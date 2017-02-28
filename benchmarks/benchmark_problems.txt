@@ -1,0 +1,7 @@
+The  file sudex_toledo.pl.txt is a Prolog file with sudoku puzzles (.txt is only there for Toledo...) for Task 1.
+When running your experiments please include these. Refer to the puzzles in your report by using the names used in this file.
+You are free to add your favorite puzzles!!
+
+The file puzzles is a similar file containing benchmarks for Task 2.
+When running your experiments please include these. Refer to the instances in your report by using the names used in this file.
+You are strongly encouraged to challenge the other students with your favorite puzzels using the APLAI wiki!!!
