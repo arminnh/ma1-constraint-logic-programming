@@ -20,7 +20,7 @@
 solve(ProblemName) :-
 	problem(ProblemName, Board),
 	print_board(Board),
-	sudoku(Board),
+	sudoku2(Board),
 	labeling(Board),
 	print_board(Board).
 
@@ -41,6 +41,72 @@ sudoku(Board) :-
 	    ),
 	    alldifferent(SubSquare)
 	).
+
+/*
+Viewpoint(X, D)
+Variables X: sets of rows, sets of columns, sets of blocks
+Domain D: sets of values 1..N2
+
+Another approach
+Variables X: sets of number 1..N2
+Domain D: set of positions
+
+Values = array met N posities van arrays
+         de N posities stellen de N mogelijke getallen voor die
+         in cellen kunnen voorkomen
+         de arrays zijn arrays van posities, elk getal komt even
+         veel voor, dus elke array is even lang
+
+werkwijze:
+    declare Values variabele
+    ken domain to aan values
+    kopieer posities van Board naar Values
+    pas de sudoku regels toe op Values
+    zet de nieuwe berekende Values in Board
+    done
+
+    later wat verbeteren want dit lijkt me niet zo proper
+
+
+dit probleem lijkt op het n-queens probleems:
+    bepaalde nummers mogen andere nummers niet raken
+    (bv 1 mag niet op zelfde kolom/rij als andere 1'en, maar
+    mag wel met 2, 3, ...)
+
+    misschien mogelijk om union van 9 viewpoints te gebruiken
+    om sudoku voor te stellen?
+
+*/
+
+sudoku2(Board) :-
+	dim(Board, [N,N]),
+	%N is integer(sqrt(N2)),
+	% Create blocks for the blocks
+	( for(I,1, N), param(Board,N) do
+        sudoqueens_arrays(N,Board, I)
+	).
+
+
+% code based on http://eclipseclp.org/examples/queens_simple.ecl.txt
+sudoqueens_arrays(N, Board, Value) :-
+
+	%dim(Board, [N]),
+	write(Value),
+	Board[1..N, 1..N] :: 1..N,
+
+	( for(I,1,N), param(Board,N, Value) do
+	    ( for(J,I+1,N), param(Board,I, Value) do
+	      Board[I] == Value ->
+	    		(
+					Board[I] #\= Board[J],
+	    		Board[I] #\= Board[J]+J-I,
+	    		Board[I] #\= Board[J]+I-J
+					)
+	    )
+	).
+
+	%Board =.. [_|Vars],
+	%labeling(Vars).
 
 
 print_board(Board) :-
