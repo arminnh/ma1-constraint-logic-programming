@@ -108,40 +108,53 @@ print_positions(Values) :-
     ), nl.
 
 sudoku2(Board, NumbersPositions) :-
-    % dimensions of board: N by N => N possible numbers
-    % board has sqrt(N) blocks of N numbers (with dim sqrt(N) by sqrt(N))
+    % dimensions of board = N by N and there are N possible numbers to be used on the Board
+    % Board has sqrt(N) blocks of N numbers (with dim sqrt(N) by sqrt(N))
     dim(Board, [N, N]),
 
-    % array of arrays. each distinct number on the board gets an array.
+    % declare an array of arrays. each distinct number on the board gets an array.
     % each number is mapped to an array of positions where this number goes
     dim(NumbersPositions, [N, N]),
     NumbersPositions[1..N, 1..N] :: 1..N*N,
 
     SqrtN is integer(sqrt(N)),
 
-    writeln("start sudoku2"),
-    ( foreach(X, ["fak uuuu", "eclipseclp", "why u terminate without message?????\n"]) do
-        writeln(X)
-    ),
-
     % assign known positions to values in given board
     ( multifor([Row, Col], 1, N), param(N, Board, NumbersPositions) do
         Pos is (Row-1) * N + Col,
-        printf("Row: %d,  Col: %d,  Pos: %d,  N: %d\n", [Row, Col, Pos, N]),
 
 		X is Board[Row, Col],
-		( var(X) ->
-            true
-        ;
-            % if Board has a number in this position
-            printf("Need to have position %d in list NumbersPositions[%d] \n", [Pos, X]),
+        % if Board has a "_" in this position, do nothing (= true)
+		( var(X) -> true ;
+            % else if Board has a number X in this position, the position needs
+            % to be in the list NumbersPositions[X]
+
+            % get the list of positions for number X
             Number is NumbersPositions[X],
-            writeln(Number),
+            % convert array to list
             array_list(Number, NumberList),
-            writeln(NumberList),
+            % let Pos be a member of the list of positions of number X
             member(Pos, NumberList)
         )
+
+        % printf("Row: %d,  Col: %d,  Pos: %d,  N: %d\n", [Row, Col, Pos, N]),
     ),
+
+    % TODO: improve these constraints to add actual sudoku logic
+    ( for(I, 1, N), param(NumbersPositions, N) do
+        /*
+        % This makes the rows and columns all different individually, but
+        % with this, multiple numbers could use the same position on the board
+        Col is NumbersPositions[1..N, I],
+        alldifferent(Col),
+        Row is NumbersPositions[I, 1..N],
+        alldifferent(Row)
+        */
+
+        % positions cannot be reused
+        alldifferent(NumbersPositions)
+    ),
+
     writeln("end sudoku2").
 
 /*
