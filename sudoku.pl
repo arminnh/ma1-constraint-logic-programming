@@ -103,7 +103,7 @@ print_positions(Values) :-
         write(" ->"),
         ( for(J, 1, N), param(Values, I) do
             X is Values[I, J],
-            ( var(X) -> write("  _") ; printf(" %2d", [X]) )
+            ( var(X) -> write(" _") ; printf("%6d", [X]) )
         ), nl
     ), nl.
 
@@ -123,7 +123,7 @@ sudoku2(Board, NumbersPositions) :-
     ( multifor([Row, Col], 1, N), param(N, Board, NumbersPositions) do
         Pos is (Row-1) * N + Col,
 
-		% A number or "_"
+		% X is a number or "_"
 		X is Board[Row, Col],
 
 		% if Board has a "_" in this position, do nothing (= true)
@@ -145,36 +145,22 @@ sudoku2(Board, NumbersPositions) :-
     % TODO: improve these constraints to add actual sudoku logic
     ( for(Number, 1, N), param(NumbersPositions, N) do
 
-				% All the positions of a certain value
-				Positions is NumbersPositions[Number],
-				(for(I, 1, N), param(Positions, N, Number) do
-					(for(J, I+1, N), param(Positions, I, N, Number) do
+        % positions of a certain Number
+		Positions is NumbersPositions[Number],
+		(for(I, 1, N), param(Positions, N, Number) do
+			(for(J, I+1, N), param(Positions, I, N, Number) do
+                % make each position be on a different row
+				suspend( mod(Positions[I], N, R1)),
+				suspend( mod(Positions[J], N, R2)),
 
-						PosI is Positions[I],
-						PosJ is Positions[J],
-						writeln(["Row1: ", PosI, " Row2: ", PosJ]),
-
-						suspend( mod(PosI, N, R1), 3, R1 -> inst) ,
-						suspend( mod(PosJ, N, R2), 3, R2 -> inst) ,
-
-						%mod(PosJ, N, R2),
-						R1 #\= R2,
-						PosI #\= PosJ
-					)
-				)
-        /*
-        % This makes the rows and columns all different individually, but
-        % with this, multiple numbers could use the same position on the board
-        Col is NumbersPositions[1..N, I],
-        alldifferent(Col),
-        Row is NumbersPositions[I, 1..N],
-        alldifferent(Row)
-        */
-
-        % positions cannot be reused
-        %alldifferent(Positions),
+				R1 #\= R2
+			)
+		)
     ),
-		alldifferent(NumbersPositions),
+
+    % positions cannot be reused
+	alldifferent(NumbersPositions),
+
     writeln("end sudoku2").
 
 /*
