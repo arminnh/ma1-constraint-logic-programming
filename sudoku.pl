@@ -91,15 +91,16 @@ dit probleem lijkt op het n-queens probleems:
 
 solve2(ProblemName) :-
     problem(ProblemName, Board),
+    writeln("Given board:"),
 	print_board(Board),
-    sudoku2(Board, Values),
-    labeling(Values),
-    print_positions(Values),
     writeln("Numbers of positions on a 9x9 board:"),
     ( for(I, 1,  81) do
         printf("%4d", [I]),
         ( mod(I, 9, 0) -> printf("\n", []) ; true)
-    ).
+    ),
+    sudoku2(Board, Values),
+    labeling(Values),
+    print_positions(Values).
 
 print_positions(Values) :-
     dim(Values, [N,N]),
@@ -122,7 +123,7 @@ sudoku2(Board, NumbersPositions) :-
     dim(NumbersPositions, [N, N]),
     NumbersPositions[1..N, 1..N] :: 1..N*N,
 
-    SqrtN is integer(sqrt(N)),
+    % SqrtN is integer(sqrt(N)),
 
     % assign known positions to values in given board
     ( multifor([Row, Col], 1, N), param(N, Board, NumbersPositions) do
@@ -147,43 +148,37 @@ sudoku2(Board, NumbersPositions) :-
         %printf("Row: %d,  Col: %d,  Pos: %d,  N: %d\n", [Row, Col, Pos, N])
     ),
 
-    % TODO: improve these constraints to add actual sudoku logic
-    ( for(Number, 1, 3), param(NumbersPositions, N) do
-
+    ( for(Number, 1, N), param(NumbersPositions, N) do
         % positions of a certain Number
-		Positions is NumbersPositions[Number],
-		(for(I, 1, N), param(Positions, N, Number) do
-			(for(J, I+1, N), param(Positions, I, N, Number) do
-                % printf("Number: %d, I: %d, J: %d, N: %d \n",  [Number, I, J, N]),
-                N1 is N,
-
-                % make each position be on a different column
-
-                % By definition of integer division, A mod B is the number Y
-                % such that Y + Q*B = A and such that Y is between 0 and B-1 (for some
-                % integer Q, usually called "quotient").
-                PosI is Positions[I],
-                PosJ is Positions[J],
-
-                PosI #= N1*Q1 + R1,
-                0 #=< R1,
-                R1 #< N1,
-                Q1 #>= 0,
-
-                PosJ #= N1*Q2 + R2,
-                0 #=< R2,
-                R2 #< N1,
-                Q2 #>= 0,
-
-				R1 #\= R2
-			)
-		)
+		Positions is NumbersPositions[Number, 1..N],
+        writeln(Positions),
+        sudoku_shift(Positions, N, PosShifted),
+        alldifferent(PosShifted)
     ),
 
     % positions cannot be reused
-	alldifferent(NumbersPositions),
+	% alldifferent(NumbersPositions),
 
     writeln("end sudoku2").
+
+
+% sudoku_shift :- replace a board positions by the first position of the row those
+%                 positions are on in a 9x9 sudoku board.
+% example:
+% ?- sudoku_shift([2, 15, 22, 36, 44, 23, 12, 54, 3], 9, [1, 10, 19, 28, 37, 19, 10, 46, 1])
+% >  Yes (0.00s cpu, solution 1, maybe more)
+sudoku_shift([], _, []).
+
+sudoku_shift([X | Tail], N, [X | Tail2]) :-
+    X #= N*Y + 1,
+    0 #=< Y,
+    Y #=< N,
+    sudoku_shift(Tail, N, Tail2).
+
+sudoku_shift([X | Tail], N, [X2 | Tail2]) :-
+    X #> X2,
+    XX is X-1,
+    sudoku_shift([XX | Tail], N, [X2 | Tail2]).
 
 /*
 Solution for 1:
