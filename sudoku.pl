@@ -103,7 +103,7 @@ print_positions(Values) :-
         write(" ->"),
         ( for(J, 1, N), param(Values, I) do
             X is Values[I, J],
-            ( var(X) -> write(" _") ; printf("%6d", [X]) )
+            ( var(X) -> write(" _") ; printf("%4d", [X]) )
         ), nl
     ), nl.
 
@@ -143,16 +143,34 @@ sudoku2(Board, NumbersPositions) :-
     ),
 
     % TODO: improve these constraints to add actual sudoku logic
-    ( for(Number, 1, N), param(NumbersPositions, N) do
+    ( for(Number, 1, 3), param(NumbersPositions, N) do
 
         % positions of a certain Number
 		Positions is NumbersPositions[Number],
 		(for(I, 1, N), param(Positions, N, Number) do
 			(for(J, I+1, N), param(Positions, I, N, Number) do
+                N1 is N+1,
+
                 % make each position be on a different row
-				suspend( mod(Positions[I], N+1, R1),3, R1 -> inst),
-				suspend( mod(Positions[J], N+1, R2), 3, R2 -> inst),
-				R1 $\= R2
+                % By definition of integer division, A mod B is the number Y
+                % such that Y + Q*B = A and such that Y is between 0 and B-1 (for some
+                % integer Q, usually called "quotient").
+                PosI is Positions[I],
+                PosJ is Positions[J],
+
+                PosI #= N1*Q1 + R1,
+                0 #=< R1,
+                R1 #< N1,
+                Q1 #>= 0,
+
+                PosJ #= N1*Q2 + R2,
+                0 #=< R2,
+                R2 #< N1,
+                Q2 #>= 0,
+
+				R1 #\= R2,
+
+                printf("I: %d, J: %d \n",  [I, J])
 			)
 		)
     ),
