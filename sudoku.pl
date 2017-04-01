@@ -143,17 +143,23 @@ sudoku2(Board, NumbersPositions) :-
     ),
 
     % TODO: improve these constraints to add actual sudoku logic
-    ( for(I, 1, N), param(NumbersPositions, N) do
+    ( for(Number, 1, N), param(NumbersPositions, N) do
 
 				% All the positions of a certain value
-				Positions is NumbersPositions[I],
-				(for(J, 1, 2), param(Positions, N) do
-					(for(K, J+1, N), param(Positions, J, N) do
-						%Not on the same line
-						t is Positions[J],
-						p is Positions[K],
+				Positions is NumbersPositions[Number],
+				(for(I, 1, N), param(Positions, N, Number) do
+					(for(J, I+1, N), param(Positions, I, N, Number) do
 
-						mod(t,N+1) #\= mod(p,N+1)
+						PosI is Positions[I],
+						PosJ is Positions[J],
+						writeln(["Row1: ", PosI, " Row2: ", PosJ]),
+
+						suspend( mod(PosI, N, R1), 3, R1 -> inst) ,
+						suspend( mod(PosJ, N, R2), 3, R2 -> inst) ,
+
+						%mod(PosJ, N, R2),
+						R1 #\= R2,
+						PosI #\= PosJ
 					)
 				)
         /*
