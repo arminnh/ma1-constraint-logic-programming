@@ -94,7 +94,12 @@ solve2(ProblemName) :-
 	print_board(Board),
     sudoku2(Board, Values),
     labeling(Values),
-    print_positions(Values).
+    print_positions(Values),
+    writeln("Numbers of positions on a 9x9 board:"),
+    ( for(I, 1,  81) do
+        printf("%4d", [I]),
+        ( mod(I, 9, 0) -> printf("\n", []) ; true)
+    ).
 
 print_positions(Values) :-
     dim(Values, [N,N]),
@@ -149,9 +154,11 @@ sudoku2(Board, NumbersPositions) :-
 		Positions is NumbersPositions[Number],
 		(for(I, 1, N), param(Positions, N, Number) do
 			(for(J, I+1, N), param(Positions, I, N, Number) do
-                N1 is N+1,
+                % printf("Number: %d, I: %d, J: %d, N: %d \n",  [Number, I, J, N]),
+                N1 is N,
 
-                % make each position be on a different row
+                % make each position be on a different column
+
                 % By definition of integer division, A mod B is the number Y
                 % such that Y + Q*B = A and such that Y is between 0 and B-1 (for some
                 % integer Q, usually called "quotient").
@@ -168,9 +175,7 @@ sudoku2(Board, NumbersPositions) :-
                 R2 #< N1,
                 Q2 #>= 0,
 
-				R1 #\= R2,
-
-                printf("I: %d, J: %d \n",  [I, J])
+				R1 #\= R2
 			)
 		)
     ),
