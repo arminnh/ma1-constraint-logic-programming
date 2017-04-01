@@ -150,10 +150,9 @@ sudoku2(Board, NumbersPositions) :-
 		(for(I, 1, N), param(Positions, N, Number) do
 			(for(J, I+1, N), param(Positions, I, N, Number) do
                 % make each position be on a different row
-				suspend( mod(Positions[I], N, R1)),
-				suspend( mod(Positions[J], N, R2)),
-
-				R1 #\= R2
+				suspend( mod(Positions[I], N+1, R1),3, R1 -> inst),
+				suspend( mod(Positions[J], N+1, R2), 3, R2 -> inst),
+				R1 $\= R2
 			)
 		)
     ),
