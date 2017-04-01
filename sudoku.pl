@@ -123,8 +123,10 @@ sudoku2(Board, NumbersPositions) :-
     ( multifor([Row, Col], 1, N), param(N, Board, NumbersPositions) do
         Pos is (Row-1) * N + Col,
 
+		% A number or "_"
 		X is Board[Row, Col],
-        % if Board has a "_" in this position, do nothing (= true)
+
+		% if Board has a "_" in this position, do nothing (= true)
 		( var(X) -> true ;
             % else if Board has a number X in this position, the position needs
             % to be in the list NumbersPositions[X]
@@ -137,11 +139,23 @@ sudoku2(Board, NumbersPositions) :-
             member(Pos, NumberList)
         )
 
-        % printf("Row: %d,  Col: %d,  Pos: %d,  N: %d\n", [Row, Col, Pos, N]),
+        %printf("Row: %d,  Col: %d,  Pos: %d,  N: %d\n", [Row, Col, Pos, N])
     ),
 
     % TODO: improve these constraints to add actual sudoku logic
     ( for(I, 1, N), param(NumbersPositions, N) do
+
+				% All the positions of a certain value
+				Positions is NumbersPositions[I],
+				(for(J, 1, 2), param(Positions, N) do
+					(for(K, J+1, N), param(Positions, J, N) do
+						%Not on the same line
+						t is Positions[J],
+						p is Positions[K],
+
+						mod(t,N+1) #\= mod(p,N+1)
+					)
+				)
         /*
         % This makes the rows and columns all different individually, but
         % with this, multiple numbers could use the same position on the board
@@ -152,9 +166,9 @@ sudoku2(Board, NumbersPositions) :-
         */
 
         % positions cannot be reused
-        alldifferent(NumbersPositions)
+        %alldifferent(Positions),
     ),
-
+		alldifferent(NumbersPositions),
     writeln("end sudoku2").
 
 /*
