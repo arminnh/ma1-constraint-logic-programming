@@ -152,8 +152,12 @@ sudoku2(Board, NumbersPositions) :-
         % positions of a certain Number
 		Positions is NumbersPositions[Number, 1..N],
         writeln(Positions),
-        sudoku_shift(Positions, N, PosShifted),
-        alldifferent(PosShifted)
+
+        sudoku_shift_rows(Positions, N, PosRowShifted),
+        alldifferent(PosRowShifted)
+
+        % sudoku_shift_cols(Positions, N, PosColShifted),
+        % alldifferent(PosColShifted)
     ),
 
     % positions cannot be reused
@@ -162,23 +166,41 @@ sudoku2(Board, NumbersPositions) :-
     writeln("end sudoku2").
 
 
-% sudoku_shift :- replace a board positions by the first position of the row those
-%                 positions are on in a 9x9 sudoku board.
+% sudoku_shift_rows :- replace a board positions by the first position of the row those
+%                      positions are on in a 9x9 sudoku board.
 % example:
-% ?- sudoku_shift([2, 15, 22, 36, 44, 23, 12, 54, 3], 9, [1, 10, 19, 28, 37, 19, 10, 46, 1])
+% ?- sudoku_shift_rows([2, 15, 22, 36, 44, 23, 12, 54, 3], 9, [1, 10, 19, 28, 37, 19, 10, 46, 1])
 % >  Yes (0.00s cpu, solution 1, maybe more)
-sudoku_shift([], _, []).
+sudoku_shift_rows([], _, []).
 
-sudoku_shift([X | Tail], N, [X | Tail2]) :-
+sudoku_shift_rows([X | Tail], N, [X | Tail2]) :-
     X #= N*Y + 1,
     0 #=< Y,
     Y #=< N,
-    sudoku_shift(Tail, N, Tail2).
+    sudoku_shift_rows(Tail, N, Tail2).
 
-sudoku_shift([X | Tail], N, [X2 | Tail2]) :-
+sudoku_shift_rows([X | Tail], N, [X2 | Tail2]) :-
     X #> X2,
     XX is X-1,
-    sudoku_shift([XX | Tail], N, [X2 | Tail2]).
+    sudoku_shift_rows([XX | Tail], N, [X2 | Tail2]).
+
+
+% sudoku_shift_cols :- replace a board positions by the first position of the column
+%                      those positions are on in a 9x9 sudoku board.
+% example:
+% ?- sudoku_shift_cols([2, 15, 22, 36, 44, 23, 12, 54, 3], 9, [2, 6, 4, 9, 8, 5, 3, 9, 3])
+% >  Yes (0.00s cpu, solution 1, maybe more)
+sudoku_shift_cols([], _, []).
+
+sudoku_shift_cols([X | Tail], N, [X | Tail2]) :-
+    X #=< N,
+    X #> 0,
+    sudoku_shift_cols(Tail, N, Tail2).
+
+sudoku_shift_cols([X | Tail], N, [X2 | Tail2]) :-
+    X #> X2,
+    XX is X-N,
+    sudoku_shift_cols([XX | Tail], N, [X2 | Tail2]).
 
 /*
 Solution for 1:
