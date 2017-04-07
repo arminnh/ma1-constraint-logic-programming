@@ -102,6 +102,18 @@ solve2(ProblemName) :-
     labeling(Values),
     print_positions(Values).
 
+test2(Number) :-
+    problem(Number, Board),
+    solution2(Number, Positions),
+
+    writeln('Problem:'),
+    print_board(Board),
+    writeln('Solution with other viewpoint:'),
+    print_positions(Positions),
+
+    writeln('Sudoku2:'),
+    sudoku2(Board, Positions).
+
 print_positions(Values) :-
     dim(Values, [N,N]),
     ( for(I, 1, N), param(Values, N) do
@@ -123,45 +135,44 @@ sudoku2(Board, NumbersPositions) :-
     dim(NumbersPositions, [N, N]),
     NumbersPositions[1..N, 1..N] :: 1..N*N,
 
-    % SqrtN is integer(sqrt(N)),
-
     % assign known positions to values in given board
     ( multifor([Row, Col], 1, N), param(N, Board, NumbersPositions) do
         Pos is (Row-1) * N + Col,
 
-		% X is a number or "_"
-		X is Board[Row, Col],
+		% Number is a number or "_"
+		Number is Board[Row, Col],
 
-		% if Board has a "_" in this position, do nothing (= true)
-		( var(X) -> true ;
-            % else if Board has a number X in this position, the position needs
-            % to be in the list NumbersPositions[X]
+		( var(Number) ->
+            % if Board has a "_" in this position, do nothing (= true)
+            true
+            ;
+            % else if Board has a number in this position, the position needs
+            % to be in the list NumbersPositions[Number]
 
-            % get the list of positions for number X
-            Number is NumbersPositions[X],
-            % convert array to list
-            array_list(Number, NumberList),
-            % let Pos be a member of the list of positions of number X
-            member(Pos, NumberList)
+            % get the array of positions for number as a list
+            PositionsList is NumbersPositions[Number, 1..N],
+
+            % let Pos be a member of the list of positions of number Number
+            member(Pos, PositionsList)
         )
-
-        %printf("Row: %d,  Col: %d,  Pos: %d,  N: %d\n", [Row, Col, Pos, N])
     ),
 
     ( for(Number, 1, N), param(NumbersPositions, N) do
         % positions of a certain Number
-		Positions is NumbersPositions[Number, 1..N],
-        writeln(Positions),
+		PositionsList is NumbersPositions[Number, 1..N],
 
-        sudoku_shift_rows(Positions, N, PosRowShifted),
-        alldifferent(PosRowShifted)
+        sudoku_shift_rows(PositionsList, N, PosRowShifted),
+        writeln([Number, 'row shifted', PositionsList, PosRowShifted]),
+        alldifferent(PosRowShifted),
 
-        % sudoku_shift_cols(Positions, N, PosColShifted),
-        % alldifferent(PosColShifted)
+        sudoku_shift_cols(PositionsList, N, PosColShifted),
+        % alldifferent(PosColShifted),
+
+        writeln([Number, "done"])
     ),
 
     % positions cannot be reused
-	% alldifferent(NumbersPositions),
+    % alldifferent(NumbersPositions),
 
     writeln("end sudoku2").
 
@@ -181,7 +192,7 @@ sudoku_shift_rows([X | Tail], N, [X | Tail2]) :-
 
 sudoku_shift_rows([X | Tail], N, [X2 | Tail2]) :-
     X #> X2,
-    XX is X-1,
+    XX #= X-1,
     sudoku_shift_rows([XX | Tail], N, [X2 | Tail2]).
 
 
@@ -199,7 +210,7 @@ sudoku_shift_cols([X | Tail], N, [X | Tail2]) :-
 
 sudoku_shift_cols([X | Tail], N, [X2 | Tail2]) :-
     X #> X2,
-    XX is X-N,
+    XX #= X-N,
     sudoku_shift_cols([XX | Tail], N, [X2 | Tail2]).
 
 /*
@@ -220,7 +231,7 @@ Value 2 goes in positions: 3 16 22 36 37 50 62 65 78
 Value 3 goes in positions: 1 15 23 30 41 54 56 70 76
 Value 4 goes in positions: 5 17 20 31 45 48 55 69 79
 Value 5 goes in positions: 6 12 27 32 43 47 58 64 80
-Value 6 goes in positions: 2 14 26 35 39 49 60 72 73
+Value 6 goes in positions: 2 14 25 35 39 49 60 72 73
 Value 7 goes in positions: 8 11 24 27 40 52 59 66 81
 Value 8 goes in positions: 4 18 21 33 44 46 61 68 74
 Value 9 goes in positions: 9 13 19 34 38 51 57 71 77
@@ -373,3 +384,25 @@ problem(11, [](
     [](_, 2, _, 4, 9, _, 8, 3, _),
     [](_, 3, _, _, 2, _, 9, _, 5),
     [](_, 9, _, _, _, 3, _, 1, _))).
+
+solution(1, [](
+    [](3,  6,  2,  8,  4,  5,  1,  7,  9),
+    [](1,  7,  5,  9,  6,  3,  2,  4,  8),
+    [](9,  4,  8,  2,  1,  7,  6,  3,  5),
+    [](7,  1,  3,  4,  5,  8,  9,  6,  2),
+    [](2,  9,  6,  7,  3,  1,  5,  8,  4),
+    [](8,  5,  4,  6,  2,  9,  7,  1,  3),
+    [](4,  3,  9,  5,  7,  6,  8,  2,  1),
+    [](5,  2,  7,  1,  8,  4,  3,  9,  6),
+    [](6,  8,  1,  3,  9,  2,  4,  5,  7))).
+
+solution2(1, [](
+    [](7, 10, 23, 29, 42, 53, 63, 67, 75),
+    [](3, 16, 22, 36, 37, 50, 62, 65, 78),
+    [](1, 15, 23, 30, 41, 54, 56, 70, 76),
+    [](5, 17, 20, 31, 45, 48, 55, 69, 79),
+    [](6, 12, 27, 32, 43, 47, 58, 64, 80),
+    [](2, 14, 25, 35, 39, 49, 60, 72, 73),
+    [](8, 11, 24, 27, 40, 52, 59, 66, 81),
+    [](4, 18, 21, 33, 44, 46, 61, 68, 74),
+    [](9, 13, 19, 34, 38, 51, 57, 71, 77))).
