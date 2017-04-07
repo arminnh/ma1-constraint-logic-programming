@@ -184,14 +184,18 @@ sudoku2(Board, NumbersPositions) :-
 % >  Yes (0.00s cpu, solution 1, maybe more)
 sudoku_shift_rows([], _, []).
 
+% If X is the first position of a row
 sudoku_shift_rows([X | Tail], N, [X | Tail2]) :-
     X #= N*Y + 1,
     0 #=< Y,
     Y #=< N,
     sudoku_shift_rows(Tail, N, Tail2).
 
+% recursive case, if we're not the first position of a row then subtract 1 from current position
 sudoku_shift_rows([X | Tail], N, [X2 | Tail2]) :-
     X #> X2,
+	% was previously is but since X might not be instantiated yet it is safer to use #=
+	% see http://www.swi-prolog.org/pldoc/man?section=clpfd-integer-arith for more detail
     XX #= X-1,
     sudoku_shift_rows([XX | Tail], N, [X2 | Tail2]).
 
@@ -210,6 +214,8 @@ sudoku_shift_cols([X | Tail], N, [X | Tail2]) :-
 
 sudoku_shift_cols([X | Tail], N, [X2 | Tail2]) :-
     X #> X2,
+	% was previously is but since X might not be instantiated yet it is safer to use #=
+	% see http://www.swi-prolog.org/pldoc/man?section=clpfd-integer-arith for more detail
     XX #= X-N,
     sudoku_shift_cols([XX | Tail], N, [X2 | Tail2]).
 
