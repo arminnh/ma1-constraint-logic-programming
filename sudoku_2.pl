@@ -213,6 +213,8 @@ sudoku2(Board, NumbersPositions) :-
 
       writeln("end sudoku2").
 
+shallow_backtrack(List) :-
+	  ( foreach(Var, List) do once(indomain(Var))).
 
 /*
 1   2   3   4   5   6   7   8   9
@@ -441,9 +443,29 @@ problem(11, [](
     [](_, 3, _, _, 2, _, 9, _, 5),
     [](_, 9, _, _, _, 3, _, 1, _))).
 
+/*
+1, 2, 3
+4, 5, 6
+7, 8, 9
+
+1 -> 1, A, B
+2 -> 7, C, D
+3 -> 3, 4, E
+
+als we voor 1 checken:
+(1-1) mod  3 (=0) \= (A-1) mod 3 => Dus A mag al zeker ni in de eerste kolom
+(1-1) mod  3 (=0) \= (B-1) mod 3 => Dus B mag al zeker ni in de eerste kolom
+(A-1) mod  3 \= (B-1) mod 3 => Dus A mag niet in dezelfde kolom zijn als B
+
+(1-1) // 3 (=0) \= (A-1)// 3 => A mag niet in de eerste rij
+(1-1) // 3 (=0) \= (B-1)// 3 => B mag niet in eerste rij
+(A-1) // 3 \= (B-1)// 3 => A mag niet in dezelfde rij als B
+
+*/
 problem(12,[](
-	[](1, _),
-	[](_, 2))).
+	[](1, _, 3),
+	[](3, _, _),
+	[](2, _, _))).
 
 solution(1, [](
     [](3,  6,  2,  8,  4,  5,  1,  7,  9),
