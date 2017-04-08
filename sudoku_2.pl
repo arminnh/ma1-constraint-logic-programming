@@ -14,8 +14,11 @@
 % Author: Joachim Schimpf, IC-Parc
 %
 
+
+
 :- lib(ic).
 :- import alldifferent/1 from ic_global.
+:- lib(suspend).
 
 solve(ProblemName) :-
 	problem(ProblemName, Board),
@@ -94,7 +97,8 @@ solve2(ProblemName) :-
     writeln("Given board:"),
 	print_board(Board),
     writeln("Numbers of positions on a 9x9 board:"),
-    ( for(I, 1,  81) do
+	dim(Board, [N,N]),
+    ( for(I, 1,  N*N) do
         printf("%4d", [I]),
         ( mod(I, 9, 0) -> printf("\n", []) ; true)
     ),
@@ -124,14 +128,6 @@ print_positions(Values) :-
             ( var(X) -> write(" _") ; printf("%4d", [X]) )
         ), nl
     ), nl.
-
-sudoku3(Board):-
-	dim(Board, [N,N]),
-	dim(Blocks, [N,N]),
-	Blocks[1..N,1..N] :: 1..N
-
-	.
-
 
 sudoku2(Board, NumbersPositions) :-
     % dimensions of board = N by N and there are N possible numbers to be used on the Board
@@ -165,24 +161,71 @@ sudoku2(Board, NumbersPositions) :-
         )
     ),
 
-    ( for(Number, 1, N), param(NumbersPositions, N) do
-        % positions of a certain Number
-		PositionsList is NumbersPositions[Number, 1..N],
+	% TODO: improve these constraints to add actual sudoku logic
+      ( for(Number, 1, N), param(NumbersPositions, N) do
 
-        sudoku_shift_rows(PositionsList, N, PosRowShifted),
-        writeln([Number, 'row shifted', PositionsList, PosRowShifted]),
-        alldifferent(PosRowShifted),
+          % positions of a certain Number
+  		Positions is NumbersPositions[Number],
+  		(for(I, 1, N), param(Positions, N, Number) do
+			PosI #= Positions[I],
+			/*PosI #= N1*Q1 + R1,
+			0 #=< R1,
+			R1 #< N1,
+			Q1 #>= 0,
+			*/
+			X #= PosI -1,
+			R1 #= X mod N,
+			Q1 #= X // N,
+  			(for(J, I+1, N), param(Positions, I, N, Number) do
+                  N1 is N+1,
 
-        %sudoku_shift_cols(PositionsList, N, PosColShifted),
-        % alldifferent(PosColShifted),
+                  % make each position be on a different row
+                  % By definition of integer division, A mod B is the number Y
+                  % such that Y + Q*B = A and such that Y is between 0 and B-1 (for some
+                  % integer Q, usually called "quotient").
+				  PosJ #= Positions[J],
 
-        writeln([Number, "done"])
-    ),
+                  /*PosJ #= N1*Q2 + R2,
+                  0 #=< R2,
+                  R2 #< N1,
+                  Q2 #>= 0,
+				 */
+				 Y #= PosJ -1 ,
+				 R2 #= Y mod N,
+				 Q2 #= Y // N,
+  				 R1 #\= R2,
+				 Q1 #\= Q2
+				 %QI is PosI// N+1,
+				 %QJ is PosJ// N+1,
+				 %QI #\= QJ,
 
-    % positions cannot be reused
-    % alldifferent(NumbersPositions),
+				 %writeln(R1),
+				 %writeln(R2)
+				 %nl
+                  %printf("I: %d, J: %d \n",  [I, J])
+  			)
+  		),
+		alldifferent(Positions)
+      ),
 
-    writeln("end sudoku2").
+      % positions cannot be reused
+  	  alldifferent(NumbersPositions),
+
+      writeln("end sudoku2").
+
+
+/*
+1   2   3   4   5   6   7   8   9
+10  11  12  13  14  15  16  17  18
+19  20  21  22  23  24  25  26  27
+28  29  30  31  32  33  34  35  36
+37  38  39  40  41  42  43  44  45
+46  47  48  49  50  51  52  53  54
+55  56  57  58  59  60  61  62  63
+64  65  66  67  68  69  70  71  72
+73  74  75  76  77  78  79  80  81
+
+*/
 
 % sudoku_shift_rows :- replace a board positions by the first position of the row those
 %                      positions are on in a 9x9 sudoku board.
@@ -397,6 +440,10 @@ problem(11, [](
     [](_, 2, _, 4, 9, _, 8, 3, _),
     [](_, 3, _, _, 2, _, 9, _, 5),
     [](_, 9, _, _, _, 3, _, 1, _))).
+
+problem(12,[](
+	[](1, _),
+	[](_, 2))).
 
 solution(1, [](
     [](3,  6,  2,  8,  4,  5,  1,  7,  9),
