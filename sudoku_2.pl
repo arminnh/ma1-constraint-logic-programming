@@ -461,6 +461,11 @@ als we voor 1 checken:
 (1-1) // 3 (=0) \= (B-1)// 3 => B mag niet in eerste rij
 (A-1) // 3 \= (B-1)// 3 => A mag niet in dezelfde rij als B
 
+...
+Mogelijk antwoord
+1 -> 1, 5, 9
+2 -> 7, 2, 6
+3 -> 3, 4, 8
 */
 problem(12,[](
 	[](1, _, 3),
