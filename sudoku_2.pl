@@ -103,8 +103,13 @@ solve2(ProblemName) :-
         ( mod(I, 9, 0) -> printf("\n", []) ; true)
     ),
     sudoku2(Board, Values),
-    labeling(Values),
+    shallow_backtrack(Values),
+	%shallow_backtrack2(Values),
+
     print_positions(Values).
+
+shallow_backtrack2(List) :-
+		  ( foreach(Var, List) do indomain(Var,Var)).
 
 test2(Number) :-
     problem(Number, Board),
@@ -117,6 +122,18 @@ test2(Number) :-
 
     writeln('Sudoku2:'),
     sudoku2(Board, Positions).
+
+test12(Number) :-
+	    problem(Number, Board),
+	    solution12(Number, Positions),
+
+	    writeln('Problem:'),
+	    print_board(Board),
+	    writeln('Solution with other viewpoint:'),
+	    print_positions(Positions),
+
+	    writeln('Sudoku2:'),
+	    sudoku2(Board, Positions).
 
 print_positions(Values) :-
     dim(Values, [N,N]),
@@ -162,17 +179,17 @@ sudoku2(Board, NumbersPositions) :-
     ),
 
 	% TODO: improve these constraints to add actual sudoku logic
-      ( for(Number, 1, N), param(NumbersPositions, N) do
+     ( for(Number, 1, N), param(NumbersPositions, N) do
 
           % positions of a certain Number
   		Positions is NumbersPositions[Number],
-  		(for(I, 1, N), param(Positions, N, Number) do
+  		/*(for(I, 1, N), param(Positions, N, Number) do
 			PosI #= Positions[I],
 			/*PosI #= N1*Q1 + R1,
 			0 #=< R1,
 			R1 #< N1,
 			Q1 #>= 0,
-			*/
+
 			X #= PosI -1,
 			R1 #= X mod N,
 			Q1 #= X // N,
@@ -183,18 +200,18 @@ sudoku2(Board, NumbersPositions) :-
                   % By definition of integer division, A mod B is the number Y
                   % such that Y + Q*B = A and such that Y is between 0 and B-1 (for some
                   % integer Q, usually called "quotient").
-				  PosJ #= Positions[J],
+				 PosJ #= Positions[J],
 
                   /*PosJ #= N1*Q2 + R2,
                   0 #=< R2,
                   R2 #< N1,
                   Q2 #>= 0,
-				 */
+
 				 Y #= PosJ -1 ,
 				 R2 #= Y mod N,
 				 Q2 #= Y // N,
-  				 R1 #\= R2,
-				 Q1 #\= Q2
+  				 %R1 #\= R2,
+				 Q1 $\= Q2
 				 %QI is PosI// N+1,
 				 %QJ is PosJ// N+1,
 				 %QI #\= QJ,
@@ -204,18 +221,44 @@ sudoku2(Board, NumbersPositions) :-
 				 %nl
                   %printf("I: %d, J: %d \n",  [I, J])
   			)
-  		),
+  		),*/
+		separate_rows(Positions),
+		%shallow_backtrack(Positions),
 		alldifferent(Positions)
-      ),
+		%shallow_backtrack(Positions)
+	),
 
       % positions cannot be reused
   	  alldifferent(NumbersPositions),
+	  %shallow_backtrack(NumbersPositions),
 
       writeln("end sudoku2").
 
-shallow_backtrack(List) :-
-	  ( foreach(Var, List) do once(indomain(Var))).
+separate_rows(Positions):-
+	dim(Positions, N),
+	(for(I, 1, N), param(Positions, N) do
+		%PosI #= Positions[I],
+		X #= Positions[I] - 1,
+		R1 #= X mod N,
+		Q1 #= X // N,
+		(for(J, 1, I-1), param(Positions, I, N) do
+			 %PosJ #= Positions[J],
+			 Y #= Positions[J] - 1 ,
+			 R2 #= Y mod N,
+			 Q2 #= Y // N,
+			 Q1 $\= Q2
+		)
+	).
 
+shallow_backtrack(List) :-
+	  ( foreach(Var, List) do get_min(Var,Var)).
+
+struct_to_list(Struct, List):-
+	  ( foreacharg(Arg, Struct),
+	  foreach(Var,List)
+	  do
+	  Var = Arg
+	  ).
 /*
 1   2   3   4   5   6   7   8   9
 10  11  12  13  14  15  16  17  18
@@ -471,6 +514,11 @@ problem(12,[](
 	[](1, _, 3),
 	[](3, _, _),
 	[](2, _, _))).
+
+solution12(1, [](
+	[](1, 5, 9),
+	[](2, 6, 7),
+	[](3, 4, 8))).
 
 solution(1, [](
     [](3,  6,  2,  8,  4,  5,  1,  7,  9),
