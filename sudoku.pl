@@ -80,6 +80,8 @@ solve2(ProblemName) :-
 
     writeln('Sudoku2:'),
     sudoku2(Board, Values),
+
+
     %labeling(Values),
 	search(naive,Values),
     print_positions(Values).
@@ -124,21 +126,26 @@ sudoku2(Board, NumbersPositions) :-
 		RowsList is NumbersPositions[Number, 1..N, 1],
 		alldifferent(RowsList),
 		ColsList is NumbersPositions[Number, 1..N, 2],
-		alldifferent(ColsList),
-
-
-        %sudoku_shift_rows(PositionsList, N, PosRowShifted),
-        %writeln([Number, 'row shifted', PositionsList, PosRowShifted]),
-        %alldifferent(PosRowShifted),
-
-        %sudoku_shift_cols(PositionsList, N, PosColShifted),
-        % alldifferent(PosColShifted),
-
-        writeln([Number, "done"])
+		alldifferent(ColsList)
     ),
+	M is N*N,
+	dim(PosList, [M]),
+	PosList[1..M] :: 1..M,
+	PosList2 is PosList[1..M],
+	( for(Number, 1, N), param(Values, N, PosList2) do
+		(for(I, 1, N), param(Values, PosList2, N, Number) do
+			Row #= NumbersPositions[Number, I, 1],
+			Col #= NumbersPositions[Number, I, 2],
+			writeln(Row),
+			Pos #= (Row-1) * N + Col
+			%member(Pos, PosList2)
+		)
+	),
+	%alldifferent(PosList),
+	search(naive,NumbersPositions),
+
 	%writeln(NumbersPositions),
     % positions cannot be reused
-    % alldifferent(NumbersPositions),
 
     writeln("end sudoku2").
 
