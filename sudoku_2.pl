@@ -14,11 +14,9 @@
 % Author: Joachim Schimpf, IC-Parc
 %
 
-
-
 :- lib(ic).
 :- import alldifferent/1 from ic_global.
-:- lib(suspend).
+:- coroutine.
 
 solve(ProblemName) :-
 	problem(ProblemName, Board),
@@ -98,14 +96,13 @@ solve2(ProblemName) :-
 	print_board(Board),
     writeln("Numbers of positions on a 9x9 board:"),
 	dim(Board, [N,N]),
-    ( for(I, 1,  N*N) do
+    ( for(I, 1,  N*N), param(N) do
         printf("%4d", [I]),
-        ( mod(I, 9, 0) -> printf("\n", []) ; true)
+        ( mod(I, N, 0) -> printf("\n", []) ; true)
     ),
     sudoku2(Board, Values),
-    shallow_backtrack(Values),
+    %shallow_backtrack(Values),
 	%shallow_backtrack2(Values),
-
     print_positions(Values).
 
 shallow_backtrack2(List) :-
@@ -225,6 +222,7 @@ sudoku2(Board, NumbersPositions) :-
 		separate_rows(Positions),
 		%shallow_backtrack(Positions),
 		alldifferent(Positions)
+		%labeling(Positions)
 		%shallow_backtrack(Positions)
 	),
 
@@ -235,84 +233,27 @@ sudoku2(Board, NumbersPositions) :-
       writeln("end sudoku2").
 
 separate_rows(Positions):-
-	dim(Positions, N),
+	dim(Positions, [N]),
 	(for(I, 1, N), param(Positions, N) do
 		%PosI #= Positions[I],
 		X #= Positions[I] - 1,
 		R1 #= X mod N,
-		Q1 #= X // N,
-		(for(J, 1, I-1), param(Positions, I, N) do
+		div(X,N,Q1),
+		(for(J, I+1, N), param(Positions, R1, Q1, N) do
 			 %PosJ #= Positions[J],
 			 Y #= Positions[J] - 1 ,
 			 R2 #= Y mod N,
-			 Q2 #= Y // N,
-			 Q1 $\= Q2
+			 div(Y,N,Q2),
+			 Q1 #\= Q2,
+			 R1 #\= R2
 		)
-	).
+	),
+	labeling(Positions)
+	.
 
 shallow_backtrack(List) :-
 	  ( foreach(Var, List) do get_min(Var,Var)).
 
-struct_to_list(Struct, List):-
-	  ( foreacharg(Arg, Struct),
-	  foreach(Var,List)
-	  do
-	  Var = Arg
-	  ).
-/*
-1   2   3   4   5   6   7   8   9
-10  11  12  13  14  15  16  17  18
-19  20  21  22  23  24  25  26  27
-28  29  30  31  32  33  34  35  36
-37  38  39  40  41  42  43  44  45
-46  47  48  49  50  51  52  53  54
-55  56  57  58  59  60  61  62  63
-64  65  66  67  68  69  70  71  72
-73  74  75  76  77  78  79  80  81
-
-*/
-
-% sudoku_shift_rows :- replace a board positions by the first position of the row those
-%                      positions are on in a 9x9 sudoku board.
-% example:
-% ?- sudoku_shift_rows([2, 15, 22, 36, 44, 23, 12, 54, 3], 9, [1, 10, 19, 28, 37, 19, 10, 46, 1])
-% >  Yes (0.00s cpu, solution 1, maybe more)
-sudoku_shift_rows([], _, []).
-
-% If X is the first position of a row
-sudoku_shift_rows([X | Tail], N, [X | Tail2]) :-
-    X #= N*Y + 1,
-    0 #=< Y,
-    Y #=< N,
-    sudoku_shift_rows(Tail, N, Tail2).
-
-% recursive case, if we're not the first position of a row then subtract 1 from current position
-sudoku_shift_rows([X | Tail], N, [X2 | Tail2]) :-
-    X #> X2,
-	% was previously is but since X might not be instantiated yet it is safer to use #=
-	% see http://www.swi-prolog.org/pldoc/man?section=clpfd-integer-arith for more detail
-    XX #= X-1,
-    sudoku_shift_rows([XX | Tail], N, [X2 | Tail2]).
-
-
-% sudoku_shift_cols :- replace a board positions by the first position of the column
-%                      those positions are on in a 9x9 sudoku board.
-% example:
-% ?- sudoku_shift_cols([2, 15, 22, 36, 44, 23, 12, 54, 3], 9, [2, 6, 4, 9, 8, 5, 3, 9, 3])
-% >  Yes (0.00s cpu, solution 1, maybe more)
-sudoku_shift_cols([], _, []).
-
-sudoku_shift_cols([X | Tail], N, [X | Tail2]) :-
-    X #=< N,
-    X #> 0,
-    sudoku_shift_cols(Tail, N, Tail2).
-
-sudoku_shift_cols([X | Tail], N, [X2 | Tail2]) :-
-    X #> X2,
-	% was previously is but since X might not be instantiated yet it is safer to use #=
-	% see http://www.swi-prolog.org/pldoc/man?section=clpfd-integer-arith for more detail
-    XX #= X-N,
-    sudoku_shift_cols([XX | Tail], N, [X2 | Tail2]).
 
 /*
 Solution for 1:
@@ -338,24 +279,6 @@ Value 8 goes in positions: 4 18 21 33 44 46 61 68 74
 Value 9 goes in positions: 9 13 19 34 38 51 57 71 77
 */
 
-% code based on http://eclipseclp.org/examples/queens_simple.ecl.txt
-sudoqueens_arrays(N, Board, Value) :-
-	%dim(Board, [N]),
-	write(Value),
-	Board[1..N, 1..N] :: 1..N,
-
-    ( for(I,1,N), param(Board, Value, N) do
-        ( for(J,I+1,N), param(Board, Value, I) do
-            Board[I] == Value -> (
-                Board[I] #\= Board[J],
-                Board[I] #\= Board[J]+J-I,
-                Board[I] #\= Board[J]+I-J
-            )
-        )
-    )
-	%Board =.. [_|Vars], % CLPArray =.. [_|PrologList],
-	%labeling(Vars).
-    .
 
 %----------------------------------------------------------------------
 % Sample data
