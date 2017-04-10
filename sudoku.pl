@@ -72,15 +72,21 @@ solve2(ProblemName) :-
 	print_board(Board),
 
     writeln("Numbers of positions on a 9x9 board:"),
-    ( for(I, 1,  81) do
+	dim(Board,[N,N]),
+    ( for(I, 1,  N*N), param(N) do
         printf("%4d", [I]),
-        ( mod(I, 9, 0) -> printf("\n", []) ; true)
+        ( mod(I, N, 0) -> printf("\n", []) ; true)
     ),
 
     writeln('Sudoku2:'),
     sudoku2(Board, Values),
-    labeling(Values),
+    %labeling(Values),
+	search(naive,Values),
     print_positions(Values).
+
+search(naive,List) :-
+		search(List,0,input_order,indomain,complete, []).
+
 
 sudoku2(Board, NumbersPositions) :-
     % dimensions of board = N by N and there are N possible numbers to be used on the Board
@@ -89,13 +95,10 @@ sudoku2(Board, NumbersPositions) :-
 
     % declare an array of arrays. each distinct number on the board gets an array.
     % each number is mapped to an array of positions where this number goes
-    dim(NumbersPositions, [N, N]),
-    NumbersPositions[1..N, 1..N] :: 1..N*N,
-
+    dim(NumbersPositions, [N, N,2]),
+    NumbersPositions[1..N, 1..N,1..2] :: 1..N,
     % assign known positions to values in given board
     ( multifor([Row, Col], 1, N), param(N, Board, NumbersPositions) do
-        Pos is (Row-1) * N + Col,
-
 		% Number is a number or "_"
 		Number is Board[Row, Col],
 
@@ -107,27 +110,33 @@ sudoku2(Board, NumbersPositions) :-
             % to be in the list NumbersPositions[Number]
 
             % get the array of positions for number as a list
-            PositionsList is NumbersPositions[Number, 1..N],
+            RowsList is NumbersPositions[Number, 1..N, 1],
+			ColsList is NumbersPositions[Number, 1..N, 2],
 
             % let Pos be a member of the list of positions of number Number
-            member(Pos, PositionsList)
+            member(Row, RowsList),
+			member(Col, ColsList)
         )
     ),
-
     ( for(Number, 1, N), param(NumbersPositions, N) do
         % positions of a certain Number
-		PositionsList is NumbersPositions[Number, 1..N],
+		%PositionsList is NumbersPositions[Number, 1..N,1..2],
+		RowsList is NumbersPositions[Number, 1..N, 1],
+		alldifferent(RowsList),
+		ColsList is NumbersPositions[Number, 1..N, 2],
+		alldifferent(ColsList),
 
-        sudoku_shift_rows(PositionsList, N, PosRowShifted),
-        writeln([Number, 'row shifted', PositionsList, PosRowShifted]),
-        alldifferent(PosRowShifted),
+
+        %sudoku_shift_rows(PositionsList, N, PosRowShifted),
+        %writeln([Number, 'row shifted', PositionsList, PosRowShifted]),
+        %alldifferent(PosRowShifted),
 
         %sudoku_shift_cols(PositionsList, N, PosColShifted),
         % alldifferent(PosColShifted),
 
         writeln([Number, "done"])
     ),
-
+	%writeln(NumbersPositions),
     % positions cannot be reused
     % alldifferent(NumbersPositions),
 
@@ -162,57 +171,16 @@ print_board(Board) :-
     ), nl.
 
 print_positions(Values) :-
-    dim(Values, [N,N]),
+    dim(Values, [N,N, 2]),
     ( for(I, 1, N), param(Values, N) do
         write(I),
         write(" ->"),
         ( for(J, 1, N), param(Values, I) do
-            X is Values[I, J],
-            ( var(X) -> write(" _") ; printf("%4d", [X]) )
+            X is Values[I, J, 1],
+			Y is Values[I, J, 2],
+            ( var(X) -> write(" _") ; printf("(%2d, %2d)", [X,Y]) )
         ), nl
     ), nl.
-
-% sudoku_shift_rows :- replace a board positions by the first position of the row those
-%                      positions are on in a 9x9 sudoku board.
-% example:
-% ?- sudoku_shift_rows([2, 15, 22, 36, 44, 23, 12, 54, 3], 9, [1, 10, 19, 28, 37, 19, 10, 46, 1])
-% >  Yes (0.00s cpu, solution 1, maybe more)
-sudoku_shift_rows([], _, []).
-
-% If X is the first position of a row
-sudoku_shift_rows([X | Tail], N, [X | Tail2]) :-
-    X #= N*Y + 1,
-    0 #=< Y,
-    Y #=< N,
-    sudoku_shift_rows(Tail, N, Tail2).
-
-% recursive case, if we're not the first position of a row then subtract 1 from current position
-sudoku_shift_rows([X | Tail], N, [X2 | Tail2]) :-
-    X #> X2,
-	% was previously is but since X might not be instantiated yet it is safer to use #=
-	% see http://www.swi-prolog.org/pldoc/man?section=clpfd-integer-arith for more detail
-    XX #= X-1,
-    sudoku_shift_rows([XX | Tail], N, [X2 | Tail2]).
-
-
-% sudoku_shift_cols :- replace a board positions by the first position of the column
-%                      those positions are on in a 9x9 sudoku board.
-% example:
-% ?- sudoku_shift_cols([2, 15, 22, 36, 44, 23, 12, 54, 3], 9, [2, 6, 4, 9, 8, 5, 3, 9, 3])
-% >  Yes (0.00s cpu, solution 1, maybe more)
-sudoku_shift_cols([], _, []).
-
-sudoku_shift_cols([X | Tail], N, [X | Tail2]) :-
-    X #=< N,
-    X #> 0,
-    sudoku_shift_cols(Tail, N, Tail2).
-
-sudoku_shift_cols([X | Tail], N, [X2 | Tail2]) :-
-    X #> X2,
-	% was previously is but since X might not be instantiated yet it is safer to use #=
-	% see http://www.swi-prolog.org/pldoc/man?section=clpfd-integer-arith for more detail
-    XX #= X-N,
-    sudoku_shift_cols([XX | Tail], N, [X2 | Tail2]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAMPLE DATA
@@ -342,6 +310,18 @@ problem(11, [](
     [](_, 2, _, 4, 9, _, 8, 3, _),
     [](_, 3, _, _, 2, _, 9, _, 5),
     [](_, 9, _, _, _, 3, _, 1, _))).
+
+	problem(12,[](
+		[](1, _, 3),
+		[](3, _, _),
+		[](2, _, _))).
+
+	problem(13,[](
+			[](1, _, 3, _),
+			[](3, _, _, 4),
+			[](2, _, _, _),
+			[](4, _, _, _))).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SOLUTIONS

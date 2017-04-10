@@ -17,6 +17,7 @@
 :- lib(ic).
 :- import alldifferent/1 from ic_global.
 :- coroutine.
+:- lib(lists).
 
 solve(ProblemName) :-
 	problem(ProblemName, Board),
@@ -101,17 +102,36 @@ solve2(ProblemName) :-
         ( mod(I, N, 0) -> printf("\n", []) ; true)
     ),
     sudoku2(Board, Values),
-    %shallow_backtrack(Values),
+	%labeling(Values),
+    search(moffmo, Values),
 	%shallow_backtrack2(Values),
     print_positions(Values).
 
+search(naive,List) :-
+	search(List,0,input_order,indomain,complete, []).
+
+search(middle_out,List) :-
+	middle_out(List,MOList),
+	search(MOList,0,input_order,indomain,complete, []).
+
+search(first_fail,List) :-
+	search(List,0,first_fail,indomain,complete, []).
+
+search(moff,List) :-
+	middle_out(List,MOList),
+	search(MOList,0,first_fail,indomain,complete, []).
+
+search(moffmo,List) :-
+	middle_out(List,MOList),
+	search(MOList,0,first_fail, indomain_middle,complete, []).
+
+
 shallow_backtrack2(List) :-
-		  ( foreach(Var, List) do indomain(Var,Var)).
+		  ( foreach(Var, List) do indomain(Var)).
 
 test2(Number) :-
     problem(Number, Board),
     solution2(Number, Positions),
-
     writeln('Problem:'),
     print_board(Board),
     writeln('Solution with other viewpoint:'),
@@ -219,9 +239,9 @@ sudoku2(Board, NumbersPositions) :-
                   %printf("I: %d, J: %d \n",  [I, J])
   			)
   		),*/
-		separate_rows(Positions),
+		separate_rows(Positions)
 		%shallow_backtrack(Positions),
-		alldifferent(Positions)
+		%alldifferent(Positions)
 		%labeling(Positions)
 		%shallow_backtrack(Positions)
 	),
@@ -237,19 +257,18 @@ separate_rows(Positions):-
 	(for(I, 1, N), param(Positions, N) do
 		%PosI #= Positions[I],
 		X #= Positions[I] - 1,
-		R1 #= X mod N,
-		div(X,N,Q1),
-		(for(J, I+1, N), param(Positions, R1, Q1, N) do
+		C1 #= X mod N,
+		R1 #= X // N,
+		(for(J, I+1, N), param(Positions, R1, C1, N) do
 			 %PosJ #= Positions[J],
 			 Y #= Positions[J] - 1 ,
-			 R2 #= Y mod N,
-			 div(Y,N,Q2),
-			 Q1 #\= Q2,
+			 C2 #= Y mod N,
+			 R2 #= Y // N,
+			 C1 #\= C2,
 			 R1 #\= R2
 		)
-	),
-	labeling(Positions)
-	.
+	)
+		.
 
 shallow_backtrack(List) :-
 	  ( foreach(Var, List) do get_min(Var,Var)).
@@ -438,10 +457,11 @@ problem(12,[](
 	[](3, _, _),
 	[](2, _, _))).
 
-solution12(1, [](
-	[](1, 5, 9),
-	[](2, 6, 7),
-	[](3, 4, 8))).
+problem(13,[](
+		[](1, _, 3, _),
+		[](3, _, _, 4),
+		[](2, _, _, _),
+		[](4, _, _, _))).
 
 solution(1, [](
     [](3,  6,  2,  8,  4,  5,  1,  7,  9),
@@ -464,3 +484,8 @@ solution2(1, [](
     [](8, 11, 24, 27, 40, 52, 59, 66, 81),
     [](4, 18, 21, 33, 44, 46, 61, 68, 74),
     [](9, 13, 19, 34, 38, 51, 57, 71, 77))).
+
+solution2(12, [](
+		[](1, 5, 9),
+		[](2, 6, 7),
+		[](3, 4, 8))).
