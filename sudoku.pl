@@ -1,3 +1,7 @@
+% TODO: change construction of NumbersPositions again:
+%       do not need to keep X coords as it will always be the same as the Position index
+%       so dimensions can become [N, N] again and only the Y coords need to be kept explicitly
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % GIVEN SUDOKU SOLUTION WITH TRIVIAL VIEWPOINT
 %
@@ -154,9 +158,17 @@ print_positions(NumbersPositions) :-
             X is NumbersPositions[I, J, 1],
 			Y is NumbersPositions[I, J, 2],
             ( var(X) ->
-                write("(_, _) ")
+                ( var(Y) ->
+                    write("(_, _) ")
+                    ;
+                    printf("(_, %d) ", [Y])
+                )
                 ;
-                printf("(%d, %d) ", [X,Y])
+                ( var(Y) ->
+                    printf("(%d, _) ", [X])
+                    ;
+                    printf("(%d, %d) ", [X,Y])
+                )
             )
         ),
         nl
@@ -165,26 +177,47 @@ print_positions(NumbersPositions) :-
 
 board_to_numbers_positions(Board, NumbersPositions, N) :-
     writeln("board_to_numbers_positions"),
-    ( multifor([X, Y], 1, N), param(N, Board, NumbersPositions) do
-        % Number is a number or "_"
-        Number #= Board[X, Y],
+    % ( multifor([X, Y], 1, N), param(N, Board, NumbersPositions) do
+    %     % Number is a number or "_"
+    %     Number #= Board[X, Y],
+    %
+    %     ( var(Number) ->
+    %         % if Board has a "_" in this position, do nothing (= true)
+    %         true
+    %         ;
+    %         % else if Board has a number in this position, the position needs
+    %         % to be in the list NumbersPositions[Number]
+    %
+    %         % get the array of positions for number as a list
+    %         XList is NumbersPositions[Number, 1..N, 1],
+    %         YList is NumbersPositions[Number, 1..N, 2],
+    %
+    %         % let Pos be a member of the list of positions of number Number
+    %         % member(X, XList),
+    %         % member(Y, YList)
+    %         nth1(X, XList, X),
+    %         nth1(X, YList, Y)
+    %     )
+    % ).
 
-        ( var(Number) ->
-            % if Board has a "_" in this position, do nothing (= true)
-            true
-            ;
-            % else if Board has a number in this position, the position needs
-            % to be in the list NumbersPositions[Number]
+    ( multifor([Number, Position], 1, N), param(NumbersPositions, Board, N) do
+        X is NumbersPositions[Number, Position, 1],
+        Y is NumbersPositions[Number, Position, 2],
+        X #= Position,
 
-            % get the array of positions for number as a list
-            XList is NumbersPositions[Number, 1..N, 1],
-            YList is NumbersPositions[Number, 1..N, 2],
+        ( for(BoardY, 1, N), param(Board, Number, Position, Y) do
+            BoardValue is Board[Position, BoardY],
 
-            % let Pos be a member of the list of positions of number Number
-            % member(X, XList),
-            % member(Y, YList)
-            nth1(Y, XList, X),
-            nth1(Y, YList, Y)
+            ( var(BoardValue) ->
+                true
+                ;
+                ( BoardValue =:= Number ->
+                    Y #= BoardY
+                    ;
+                    true
+                )
+            )
+
         )
     ).
 
@@ -517,43 +550,43 @@ problem(14, [](
 
 problem(15, [](
 	[](1, _, 3, _),
-	[](3, _, _, 4),
+	[](3, _, 2, 4),
 	[](2, _, _, _),
-	[](4, _, _, _))).
+	[](4, 2, _, _))).
 
 problem(16, [](
 	[](1, _, 3, _, _),
-	[](3, 5, _, 4, _),
+	[](3, 5, 2, 4, _),
 	[](2, _, _, _, _),
-	[](4, _, 5, _, _),
+	[](4, 2, 5, _, _),
 	[](5, 3, _, _, _))).
 
 problem(17, [](
-	[](1, _, 3, _, _, _),
-	[](3, 5, _, 4, _, 6),
-	[](2, _, 6, _, _, _),
-	[](4, _, 5, _, _, _),
-	[](5, _, _, _, 6, _),
-	[](6, 3, _, _, _, _))).
+	[](1, _, 3, _, _, 5),
+	[](3, 5, 2, 4, _, 6),
+	[](2, _, 6, 3, _, _),
+	[](4, 2, 5, _, _, _),
+	[](5, 3, _, _, 6, _),
+	[](6, _, _, 5, _, _))).
 
 problem(18, [](
-	[](1, _, 3, _, 4, _, _),
-	[](3, 5, _, 4, 7, 6, _),
-	[](2, _, 6, _, _, _, _),
-	[](4, _, 5, _, _, _, 7),
-	[](5, _, 2, _, 6, 1, _),
-	[](6, _, 7, _, _, _, 2),
-	[](7, 3, _, _, _, 3, _))).
+	[](1, _, 3, _, _, 5, 4),
+	[](3, 5, 2, 4, _, 6, 7),
+	[](2, _, 6, 3, _, _, _),
+	[](4, 2, 5, _, 7, _, _),
+	[](5, 3, 7, _, 6, _, _),
+	[](6, _, _, 5, _, 7, _),
+    [](7, 4, _, 6, _, _, 3))).
 
 problem(19, [](
-	[](1, _, 3, _, 4, _, 8, _),
-	[](3, 5, _, 4, 7, 6, _, _),
-	[](2, _, 6, 8, 1, _, _, 3),
-	[](4, _, 5, _, _, _, 7, _),
-	[](5, _, 2, _, 6, 1, _, 8),
-	[](6, _, 7, 4, _, _, 2, _),
-	[](7, _, 8, _, _, 3, _, _),
-	[](8, 3, _, 1, _, _, _, 4))).
+	[](1, _, 3, _, _, 5, 4, 8),
+	[](3, 5, 2, 4, _, 6, 7, _),
+	[](2, _, 6, 3, _, 4, _, _),
+	[](4, 2, 5, _, 7, _, 1, _),
+	[](5, 3, 7, _, 6, 2, _, 4),
+	[](6, _, _, 5, _, 7, _, _),
+    [](7, 4, _, 6, _, _, 3, _),
+    [](8, _, _, _, _, _, 6, _))).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SOLUTIONS
