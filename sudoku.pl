@@ -239,10 +239,10 @@ numbers_positions_to_board(NumbersPositions, Board) :-
     ).
 
 
-% compare lists based on first element
-compareThierry(Delta, [E1, _ | _], [E2, _ | _]) :-
-    compare(Delta, E1, E2).
-
+between_val(Value, Start, End) :-
+	Start #< Value,
+	Value #=< End.
+	
 sudoku_constraints(NumbersPositions, N) :-
     % writeln("for each number, it's positions are on different rows and columns"),
     % for each number, it's positions are on different rows and columns
@@ -284,12 +284,33 @@ sudoku_constraints(NumbersPositions, N) :-
 
         Nth is (Number-1) * N + Position,
         nth1(Nth, PosList, Pos),
-        % writeln(["Nth: ", Nth, "PosList: ", PosList]),
+        writeln(["Nth: ", Nth, "PosList: ", PosList]),
         % nl,
         true
 	),
-
     alldifferent(PosList),
+	SN is sqrt(N),
+	Sum is N*(N+1)/2,
+	(for(I, 1,N), param(NumbersPositions, PosList, N, SN) do
+		length(Blocks, N),
+		(multifor([Number,Position], 1, N), param(NumbersPositions, SN, I, Blocks) do
+			X #= NumbersPositions[Number, Position, 1],
+			Y #= NumbersPositions[Number, Position, 2],
+			Start is (I-1)*SN,
+			End is I*SN,
+			( between_val(X ,Start,End) ->
+				 between_val(Y,Start,End)->
+					 writeln(Number),
+					member(Number,Blocks)
+					;
+					true
+				;
+				true
+			)
+		),
+		alldifferent(Blocks)
+	)
+	,
     writeln(["PosList: ", PosList]),
     true.
 
