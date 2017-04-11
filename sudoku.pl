@@ -23,10 +23,11 @@
 %
 
 :- lib(ic).
-:- import alldifferent/1 from ic_global.
+:- import alldifferent/1, sorted/2, sorted/3, ordered/2 from ic_global.
 % :- coroutine.
 % :- lib(lists).
 :- lib(listut).
+:- import predsort/3 from swi.
 
 solve(ProblemName) :-
 	problem(ProblemName, Board),
@@ -67,6 +68,8 @@ sudoku(Board) :-
 %     all of the numbers appear an equal amount of times, so each array has equal length
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% findall(_, solve2(13), Sols), length(Sols, N), writeln(["amount of solutions: ", N]).
+
 solve2(ProblemName) :-
     problem(ProblemName, Board),
 
@@ -93,7 +96,9 @@ solve2(ProblemName) :-
     print_positions(NumbersPositions),
     writeln("Converted back to sudoku board:"),
     numbers_positions_to_board(NumbersPositions, Board2),
-    print_board(Board2).
+    print_board(Board2),
+    writeln("Given board again for debug purposes:"),
+	print_board(Board).
 
 sudoku2(Board, NumbersPositions) :-
     % dimensions of board = N by N and there are N possible numbers to be used on the Board
@@ -176,10 +181,18 @@ board_to_numbers_positions(Board, NumbersPositions, N) :-
             YList is NumbersPositions[Number, 1..N, 2],
 
             % let Pos be a member of the list of positions of number Number
-            member(X, XList),
-            member(Y, YList)
+            % member(X, XList),
+            % member(Y, YList)
+            nth1(Y, XList, X),
+            nth1(Y, YList, Y)
         )
     ).
+
+    % reduced search space:
+    % nth1(Y, XList, X)
+    % nth1(Y, YList, Y)
+    % 13: 8->1
+    % 14: 2500->4
 
 numbers_positions_to_board(NumbersPositions, Board) :-
     dim(NumbersPositions, [N, N, 2]),
@@ -193,37 +206,53 @@ numbers_positions_to_board(NumbersPositions, Board) :-
     ).
 
 
+% compare lists based on first element
+compareThierry(Delta, [E1, _ | _], [E2, _ | _]) :-
+    compare(Delta, E1, E2).
+
 sudoku_constraints(NumbersPositions, N) :-
-    writeln("for each number, it's positions are on different rows and columns"),
+    % writeln("for each number, it's positions are on different rows and columns"),
     % for each number, it's positions are on different rows and columns
     ( for(Number, 1, N), param(NumbersPositions, N) do
         % positions of a certain Number
 		XList is NumbersPositions[Number, 1..N, 1],
+        % ordered(#=<, XList),
+        % writeln(["unsorted: ", XList]),
+        % sorted(XList, XList, Positions),
+        % writeln(["sorted: ", XList, "Positions: ", Positions]),
+        % nl,
 		alldifferent(XList),
-		YList is NumbersPositions[Number, 1..N, 2],
-		alldifferent(YList)
+
+        YList is NumbersPositions[Number, 1..N, 2],
+		alldifferent(YList),
+
+        % example XYList is [(1, 2), (2, 2)]
+        % XYList is NumbersPositions[Number, 1..N, 1..2],
+        % predsort(compareThierry, XYList, XYList),
+        true
     ),
 
-    writeln("each position can only appear once in NumbersPositions\n"),
+    % writeln("each position can only appear once in NumbersPositions\n"),
     % each position can only appear once in NumbersPositions
 	NN is N*N,
     length(PosList, NN),
     PosList :: 1..NN,
+    writeln(["NumbersPositions: ", NumbersPositions]),
     writeln(["PosList: ", PosList]),
     nl,
 
 	( multifor([Number, Position], 1, N), param(NumbersPositions, PosList, N) do
-        writeln(["Number: ", Number , "Position: ", Position]),
+        % writeln(["Number: ", Number , "Position: ", Position]),
 		X #= NumbersPositions[Number, Position, 1],
 		Y #= NumbersPositions[Number, Position, 2],
-		writeln(["X: ", X, "Y: ", Y]),
+		% writeln(["X: ", X, "Y: ", Y]),
 		Pos #= (X-1) * N + Y,
-        writeln(["Pos: ", Pos]),
+        % writeln(["Pos: ", Pos]),
 
         Nth is (Number-1) * N + Position,
         nth1(Nth, PosList, Pos),
-        writeln(["Nth: ", Nth, "PosList: ", PosList]),
-        nl,
+        % writeln(["Nth: ", Nth, "PosList: ", PosList]),
+        % nl,
         true
 	),
 
@@ -478,7 +507,7 @@ problem(12, [](
 	[](_))).
 
 problem(13, [](
-	[](1, 2),
+	[](2, 1),
 	[](_, _))).
 
 problem(14, [](
