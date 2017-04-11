@@ -207,6 +207,10 @@ numbers_positions_to_board(NumbersPositions, Board) :-
         Number #= Board[X, Y]
     ).
 
+between_val(Value, Start, End) :-
+	Start #< Value,
+	Value #=< End.
+
 sudoku_constraints(NumbersPositions, N) :-
     % for each number, it's positions are on different rows and columns
     ( for(Number, 1, N), param(NumbersPositions, N) do
@@ -233,7 +237,34 @@ sudoku_constraints(NumbersPositions, N) :-
         nth1(Nth, PosList, Pos)
 	),
 
-    alldifferent(PosList).
+    alldifferent(PosList),
+
+    % sudoku block rules
+	SN is sqrt(N),
+	Sum is N*(N+1)/2,
+
+	(for(I, 1,N), param(NumbersPositions, PosList, N, SN) do
+		length(Blocks, N),
+		(multifor([Number,Position], 1, N), param(NumbersPositions, SN, I, Blocks) do
+			X #= NumbersPositions[Number, Position, 1],
+			Y #= NumbersPositions[Number, Position, 2],
+			Start is (I-1)*SN,
+			End is I*SN,
+			( between_val(X ,Start,End) ->
+				 between_val(Y,Start,End)->
+					 writeln(Number),
+					member(Number,Blocks)
+					;
+					true
+				;
+				true
+			)
+		),
+
+		alldifferent(Blocks)
+	),
+
+    true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SOME SEARCH STRATEGIES TAKEN FROM SLIDES
