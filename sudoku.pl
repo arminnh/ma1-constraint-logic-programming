@@ -27,8 +27,8 @@
 %
 
 :- lib(ic).
-:- import alldifferent/1 from ic_global.
-% :- coroutine.
+:- import alldifferent/1, sorted/2 from ic_global.
+:- coroutine.
 % :- lib(lists).
 :- import nth1/3 from listut.
 
@@ -92,7 +92,10 @@ solve2(ProblemName) :-
 
     writeln("Converted back to sudoku board:"),
     numbers_positions_to_board(NumbersPositions, Board2),
-    print_board(Board2).
+    print_board(Board2),
+
+    writeln("Given board again for checking:"),
+	print_board(Board).
 
 sudoku2(Board, NumbersPositions) :-
     % dimensions of board = N by N and there are N possible numbers to be used on the Board
@@ -208,7 +211,7 @@ numbers_positions_to_board(NumbersPositions, Board) :-
     ).
 
 between_val(Value, Start, End) :-
-	Start #< Value,
+	Start #=< Value,
 	Value #=< End.
 
 sudoku_constraints(NumbersPositions, N) :-
@@ -238,34 +241,74 @@ sudoku_constraints(NumbersPositions, N) :-
 	),
 
     alldifferent(PosList),
-	SN is integer(sqrt(N)),
-	(for(I, 1,N), param(NumbersPositions, N, SN) do
-		length(Blocks, N),
-		(multifor([Number,Position], 1, N), param(NumbersPositions, SN, I, Blocks,N) do
+
+    % rules for blocks
+    SN is integer(sqrt(N)),
+
+    % % on a sudoku board, there are N blocks which contain N numbers
+    % dim(Blocks, [N, N]),
+    % Blocks :: 1..N,
+    %
+    % % fill all block values
+    % ( multifor([Number, Position], 1, N), param(NumbersPositions, Blocks, SN) do
+    %     X #= NumbersPositions[Number, Position, 1],
+    %     Y #= NumbersPositions[Number, Position, 2],
+    %
+    %     % find block index from (X, Y)
+    %
+    %     XX #= X-1,
+    %     XXX #= XX // 3,
+    %     BlockRow #= XXX + 1,
+    %
+    %     YY #= Y-1,
+    %     YYY #= YY // 3,
+    %     BlockCol #= YYY + 1,
+    %
+    %     BlockIndex #= (BlockRow-1) * SN + BlockCol,
+    %     Block is Blocks[BlockIndex],
+    %     nth1(BlockIndex, Block, Number)
+    % ),
+    % % for each block, make the values in the block be all different
+    % ( for(BlockIndex, 1, N), param(Blocks) do
+    %     Block is Blocks[BlockIndex],
+    %     writeln(["BlockIndex: ", BlockIndex, "Block: ", Block]),
+    %     alldifferent(Block)
+    % ),
+
+	( for(BlockIndex, 1, N), param(NumbersPositions, N, SN) do
+        length(Block, N),
+        Block :: 1..N,
+
+        % find block bounds
+        XStart is ((BlockIndex-1)*SN mod N) + 1,
+        XEnd is XStart + SN - 1,
+
+        YStart is (SN * ((BlockIndex-1) // SN)) + 1,
+        YEnd is YStart + SN - 1,
+
+        writeln(["Block: ", BlockIndex, "XStart: ", XStart, "XEnd: ", XEnd, "YStart: ", YStart, "YEnd: ", YEnd]),
+
+        % find all numbers in block
+		( multifor([Number, Position], 1, N), param(NumbersPositions, XStart, XEnd, YStart, YEnd, Block) do
 			X #= NumbersPositions[Number, Position, 1],
 			Y #= NumbersPositions[Number, Position, 2],
-			XStart is (I-1)*SN mod N,
-			XEnd is XStart + SN,
+            % writeln(["X: ", X, "Y: ", Y]),
+			% writeln(["Number: ", Number, "BX: ", between_val(X , XStart, XEnd), "BY: ", between_val(Y , YStart, YEnd)]),
 
-			YStart is SN * ((I-1) // SN),
-			YEnd is YStart + SN,
-			%writeln(["XStart: ", XStart, "XEnd: ", XEnd, "YStart: ", YStart, "YEnd: ", YEnd ]),
-			%writeln(["BX: ", between_val(X ,XStart,XEnd), "BY: ", between_val(Y ,YStart,YEnd)]),
-
-			( between_val(X ,XStart,XEnd) ->
-				 %writeln("X is between Start and end!"),
-				 (between_val(Y,YStart,YEnd)->
-					%writeln(Number),
-					member(Number,Blocks)
-					;
-					true
-				)
-				;
-				true
+			( XStart #=< X, X #=< XEnd, YStart #=< Y, Y #=< YEnd ->
+                % writeln(["Position: ", X, Y, "is in block with Number: ", Number]),
+                member(Number, Block)
+                % nth1(Number, Block, Number)
+                ;
+                true
 			)
 		),
-		writeln(Blocks),
-		alldifferent(Blocks)
+
+        %  make all the numbers in the block be different
+        alldifferent(Block),
+        writeln(["Block: ", BlockIndex, Block]), nl, nl,
+
+        true
 	),
 
     true.
