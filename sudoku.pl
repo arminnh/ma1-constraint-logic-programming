@@ -215,15 +215,21 @@ between_val(Value, Start, End) :-
 	Value #=< End.
 
 list_between_val([], _, _, _, _, Amount):-
+	% Constraint the amount on 0,
+	% This has to be true => If this is so we have 1 value in a block
 	Amount #= 0,
 	true.
 
 list_between_val([ [X,Y] | List], XStart, XEnd, YStart, YEnd, Amount):-
+	% Checks if a pair is in a certain block
 	( between_val(X, XStart, XEnd), between_val(Y, YStart, YEnd) ->
+		% It is in the block
 		NewAmount is Amount - 1,
 		writeln(NewAmount),
+		% Check the other values
 		list_between_val(List, XStart, XEnd, YStart, YEnd, NewAmount)
 		;
+		% It is not in the block
 		list_between_val(List, XStart, XEnd, YStart, YEnd, Amount)
 	)
 	.
@@ -323,6 +329,8 @@ sudoku_constraints(NumbersPositions, N) :-
 			%writeln(Y),
 
 			List is NumbersPositions[Number, 1..N, 1..2],
+			% Checks for a certain number how many values are in a certain block
+			% For sudoku this has to be exactly one
 			list_between_val(List, XStart, XEnd, YStart, YEnd, 1)
 			/*Amount :: 0..N,
 			Amount = 0,
