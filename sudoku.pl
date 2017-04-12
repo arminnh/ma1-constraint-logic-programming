@@ -214,19 +214,23 @@ between_val(Value, Start, End) :-
 	Start #=< Value,
 	Value #=< End.
 
-list_between_val(List, XStart, XEnd, YStart, YEnd, Amount):-
-	dim(List, [N,2]),
-	writeln(List),
-	(for(I,1,N), param(List, XStart, XEnd, YStart, YEnd, Amount) do
-		X is List[I, 1],
-		Y is List[I, 2],
-		writeln(X),
-		( between_val(X, XStart, XEnd), between_val(Y, YStart, YEnd) ->
-			Amount is Amount + 1
-			;
-			true
-		)
-	).
+incr(X, X1):-
+	writeln(X),
+	X1 is X+1,
+	writeln(X1).
+
+list_between_val([], _, _, _, _, 0):-
+	true.
+
+list_between_val([ [X,Y] | List], XStart, XEnd, YStart, YEnd, Amount):-
+	( between_val(X, XStart, XEnd), between_val(Y, YStart, YEnd) ->
+		NewAmount is Amount - 1,
+		writeln(NewAmount),
+		list_between_val(List, XStart, XEnd, YStart, YEnd, NewAmount)
+		;
+		false
+	)
+	.
 
 sudoku_constraints(NumbersPositions, N) :-
     % for each number, it's positions are on different rows and columns
@@ -318,8 +322,28 @@ sudoku_constraints(NumbersPositions, N) :-
             %    ;
             %    true
 			%)
+			writeln("Y"),
+			%writeln
+			%dim(List, [Y, 2]),
+			%writeln(Y),
+
 			List is NumbersPositions[Number, 1..N, 1..2],
 			list_between_val(List, XStart, XEnd, YStart, YEnd, 1)
+			/*Amount :: 0..N,
+			Amount = 0,
+
+			(for(I,1,N), param(NumbersPositions, XStart, XEnd, YStart, YEnd, Amount) do
+				X is NumbersPositions[Number, I, 1],
+				Y is  NumbersPositions[Number, I, 2],
+				%writeln(Y),
+				( between_val(X, XStart, XEnd), between_val(Y, YStart, YEnd) ->
+					incr(Amount,Amount),
+					writeln(Amount)
+					;
+					true
+				)
+			),
+			Amount #= 1*/
 		)
 
         %  make all the numbers in the block be different
