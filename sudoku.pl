@@ -27,11 +27,10 @@
 %
 
 :- lib(ic).
-:- import alldifferent/1, sorted/2, sorted/3, ordered/2 from ic_global.
+:- import alldifferent/1 from ic_global.
 % :- coroutine.
 % :- lib(lists).
-:- lib(listut).
-:- import predsort/3 from swi.
+:- import nth1/3 from listut.
 
 solve(ProblemName) :-
 	problem(ProblemName, Board),
@@ -80,14 +79,6 @@ solve2(ProblemName) :-
     writeln("Given board:"),
 	print_board(Board),
 
-    dim(Board,[N,N]),
-    printf("Absolute positions on a %dx%d board:\n", [N, N]),
-    ( for(I, 1, N*N), param(N) do
-        printf("%3d", [I]),
-        ( mod(I, N, 0) -> printf("\n", []) ; true)
-    ),
-    nl,
-
     writeln('Sudoku2:'),
     % set up variables and their constraints
     sudoku2(Board, NumbersPositions),
@@ -98,11 +89,10 @@ solve2(ProblemName) :-
     % print results
     writeln("Sudoku2 done:"),
     print_positions(NumbersPositions),
+
     writeln("Converted back to sudoku board:"),
     numbers_positions_to_board(NumbersPositions, Board2),
-    print_board(Board2),
-    writeln("Given board again for debug purposes:"),
-	print_board(Board).
+    print_board(Board2).
 
 sudoku2(Board, NumbersPositions) :-
     % dimensions of board = N by N and there are N possible numbers to be used on the Board
@@ -116,27 +106,36 @@ sudoku2(Board, NumbersPositions) :-
     NumbersPositions[1..N, 1..N, 1..2] :: 1..N,
 
     % assign known positions in given board to NumbersPositions
-    board_to_numbers_positions(Board, NumbersPositions, N),
+    board_to_numbers_positions(Board, NumbersPositions),
 
     % set sudoku constraints
     sudoku_constraints(NumbersPositions, N).
 
 % should give true if the problem and solution exist
 test2(Number) :-
-    problem(Number, Board),
-    solution2(Number, Positions),
-
     writeln('Problem:'),
+    problem(Number, Board),
     print_board(Board),
 
+    writeln('Solution:'),
+    solution(Number, Solution),
+    print_board(Solution),
+
     writeln('Solution with other viewpoint:'),
-    print_positions(Positions),
+    solution2(Number, NumbersPositions),
+    print_positions(NumbersPositions),
+
+    writeln("Solution with other viewpoint converted back to sudoku board:"),
+    numbers_positions_to_board(NumbersPositions, Board2),
+    print_board(Board2),
 
     writeln('Sudoku2:'),
-    sudoku2(Board, Positions).
+    sudoku2(Board, NumbersPositions),
+
+    writeln("OK").
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% HELPER FUNCTIONS
+% HELPER PROCEDURES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 print_board(Board) :-
@@ -167,7 +166,7 @@ print_positions(NumbersPositions) :-
                 ( var(Y) ->
                     printf("(%d, _) ", [X])
                     ;
-                    printf("(%d, %d) ", [X,Y])
+                    printf("(%d, %d) ", [X, Y])
                 )
             )
         ),
@@ -175,30 +174,12 @@ print_positions(NumbersPositions) :-
     ),
     nl.
 
-board_to_numbers_positions(Board, NumbersPositions, N) :-
-    writeln("board_to_numbers_positions"),
-    % ( multifor([X, Y], 1, N), param(N, Board, NumbersPositions) do
-    %     % Number is a number or "_"
-    %     Number #= Board[X, Y],
-    %
-    %     ( var(Number) ->
-    %         % if Board has a "_" in this position, do nothing (= true)
-    %         true
-    %         ;
-    %         % else if Board has a number in this position, the position needs
-    %         % to be in the list NumbersPositions[Number]
-    %
-    %         % get the array of positions for number as a list
-    %         XList is NumbersPositions[Number, 1..N, 1],
-    %         YList is NumbersPositions[Number, 1..N, 2],
-    %
-    %         % let Pos be a member of the list of positions of number Number
-    %         % member(X, XList),
-    %         % member(Y, YList)
-    %         nth1(X, XList, X),
-    %         nth1(X, YList, Y)
-    %     )
-    % ).
+% construct NumbersPositions in a way such that the X coordinates
+% are sorted for each list of positions for each number
+% this reduces the position search space dramatically
+board_to_numbers_positions(Board, NumbersPositions) :-
+    dim(NumbersPositions, [N, N, 2]),
+    dim(Board, [N, N]),
 
     ( multifor([Number, Position], 1, N), param(NumbersPositions, Board, N) do
         X is NumbersPositions[Number, Position, 1],
@@ -207,30 +188,18 @@ board_to_numbers_positions(Board, NumbersPositions, N) :-
 
         ( for(BoardY, 1, N), param(Board, Number, Position, Y) do
             BoardValue is Board[Position, BoardY],
-
-            ( var(BoardValue) ->
-                true
+            ( not(var(BoardValue)), BoardValue =:= Number ->
+                Y #= BoardY
                 ;
-                ( BoardValue =:= Number ->
-                    Y #= BoardY
-                    ;
-                    true
-                )
+                true
             )
-
         )
     ).
 
-    % reduced search space:
-    % nth1(Y, XList, X)
-    % nth1(Y, YList, Y)
-    % 13: 8->1
-    % 14: 2500->4
-
+% construct a sudoku Board out of a given NumbersPositions
 numbers_positions_to_board(NumbersPositions, Board) :-
     dim(NumbersPositions, [N, N, 2]),
     dim(Board, [N, N]),
-    Board :: 1..N,
 
     ( multifor([Number, Position], 1, N), param(NumbersPositions, Board) do
         X is NumbersPositions[Number, Position, 1],
@@ -238,56 +207,36 @@ numbers_positions_to_board(NumbersPositions, Board) :-
         Number #= Board[X, Y]
     ).
 
-
 between_val(Value, Start, End) :-
 	Start #< Value,
 	Value #=< End.
 
 sudoku_constraints(NumbersPositions, N) :-
-    % writeln("for each number, it's positions are on different rows and columns"),
     % for each number, it's positions are on different rows and columns
     ( for(Number, 1, N), param(NumbersPositions, N) do
-        % positions of a certain Number
+        % list of X coordinates of positions of a certain Number
 		XList is NumbersPositions[Number, 1..N, 1],
-        % ordered(#=<, XList),
-        % writeln(["unsorted: ", XList]),
-        % sorted(XList, XList, Positions),
-        % writeln(["sorted: ", XList, "Positions: ", Positions]),
-        % nl,
 		alldifferent(XList),
 
+        % list of Y coordinates of positions of a certain Number
         YList is NumbersPositions[Number, 1..N, 2],
-		alldifferent(YList),
-
-        % example XYList is [(1, 2), (2, 2)]
-        % XYList is NumbersPositions[Number, 1..N, 1..2],
-        % predsort(compareThierry, XYList, XYList),
-        true
+		alldifferent(YList)
     ),
 
-    % writeln("each position can only appear once in NumbersPositions\n"),
     % each position can only appear once in NumbersPositions
 	NN is N*N,
     length(PosList, NN),
     PosList :: 1..NN,
-    writeln(["NumbersPositions: ", NumbersPositions]),
-    writeln(["PosList: ", PosList]),
-    nl,
 
 	( multifor([Number, Position], 1, N), param(NumbersPositions, PosList, N) do
-        % writeln(["Number: ", Number , "Position: ", Position]),
 		X #= NumbersPositions[Number, Position, 1],
 		Y #= NumbersPositions[Number, Position, 2],
-		% writeln(["X: ", X, "Y: ", Y]),
 		Pos #= (X-1) * N + Y,
-        % writeln(["Pos: ", Pos]),
 
         Nth is (Number-1) * N + Position,
-        nth1(Nth, PosList, Pos),
-        writeln(["Nth: ", Nth, "PosList: ", PosList]),
-        % nl,
-        true
+        nth1(Nth, PosList, Pos)
 	),
+
     alldifferent(PosList),
 	SN is integer(sqrt(N)),
 	(for(I, 1,N), param(NumbersPositions, N, SN) do
@@ -314,10 +263,10 @@ sudoku_constraints(NumbersPositions, N) :-
 				true
 			)
 		),
+
 		alldifferent(Blocks)
-	)
-	,
-    writeln(["PosList: ", PosList]),
+	),
+
     true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -631,6 +580,18 @@ solution(1, [](
     [](5,  2,  7,  1,  8,  4,  3,  9,  6),
     [](6,  8,  1,  3,  9,  2,  4,  5,  7))).
 
+solution(12, [](
+	[](1))).
+
+solution(13, [](
+	[](2, 1),
+	[](1, 2))).
+
+solution(14, [](
+	[](1, 2, 3),
+	[](3, 1, 2),
+	[](2, 3, 1))).
+
 % Solution for problem 1 in our other viewpoint (where positions are represented in a 1D way):
 solution2_old(1, [](
     [](7, 10, 23, 29, 42, 53, 63, 67, 75),
@@ -648,9 +609,12 @@ solution2_old(14, [](
 	[](2, 6, 7),
 	[](3, 4, 8))).
 
+solution2(12, [](
+	[]([](1, 1)))).
+
 solution2(13, [](
-	[]([](1, 1), [](2, 2)),
-	[]([](1, 2), [](2, 1)))).
+	[]([](1, 2), [](2, 1)),
+	[]([](1, 1), [](2, 2)))).
 
 solution2(14, [](
 	[]([](1, 1), [](2, 2), [](3, 3)),
