@@ -249,21 +249,22 @@ sudoku_constraints(NumbersPositions, N) :-
 
 			YStart is SN * ((I-1) // SN),
 			YEnd is YStart + SN,
-			writeln(["XStart: ", XStart, "XEnd: ", XEnd, "YStart: ", YStart, "YEnd: ", YEnd ]),
-			writeln(["BX: ", between_val(X ,XStart,XEnd), "BY: ", between_val(Y ,YStart,YEnd)]),
+			%writeln(["XStart: ", XStart, "XEnd: ", XEnd, "YStart: ", YStart, "YEnd: ", YEnd ]),
+			%writeln(["BX: ", between_val(X ,XStart,XEnd), "BY: ", between_val(Y ,YStart,YEnd)]),
 
 			( between_val(X ,XStart,XEnd) ->
-				writeln("X is between Start and end!"),
-				 between_val(Y,YStart,YEnd)->
-					writeln(Number),
+				 %writeln("X is between Start and end!"),
+				 (between_val(Y,YStart,YEnd)->
+					%writeln(Number),
 					member(Number,Blocks)
 					;
 					true
+				)
 				;
 				true
 			)
 		),
-
+		writeln(Blocks),
 		alldifferent(Blocks)
 	),
 
