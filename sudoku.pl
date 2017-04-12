@@ -30,7 +30,7 @@
 :- import alldifferent/1, sorted/2 from ic_global.
 :- coroutine.
 % :- lib(lists).
-:- import nth1/3 from listut.
+%:- import nth1/3 from listut.
 
 solve(ProblemName) :-
 	problem(ProblemName, Board),
@@ -214,6 +214,20 @@ between_val(Value, Start, End) :-
 	Start #=< Value,
 	Value #=< End.
 
+list_between_val(List, XStart, XEnd, YStart, YEnd, Amount):-
+	dim(List, [N,2]),
+	writeln(List),
+	(for(I,1,N), param(List, XStart, XEnd, YStart, YEnd, Amount) do
+		X is List[I, 1],
+		Y is List[I, 2],
+		writeln(X),
+		( between_val(X, XStart, XEnd), between_val(Y, YStart, YEnd) ->
+			Amount is Amount + 1
+			;
+			true
+		)
+	).
+
 sudoku_constraints(NumbersPositions, N) :-
     % for each number, it's positions are on different rows and columns
     ( for(Number, 1, N), param(NumbersPositions, N) do
@@ -289,26 +303,30 @@ sudoku_constraints(NumbersPositions, N) :-
         writeln(["Block: ", BlockIndex, "XStart: ", XStart, "XEnd: ", XEnd, "YStart: ", YStart, "YEnd: ", YEnd]),
 
         % find all numbers in block
-		( multifor([Number, Position], 1, N), param(NumbersPositions, XStart, XEnd, YStart, YEnd, Block) do
-			X #= NumbersPositions[Number, Position, 1],
-			Y #= NumbersPositions[Number, Position, 2],
+		%( multifor([Number, Position], 1, N), param(NumbersPositions, XStart, XEnd, YStart, YEnd, Block) do
+
+		( for(Number, 1, N), param(NumbersPositions, XStart, XEnd, YStart, YEnd, Block, N) do
+			%X #= NumbersPositions[Number, Position, 1],
+			%Y #= NumbersPositions[Number, Position, 2],
             % writeln(["X: ", X, "Y: ", Y]),
 			% writeln(["Number: ", Number, "BX: ", between_val(X , XStart, XEnd), "BY: ", between_val(Y , YStart, YEnd)]),
 
-			( XStart #=< X, X #=< XEnd, YStart #=< Y, Y #=< YEnd ->
-                % writeln(["Position: ", X, Y, "is in block with Number: ", Number]),
-                member(Number, Block)
-                % nth1(Number, Block, Number)
-                ;
-                true
-			)
-		),
+			%( XStart #=< X, X #=< XEnd, YStart #=< Y, Y #=< YEnd ->
+            %    % writeln(["Position: ", X, Y, "is in block with Number: ", Number]),
+            %    member(Number, Block)
+            %    % nth1(Number, Block, Number)
+            %    ;
+            %    true
+			%)
+			List is NumbersPositions[Number, 1..N, 1..2],
+			list_between_val(List, XStart, XEnd, YStart, YEnd, 1)
+		)
 
         %  make all the numbers in the block be different
-        alldifferent(Block),
-        writeln(["Block: ", BlockIndex, Block]), nl, nl,
+        %alldifferent(Block),
+        %writeln(["Block: ", BlockIndex, Block]), nl, nl,
 
-        true
+        %true
 	),
 
     true.
