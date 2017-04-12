@@ -30,7 +30,7 @@
 :- import alldifferent/1, sorted/2 from ic_global.
 :- coroutine.
 % :- lib(lists).
-%:- import nth1/3 from listut.
+:- import nth1/3 from listut.
 
 solve(ProblemName) :-
 	problem(ProblemName, Board),
@@ -222,6 +222,8 @@ list_between_val([], _, _, _, _, Amount):-
 
 list_between_val([ [X,Y] | List], XStart, XEnd, YStart, YEnd, Amount):-
 	% Checks if a pair is in a certain block
+	Amount #>=0,
+	writeln(["X: ", X, "Y: ", Y, "XStart: ", XStart, "XEnd: ", XEnd, "YStart: ", YStart, "YEnd: ", YEnd, "Amount: "]),
 	( between_val(X, XStart, XEnd), between_val(Y, YStart, YEnd) ->
 		% It is in the block
 		NewAmount is Amount - 1,
@@ -232,6 +234,18 @@ list_between_val([ [X,Y] | List], XStart, XEnd, YStart, YEnd, Amount):-
 		% It is not in the block
 		list_between_val(List, XStart, XEnd, YStart, YEnd, Amount)
 	)
+	.
+
+block_index(X, Y, SN, BlockIndex):-
+	XX #= X-1,
+    XXX #= XX // SN,
+    BlockRow #= XXX + 1,
+
+    YY #= Y-1,
+    YYY #= YY // SN,
+    BlockCol #= YYY + 1,
+
+    BlockIndex #= (BlockRow-1) * SN + BlockCol
 	.
 
 sudoku_constraints(NumbersPositions, N) :-
@@ -268,25 +282,28 @@ sudoku_constraints(NumbersPositions, N) :-
     % % on a sudoku board, there are N blocks which contain N numbers
     % dim(Blocks, [N, N]),
     % Blocks :: 1..N,
-    %
+	%
     % % fill all block values
     % ( multifor([Number, Position], 1, N), param(NumbersPositions, Blocks, SN) do
-    %     X #= NumbersPositions[Number, Position, 1],
+	%
+	% 	X #= NumbersPositions[Number, Position, 1],
     %     Y #= NumbersPositions[Number, Position, 2],
-    %
+	%
     %     % find block index from (X, Y)
-    %
+	%
     %     XX #= X-1,
     %     XXX #= XX // 3,
     %     BlockRow #= XXX + 1,
-    %
+	%
     %     YY #= Y-1,
     %     YYY #= YY // 3,
     %     BlockCol #= YYY + 1,
-    %
+	%
     %     BlockIndex #= (BlockRow-1) * SN + BlockCol,
-    %     Block is Blocks[BlockIndex],
-    %     nth1(BlockIndex, Block, Number)
+	% 	writeln(BlockIndex),
+    %     %Block is Blocks[BlockIndex],
+	% 	writeln(Block),
+    %     member(Number, Block)
     % ),
     % % for each block, make the values in the block be all different
     % ( for(BlockIndex, 1, N), param(Blocks) do
@@ -295,67 +312,116 @@ sudoku_constraints(NumbersPositions, N) :-
     %     alldifferent(Block)
     % ),
 
-	( for(BlockIndex, 1, N), param(NumbersPositions, N, SN) do
-        length(Block, N),
-        Block :: 1..N,
+	% For every number
+	(for(Number, 1,N), param(SN, NumbersPositions) do
+		% There are SN block rows
+		(for(BlockRow, 1, SN), param(SN, NumbersPositions, Number) do
+			% On these rows there are SN values
+			(for(I, 1, SN), param(SN, NumbersPositions, Number, BlockRow) do
+				% We have to check with the other values in these block rows
+				Index is (BlockRow-1) * SN + I,
+				X1 is NumbersPositions[Number,Index, 1],
+				Y1 is NumbersPositions[Number,Index, 2],
+				block_index(X1, Y1, SN, BlockIndex1),
+				%writeln(["X1: ", X1, "Y1: ", Y1]),
+				(for(K, I+1, SN), param(SN, NumbersPositions, Number, BlockRow, BlockIndex1)do
+					Index2 is (BlockRow-1) * SN + K,
+					X2 is NumbersPositions[Number, Index2, 1],
+					Y2 is NumbersPositions[Number, Index2, 2],
+					block_index(X2, Y2, SN, BlockIndex2),
+					%writeln(["X2: ", X2, "Y2: ", Y2]),
+					%writeln(["BlockIndex1: ", BlockIndex1, "BlockIndex2: ", BlockIndex2]),
+					BlockIndex1 #\= BlockIndex2
 
-        % find block bounds
-        XStart is ((BlockIndex-1)*SN mod N) + 1,
-        XEnd is XStart + SN - 1,
-
-        YStart is (SN * ((BlockIndex-1) // SN)) + 1,
-        YEnd is YStart + SN - 1,
-
-        writeln(["Block: ", BlockIndex, "XStart: ", XStart, "XEnd: ", XEnd, "YStart: ", YStart, "YEnd: ", YEnd]),
-
-        % find all numbers in block
-		%( multifor([Number, Position], 1, N), param(NumbersPositions, XStart, XEnd, YStart, YEnd, Block) do
-
-		( for(Number, 1, N), param(NumbersPositions, XStart, XEnd, YStart, YEnd, Block, N) do
-			%X #= NumbersPositions[Number, Position, 1],
-			%Y #= NumbersPositions[Number, Position, 2],
-            % writeln(["X: ", X, "Y: ", Y]),
-			% writeln(["Number: ", Number, "BX: ", between_val(X , XStart, XEnd), "BY: ", between_val(Y , YStart, YEnd)]),
-
-			%( XStart #=< X, X #=< XEnd, YStart #=< Y, Y #=< YEnd ->
-            %    % writeln(["Position: ", X, Y, "is in block with Number: ", Number]),
-            %    member(Number, Block)
-            %    % nth1(Number, Block, Number)
-            %    ;
-            %    true
-			%)
-			%writeln
-			%dim(List, [Y, 2]),
-			%writeln(Y),
-
-			List is NumbersPositions[Number, 1..N, 1..2],
-			% Checks for a certain number how many values are in a certain block
-			% For sudoku this has to be exactly one
-			list_between_val(List, XStart, XEnd, YStart, YEnd, 1)
-			/*Amount :: 0..N,
-			Amount = 0,
-
-			(for(I,1,N), param(NumbersPositions, XStart, XEnd, YStart, YEnd, Amount) do
-				X is NumbersPositions[Number, I, 1],
-				Y is  NumbersPositions[Number, I, 2],
-				%writeln(Y),
-				( between_val(X, XStart, XEnd), between_val(Y, YStart, YEnd) ->
-					incr(Amount,Amount),
-					writeln(Amount)
-					;
-					true
 				)
-			),
-			Amount #= 1*/
+			)
 		)
-
-        %  make all the numbers in the block be different
-        %alldifferent(Block),
-        %writeln(["Block: ", BlockIndex, Block]), nl, nl,
-
-        %true
 	),
 
+	%
+	%
+	%
+	% 1 -> (1, Y1), (2, Y2), (3,Y3),
+	%	   (4, Y4),(5, Y5), (6, Y6),
+	%      (7,Y7), (8, Y8), (9,Y9)
+	%
+	% Number * J * I*K
+	% N * sqrt(N) * (sqrt(N)-1)!
+	%
+	% 9 * 2 * 3 = 9 * 6 = 54
+	% _,1,_,_
+	% _,_,1,_
+	% _,_,_,_
+	% _,_,_,_
+	%
+	% sqrt(N)-1
+	%
+	% BlockY1, BlockY2
+	% BlockY1 #\= BlockY2
+
+
+
+	% ( for(BlockIndex, 1, N), param(NumbersPositions, N, SN) do
+    %     length(Block, N),
+    %     Block :: 1..N,
+	%
+    %     % find block bounds
+    %     XStart is ((BlockIndex-1)*SN mod N) + 1,
+    %     XEnd is XStart + SN - 1,
+	%
+    %     YStart is (SN * ((BlockIndex-1) // SN)) + 1,
+    %     YEnd is YStart + SN - 1,
+	%
+    %     writeln(["Block: ", BlockIndex, "XStart: ", XStart, "XEnd: ", XEnd, "YStart: ", YStart, "YEnd: ", YEnd]),
+	%
+    %     % find all numbers in block
+	% 	%( multifor([Number, Position], 1, N), param(NumbersPositions, XStart, XEnd, YStart, YEnd, Block) do
+	%
+	% 	( for(Number, 1, N), param(NumbersPositions, XStart, XEnd, YStart, YEnd, Block, N) do
+	% 		%X #= NumbersPositions[Number, Position, 1],
+	% 		%Y #= NumbersPositions[Number, Position, 2],
+    %         % writeln(["X: ", X, "Y: ", Y]),
+	% 		% writeln(["Number: ", Number, "BX: ", between_val(X , XStart, XEnd), "BY: ", between_val(Y , YStart, YEnd)]),
+	%
+	% 		%( XStart #=< X, X #=< XEnd, YStart #=< Y, Y #=< YEnd ->
+    %         %    % writeln(["Position: ", X, Y, "is in block with Number: ", Number]),
+    %         %    member(Number, Block)
+    %         %    % nth1(Number, Block, Number)
+    %         %    ;
+    %         %    true
+	% 		%)
+	% 		%writeln
+	% 		%dim(List, [Y, 2]),
+	% 		%writeln(Y),
+	%
+	% 		List is NumbersPositions[Number, 1..N, 1..2],
+	% 		% Checks for a certain number how many values are in a certain block
+	% 		% For sudoku this has to be exactly one
+	% 		list_between_val(List, XStart, XEnd, YStart, YEnd, 1)
+	%
+	% 		/*Amount :: 0..N,
+	% 		Amount = 0,
+	%
+	% 		(for(I,1,N), param(NumbersPositions, XStart, XEnd, YStart, YEnd, Amount) do
+	% 			X is NumbersPositions[Number, I, 1],
+	% 			Y is  NumbersPositions[Number, I, 2],
+	% 			%writeln(Y),
+	% 			( between_val(X, XStart, XEnd), between_val(Y, YStart, YEnd) ->
+	% 				incr(Amount,Amount),
+	% 				writeln(Amount)
+	% 				;
+	% 				true
+	% 			)
+	% 		),
+	% 		Amount #= 1*/
+	% 	)
+	%
+    %     %  make all the numbers in the block be different
+    %     %alldifferent(Block),
+    %     %writeln(["Block: ", BlockIndex, Block]), nl, nl,
+	%
+    %     %true
+	% ),
     true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -615,35 +681,19 @@ problem(14, [](
 
 problem(15, [](
 	[](1, _, 3, _),
-	[](3, _, 2, 4),
+	[](3, _, _, 4),
 	[](2, _, _, _),
-	[](4, 2, _, _))).
+	[](4, _, 2, _))).
+
 
 problem(16, [](
-	[](1, _, 3, _, _),
-	[](3, 5, 2, 4, _),
-	[](2, _, _, _, _),
-	[](4, 2, 5, _, _),
-	[](5, 3, _, _, _))).
+		[](_, _, _, _),
+		[](_, _, _, _),
+		[](_, _, _, _),
+		[](_, _, _, _))).
+
 
 problem(17, [](
-	[](1, _, 3, _, _, 5),
-	[](3, 5, 2, 4, _, 6),
-	[](2, _, 6, 3, _, _),
-	[](4, 2, 5, _, _, _),
-	[](5, 3, _, _, 6, _),
-	[](6, _, _, 5, _, _))).
-
-problem(18, [](
-	[](1, _, 3, _, _, 5, 4),
-	[](3, 5, 2, 4, _, 6, 7),
-	[](2, _, 6, 3, _, _, _),
-	[](4, 2, 5, _, 7, _, _),
-	[](5, 3, 7, _, 6, _, _),
-	[](6, _, _, 5, _, 7, _),
-    [](7, 4, _, 6, _, _, 3))).
-
-problem(19, [](
 	[](1, _, 3, _, _, 5, 4, 8),
 	[](3, 5, 2, 4, _, 6, 7, _),
 	[](2, _, 6, 3, _, 4, _, _),
@@ -680,6 +730,13 @@ solution(14, [](
 	[](1, 2, 3),
 	[](3, 1, 2),
 	[](2, 3, 1))).
+
+
+sulution(15, [](
+		[](1, 4, 3, 2),
+		[](3, 2, 1, 4),
+		[](2, 1, 4, 3),
+		[](4, 3, 2, 1))).
 
 % Solution for problem 1 in our other viewpoint (where positions are represented in a 1D way):
 solution2_old(1, [](
