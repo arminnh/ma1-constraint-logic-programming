@@ -210,32 +210,6 @@ numbers_positions_to_board(NumbersPositions, Board) :-
         Number #= Board[X, Y]
     ).
 
-between_val(Value, Start, End) :-
-	Start #=< Value,
-	Value #=< End.
-
-list_between_val([], _, _, _, _, Amount):-
-	% Constraint the amount on 0,
-	% This has to be true => If this is so we have 1 value in a block
-	Amount #= 0,
-	true.
-
-list_between_val([ [X,Y] | List], XStart, XEnd, YStart, YEnd, Amount):-
-	% Checks if a pair is in a certain block
-	Amount #>=0,
-	writeln(["X: ", X, "Y: ", Y, "XStart: ", XStart, "XEnd: ", XEnd, "YStart: ", YStart, "YEnd: ", YEnd, "Amount: "]),
-	( between_val(X, XStart, XEnd), between_val(Y, YStart, YEnd) ->
-		% It is in the block
-		NewAmount is Amount - 1,
-		writeln(NewAmount),
-		% Check the other values
-		list_between_val(List, XStart, XEnd, YStart, YEnd, NewAmount)
-		;
-		% It is not in the block
-		list_between_val(List, XStart, XEnd, YStart, YEnd, Amount)
-	)
-	.
-
 block_index(X, Y, SN, BlockIndex):-
 	XX #= X-1,
     XXX #= XX // SN,
@@ -278,39 +252,6 @@ sudoku_constraints(NumbersPositions, N) :-
 
     % rules for blocks
     SN is integer(sqrt(N)),
-
-    % % on a sudoku board, there are N blocks which contain N numbers
-    % dim(Blocks, [N, N]),
-    % Blocks :: 1..N,
-	%
-    % % fill all block values
-    % ( multifor([Number, Position], 1, N), param(NumbersPositions, Blocks, SN) do
-	%
-	% 	X #= NumbersPositions[Number, Position, 1],
-    %     Y #= NumbersPositions[Number, Position, 2],
-	%
-    %     % find block index from (X, Y)
-	%
-    %     XX #= X-1,
-    %     XXX #= XX // 3,
-    %     BlockRow #= XXX + 1,
-	%
-    %     YY #= Y-1,
-    %     YYY #= YY // 3,
-    %     BlockCol #= YYY + 1,
-	%
-    %     BlockIndex #= (BlockRow-1) * SN + BlockCol,
-	% 	writeln(BlockIndex),
-    %     %Block is Blocks[BlockIndex],
-	% 	writeln(Block),
-    %     member(Number, Block)
-    % ),
-    % % for each block, make the values in the block be all different
-    % ( for(BlockIndex, 1, N), param(Blocks) do
-    %     Block is Blocks[BlockIndex],
-    %     writeln(["BlockIndex: ", BlockIndex, "Block: ", Block]),
-    %     alldifferent(Block)
-    % ),
 
 	% For every number
 	(for(Number, 1,N), param(SN, NumbersPositions) do
@@ -359,69 +300,6 @@ sudoku_constraints(NumbersPositions, N) :-
 	% BlockY1, BlockY2
 	% BlockY1 #\= BlockY2
 
-
-
-	% ( for(BlockIndex, 1, N), param(NumbersPositions, N, SN) do
-    %     length(Block, N),
-    %     Block :: 1..N,
-	%
-    %     % find block bounds
-    %     XStart is ((BlockIndex-1)*SN mod N) + 1,
-    %     XEnd is XStart + SN - 1,
-	%
-    %     YStart is (SN * ((BlockIndex-1) // SN)) + 1,
-    %     YEnd is YStart + SN - 1,
-	%
-    %     writeln(["Block: ", BlockIndex, "XStart: ", XStart, "XEnd: ", XEnd, "YStart: ", YStart, "YEnd: ", YEnd]),
-	%
-    %     % find all numbers in block
-	% 	%( multifor([Number, Position], 1, N), param(NumbersPositions, XStart, XEnd, YStart, YEnd, Block) do
-	%
-	% 	( for(Number, 1, N), param(NumbersPositions, XStart, XEnd, YStart, YEnd, Block, N) do
-	% 		%X #= NumbersPositions[Number, Position, 1],
-	% 		%Y #= NumbersPositions[Number, Position, 2],
-    %         % writeln(["X: ", X, "Y: ", Y]),
-	% 		% writeln(["Number: ", Number, "BX: ", between_val(X , XStart, XEnd), "BY: ", between_val(Y , YStart, YEnd)]),
-	%
-	% 		%( XStart #=< X, X #=< XEnd, YStart #=< Y, Y #=< YEnd ->
-    %         %    % writeln(["Position: ", X, Y, "is in block with Number: ", Number]),
-    %         %    member(Number, Block)
-    %         %    % nth1(Number, Block, Number)
-    %         %    ;
-    %         %    true
-	% 		%)
-	% 		%writeln
-	% 		%dim(List, [Y, 2]),
-	% 		%writeln(Y),
-	%
-	% 		List is NumbersPositions[Number, 1..N, 1..2],
-	% 		% Checks for a certain number how many values are in a certain block
-	% 		% For sudoku this has to be exactly one
-	% 		list_between_val(List, XStart, XEnd, YStart, YEnd, 1)
-	%
-	% 		/*Amount :: 0..N,
-	% 		Amount = 0,
-	%
-	% 		(for(I,1,N), param(NumbersPositions, XStart, XEnd, YStart, YEnd, Amount) do
-	% 			X is NumbersPositions[Number, I, 1],
-	% 			Y is  NumbersPositions[Number, I, 2],
-	% 			%writeln(Y),
-	% 			( between_val(X, XStart, XEnd), between_val(Y, YStart, YEnd) ->
-	% 				incr(Amount,Amount),
-	% 				writeln(Amount)
-	% 				;
-	% 				true
-	% 			)
-	% 		),
-	% 		Amount #= 1*/
-	% 	)
-	%
-    %     %  make all the numbers in the block be different
-    %     %alldifferent(Block),
-    %     %writeln(["Block: ", BlockIndex, Block]), nl, nl,
-	%
-    %     %true
-	% ),
     true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -445,98 +323,6 @@ search(moff,List) :-
 search(moffmo,List) :-
     middle_out(List,MOList),
     search(MOList,0,first_fail, indomain_middle,complete, []).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% CRUSHED HOPES AND DREAMS
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-sudoku_constraints_using_shifting(NumbersPositions, N) :-
-    ( for(Number, 1, N), param(NumbersPositions, N) do
-        % positions of a certain Number
-        PositionsList is NumbersPositions[Number, 1..N],
-
-        sudoku_shift_rows(PositionsList, N, PosRowShifted),
-        writeln([Number, 'row shifted', PositionsList, PosRowShifted]),
-        alldifferent(PosRowShifted),
-
-        sudoku_shift_cols(PositionsList, N, PosColShifted),
-        alldifferent(PosColShifted),
-
-        writeln([Number, "done"])
-    ),
-
-    % positions cannot be reused
-    alldifferent(NumbersPositions).
-
-% sudoku_shift_rows :- replace a board positions by the first position of the row those
-%                      positions are on in a 9x9 sudoku board.
-% example:
-% ?- sudoku_shift_rows([2, 15, 22, 36, 44, 23, 12, 54, 3], 9, [1, 10, 19, 28, 37, 19, 10, 46, 1])
-% >  Yes (0.00s cpu, solution 1, maybe more)
-sudoku_shift_rows([], _, []).
-
-% If X is the first position of a row
-sudoku_shift_rows([X | Tail], N, [X | Tail2]) :-
-    X #= N*Y + 1,
-    0 #=< Y,
-    Y #=< N,
-    sudoku_shift_rows(Tail, N, Tail2).
-
-% recursive case, if we're not the first position of a row then subtract 1 from current position
-sudoku_shift_rows([X | Tail], N, [X2 | Tail2]) :-
-    X #> X2,
-	% was previously is but since X might not be instantiated yet it is safer to use #=
-	% see http://www.swi-prolog.org/pldoc/man?section=clpfd-integer-arith for more detail
-    XX #= X-1,
-    sudoku_shift_rows([XX | Tail], N, [X2 | Tail2]).
-
-% sudoku_shift_cols :- replace a board positions by the first position of the column
-%                      those positions are on in a 9x9 sudoku board.
-% example:
-% ?- sudoku_shift_cols([2, 15, 22, 36, 44, 23, 12, 54, 3], 9, [2, 6, 4, 9, 8, 5, 3, 9, 3])
-% >  Yes (0.00s cpu, solution 1, maybe more)
-sudoku_shift_cols([], _, []).
-
-sudoku_shift_cols([X | Tail], N, [X | Tail2]) :-
-    X #=< N,
-    X #> 0,
-    sudoku_shift_cols(Tail, N, Tail2).
-
-sudoku_shift_cols([X | Tail], N, [X2 | Tail2]) :-
-    X #> X2,
-	% was previously is but since X might not be instantiated yet it is safer to use #=
-	% see http://www.swi-prolog.org/pldoc/man?section=clpfd-integer-arith for more detail
-    XX #= X-N,
-    sudoku_shift_cols([XX | Tail], N, [X2 | Tail2]).
-
-
-sudoku_constraints_using_mod(NumbersPositions, N) :-
-    ( for(Number, 1, N), param(NumbersPositions) do
-        % positions of a certain Number
-  		Positions is NumbersPositions[Number],
-
-		separate_rows(Positions)
-	),
-
-    % positions cannot be reused
-    alldifferent(NumbersPositions).
-
-separate_rows(Positions) :-
-    dim(Positions, [N]),
-    ( for(I, 1, N), param(Positions, N) do
-        %PosI #= Positions[I],
-        X #= Positions[I] - 1,
-        C1 #= X mod N,
-        R1 #= X // N,
-        ( for(J, I+1, N), param(Positions, R1, C1, N) do
-            %PosJ #= Positions[J],
-            Y #= Positions[J] - 1 ,
-            C2 #= Y mod N,
-            R2 #= Y // N,
-            C1 #\= C2,
-            R1 #\= R2
-        )
-    ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAMPLE DATA
