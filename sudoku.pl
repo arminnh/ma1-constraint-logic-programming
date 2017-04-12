@@ -295,14 +295,17 @@ sudoku_constraints(NumbersPositions, N) :-
 		(multifor([Number,Position], 1, N), param(NumbersPositions, SN, I, Blocks,N) do
 			X #= NumbersPositions[Number, Position, 1],
 			Y #= NumbersPositions[Number, Position, 2],
-			Start is (I-1)*SN,
-			Start :: 0..N,
-			End is I*SN,
-			End :: 0..N,
-			writeln(X),
-			writeln(Y),
-			( between_val(X ,Start,End) ->
-				 between_val(Y,Start,End)->
+			XStart is (I-1)*SN mod N,
+			XEnd is XStart + SN,
+
+			YStart is SN * ((I-1) // SN),
+			YEnd is YStart + SN,
+			writeln(["XStart: ", XStart, "XEnd: ", XEnd, "YStart: ", YStart, "YEnd: ", YEnd ]),
+			writeln(["BX: ", between_val(X ,XStart,XEnd), "BY: ", between_val(Y ,YStart,YEnd)]),
+
+			( between_val(X ,XStart,XEnd) ->
+				writeln("X is between Start and end!"),
+				 between_val(Y,YStart,YEnd)->
 					writeln(Number),
 					member(Number,Blocks)
 					;
