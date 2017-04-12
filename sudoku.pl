@@ -214,12 +214,8 @@ between_val(Value, Start, End) :-
 	Start #=< Value,
 	Value #=< End.
 
-incr(X, X1):-
-	writeln(X),
-	X1 is X+1,
-	writeln(X1).
-
-list_between_val([], _, _, _, _, 0):-
+list_between_val([], _, _, _, _, Amount):-
+	Amount #= 0,
 	true.
 
 list_between_val([ [X,Y] | List], XStart, XEnd, YStart, YEnd, Amount):-
@@ -228,7 +224,7 @@ list_between_val([ [X,Y] | List], XStart, XEnd, YStart, YEnd, Amount):-
 		writeln(NewAmount),
 		list_between_val(List, XStart, XEnd, YStart, YEnd, NewAmount)
 		;
-		false
+		list_between_val(List, XStart, XEnd, YStart, YEnd, Amount)
 	)
 	.
 
@@ -322,7 +318,6 @@ sudoku_constraints(NumbersPositions, N) :-
             %    ;
             %    true
 			%)
-			writeln("Y"),
 			%writeln
 			%dim(List, [Y, 2]),
 			%writeln(Y),
