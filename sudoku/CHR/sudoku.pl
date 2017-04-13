@@ -1,6 +1,10 @@
 :- use_module(library(chr)).
-:- chr_constraint solve/0, solve/1, sudoku/1, print_board/1, print_numbers/1.
-:- chr_constraint diff/2, list_diff/1, list_diff/2, row_different/1, rows_different/1, enum/1.
+% TODO: ask if transpose is allowed
+:- use_module(library(clpfd), [ transpose/2 ]).
+
+:- chr_constraint solve/0, solve/1, sudoku/1, print_board/1, print_numbers/1,
+                  diff/2, list_diff/1, list_diff/2, row_different/1,
+                  rows_different/1, enum/1, enum_board/1.
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
@@ -36,14 +40,16 @@ rows_different([ Row | Rows ]) <=>
     length(Row, N),
     makedomains(N, Row),
     list_diff(Row),
-    enum(Row),
-    % writeln("row done \n"),
     rows_different(Rows).
 
 %% enum(N,Qs): fill list Qs successively with values from 1..N
 enum([])            <=> true.
 enum([X|R])             <=> number(X) | enum(R).
 enum([X|R]), X in L     <=> member(X,L), enum(R).
+
+enum_board([ Row | Rows ]) <=>
+    enum(Row),
+    enum_board(Rows).
 
 %% upto(N,L): L=[1..N]
 upto(0,[]).
@@ -59,6 +65,9 @@ makedomains(N,Row) :- length(Row,N), upto(N,D), domain(Row,D).
 
 sudoku(Board) <=>
     rows_different(Board),
+    transpose(Board, Board2),
+    rows_different(Board2),
+    enum_board(Board),
     true.
 
 
