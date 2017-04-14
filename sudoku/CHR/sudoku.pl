@@ -3,8 +3,8 @@
 :- use_module(library(clpfd), [ transpose/2 ]).
 
 :- chr_constraint solve/0, solve/1, sudoku/1, print_board/1, print_numbers/1,
-                  diff/2, list_diff/1, list_diff/2, row_different/1,
-                  rows_different/1, enum/1, enum_board/1.
+                  diff/2, list_diff/1, list_diff/2, rows_different/1, enum/1,
+                  enum_board/1, upto/2, domain/2, makedomains/1.
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
@@ -22,53 +22,70 @@ solve(ProblemName) <=>
     writeln("Result:"),
     print_board(Board).
 
+
+sudoku(Board) <=>
+    rows_different(Board),
+    % transpose(Board, Board2),
+    % rows_different(Board2),
+    enum_board(Board),
+    true.
+
+
 diff(X,Y) <=> nonvar(X), nonvar(Y) | X \== Y.
+
 
 list_diff([]) <=> true.
 list_diff([ Val | Vals ]) <=>
     list_diff(Val, Vals),
     list_diff(Vals).
 
+
 list_diff(_, []) <=> true.
 list_diff(Val, [ Val2 | Vals ]) <=>
-    % writeln(["Val: ", Val, ", Val2: ", Val2]),
     diff(Val, Val2),
     list_diff(Val, Vals).
 
+
 rows_different([]) <=> true.
 rows_different([ Row | Rows ]) <=>
-    length(Row, N),
-    makedomains(N, Row),
+    makedomains(Row),
     list_diff(Row),
     rows_different(Rows).
 
-%% enum(N,Qs): fill list Qs successively with values from 1..N
-enum([])            <=> true.
-enum([X|R])             <=> number(X) | enum(R).
-enum([X|R]), X in L     <=> member(X,L), enum(R).
 
+% enum(N, R): fill list with values from 1..N
+enum([])                <=> true.
+enum([ X | R ])         <=> number(X) | enum(R).
+enum([ X | R ]), X in L <=> member(X, L), enum(R).
+
+
+% enum_board(Board): fill board with values from 1..N
+enum_board([]) <=> true.
 enum_board([ Row | Rows ]) <=>
     enum(Row),
     enum_board(Rows).
 
-%% upto(N,L): L=[1..N]
-upto(0,[]).
-upto(N,[N|L]) :- N>0, N1 is N-1, upto(N1,L).
 
-%% domain(Qs,D): create 'Q in D' constraints for all Q from Qs
-domain([],_).
-domain([Val|Row],D) :- Val in D, domain(Row,D).
-
-%% makedomains(N,Qs): Qs is an N-elem. list, create 'X in [1..N]' constraints
-makedomains(N,Row) :- length(Row,N), upto(N,D), domain(Row,D).
+% upto(N,L): L=[1..N]
+upto([], 0).
+upto([ N | L ], N) :-
+    N > 0,
+    N1 is N-1,
+    upto(L, N1).
 
 
-sudoku(Board) <=>
-    rows_different(Board),
-    transpose(Board, Board2),
-    rows_different(Board2),
-    enum_board(Board),
-    true.
+% domain(L,D): create 'X in D' constraints for all X from L
+domain([], _) <=> true.
+domain([ Val | Tail ], D) <=>
+     Val in D,
+     domain(Tail, D).
+
+
+% makedomains(R): R is an N-elem. list, create 'X in [1..N]' constraints
+makedomains(List) <=>
+    length(List, N),
+    upto(DomainList, N),
+    domain(List, DomainList).
 
 
 print_numbers([]) <=> writeln("").
@@ -87,29 +104,7 @@ print_board([ Row | Tail ]) <=>
     print_numbers(Row),
     print_board(Tail).
 
-/*
-sudoku(Board) :-
-	dim(Board, [N2,N2]),
-	N is integer(sqrt(N2)),
-	Board[1..N2,1..N2] :: 1..N2,
-
-	( for(I,1,N2), param(Board,N2) do
-	    Row is Board[I,1..N2],
-	    alldifferent(Row),
-	    Col is Board[1..N2,I],
-	    alldifferent(Col)
-	),
-
-	( multifor([I,J],1,N2,N), param(Board,N) do
-	    ( multifor([K,L],0,N-1), param(Board,I,J), foreach(X,SubSquare) do
-		X is Board[I+K,J+L]
-	    ),
-	    alldifferent(SubSquare)
-	).
-*/
-
-% problem(ProblemName, X, Y, Number)
-
+% alternative version to store numbers: problem(ProblemName, X, Y, Number)
 problem(1, [ [_, _, 2, _, _, 5, _, 7, 9],
              [1, _, 5, _, _, 3, _, _, _],
              [_, _, _, _, _, _, 6, _, _],
