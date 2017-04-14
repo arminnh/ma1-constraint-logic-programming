@@ -325,7 +325,7 @@ search(moffmo,List) :-
     search(MOList,0,first_fail, indomain_middle,complete, []).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% SAMPLE DATA
+% SAMPLE PROBLEMS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 problem(1, [](
