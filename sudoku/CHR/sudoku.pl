@@ -4,7 +4,8 @@
 
 :- chr_constraint solve/0, solve/1, sudoku/1, print_board/1, print_numbers/1,
                   diff/2, list_diff/1, list_diff/2, rows_different/1, enum/1,
-                  enum_board/1, upto/2, domain/2, makedomains/1.
+                  enum_board/1, upto/2, domain/2, make_domains/1, board_blocks/2,
+                  blocks_different/1, block_different/1.
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
@@ -18,17 +19,18 @@ solve(ProblemName) <=>
     problem(ProblemName, Board),
     print_board(Board),
     sudoku(Board),
-    % labeling(Board),
     writeln("Result:"),
     print_board(Board).
 
 
 sudoku(Board) <=>
+    make_domains(Board),
     rows_different(Board),
-    % transpose(Board, Board2),
-    % rows_different(Board2),
-    enum_board(Board),
-    true.
+    transpose(Board, Board2),
+    rows_different(Board2),
+    board_blocks(Board, Blocks),
+    blocks_different(Blocks),
+    enum_board(Board).
 
 
 diff(X,Y) <=> nonvar(X), nonvar(Y) | X \== Y.
@@ -48,7 +50,6 @@ list_diff(Val, [ Val2 | Vals ]) <=>
 
 rows_different([]) <=> true.
 rows_different([ Row | Rows ]) <=>
-    makedomains(Row),
     list_diff(Row),
     rows_different(Rows).
 
@@ -65,7 +66,8 @@ enum_board([ Row | Rows ]) <=>
     enum(Row),
     enum_board(Rows).
 
-
+% length(X, 4), length(Y, 4), domain(X, Y), upto(Y, 4).
+% length(X, 4), length(Y, 4), domain(X, Y), upto(Y, 4), enum(X).
 % upto(N,L): L=[1..N]
 upto([], 0).
 upto([ N | L ], N) :-
@@ -81,11 +83,20 @@ domain([ Val | Tail ], D) <=>
      domain(Tail, D).
 
 
-% makedomains(R): R is an N-elem. list, create 'X in [1..N]' constraints
-makedomains(List) <=>
-    length(List, N),
+% make_domains(R): R is an N-elem. list, create 'X in [1..N]' constraints
+make_domains([]) <=> true.
+make_domains([ Row | Tail ]) <=>
+    length(Row, N),
     upto(DomainList, N),
-    domain(List, DomainList).
+    domain(Row, DomainList),
+    make_domains(Tail).
+
+board_blocks(Board, Blocks) <=> true.
+
+blocks_different([]) <=> true.
+blocks_different([ Block | Tail ]) <=>
+    block_different(Block),
+    blocks_different(Tail).
 
 
 print_numbers([]) <=> writeln("").
