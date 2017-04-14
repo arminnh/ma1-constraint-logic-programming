@@ -74,35 +74,24 @@ rows_different([ Row | Rows ]) <=>
     list_diff(Row),
     rows_different(Rows).
 
-% board_blocks(Board, Blocks): Blocks is a list of lists that represent the Board's blocks
+% board_blocks(Board, Blocks): Blocks is a list of lists that represent the Board's sudoku blocks
 board_blocks(Board, Blocks) <=>
     length(Blocks, N),
     length(Board, N),
-    set_block_lengths(Blocks, N),
+    set_array_lengths(Blocks, N),
     sqrt(N, NN),
     SN is round(NN),
     board_blocks(Board, Blocks, SN, SN).
-
-% set_matrix_lengths(Rows, N): sets the lengths of rows in Rows to N
-set_array_lengths([], _).
-set_array_lengths([ Row | Rows ], N) :-
-    length(Row, N),
-    set_block_lengths(Rows, N).
-
 board_blocks(_, _, _, 0).
 board_blocks(Board, Blocks, SN, Count) :-
-    Count > 0,
-    I is (SN-Count) * SN + 1, % SN=2,Count=2 => I=1,J=2 | SN=2,Count=1 => I=3,J=4
-    J is I + SN - 1,          % SN=3,Count=3 => I=1,J=3 | SN=3,Count=2 => I=4,J=6 | SN=3,Count=1 => I=7,J=9
+    I is (SN-Count) * SN + 1,
+    J is I + SN - 1,
     write("\nboard_blocks | Count: "), write(Count), write(", I: "), write(I), write(", J: "), writeln(J),
     write("    "), writeln(Blocks),
-
     % take rows I to J of board
     take_elements(Board, I, J, Rows),
-
     % take blocks I to J of board
     take_elements(Blocks, I, J, Blocks2),
-
     write("    partition rows:"), write(Rows), write(", into blocks: "), writeln(Blocks2),
     % put correct parts of the rows in the blocks
     rows_blocks(Rows, Blocks2, SN, SN),
@@ -111,46 +100,30 @@ board_blocks(Board, Blocks, SN, Count) :-
     board_blocks(Board, Blocks, SN, Count2).
 
 % rows_blocks(Rows, Blocks, SN, Count): takes certain parts of Rows in Rows and puts them into blcosk
-rows_blocks([], _, _, _) :-
-    writeln("    rows_blocks | rows done").
-
+rows_blocks([], _, _, _).
 rows_blocks([ _ | Rows ], Blocks, SN, 0) :-
-    write("    rows_blocks | next row, calling rows_blocks with Rows: "), writeln(Rows),
     rows_blocks(Rows, Blocks, SN, SN).
-
 rows_blocks([ Row | Rows ], Blocks, SN, Count) :-
     write("    rows_blocks | partition row:"), write(Row), write(", into blocks: "), writeln(Blocks),
     write("      SN: "), write(SN), write(", Count: "), writeln(Count),
-    Count > 0,
-    I is (SN-Count) * SN + 1,
+    I is (SN - Count) * SN + 1,
     J is I + SN - 1,
     X is SN - Count + 1,
     write("      I: "), write(I), write(", J: "), write(J), write(", X: "), writeln(X),
 
     % take rows I to J of board
     take_elements(Row, I, J, Elements),
-
     % take blocks I to J of board
     nth1(X, Blocks, Block),
-
     write("      Elements: "), write(Elements), write(" in Block: "), writeln(Block),
-
     % Elements is in Block
     length(Blocks, N),
     length(Rows, L),
     Index is (N - L - 1) * SN + 1,
-    elements_block(Elements, Block, Index),
+    nth1_list(Index, Block, Elements),
 
     Count2 is Count-1,
-    write("      calling rows_blocks with Count2: "), write(Count2), write(", Rows: "), writeln([ Row | Rows ]),
     rows_blocks([ Row | Rows ], Blocks, SN, Count2).
-
-elements_block([], _, _).
-elements_block([ Elem | Tail ], Block, Index) :-
-    write("        Element: "), write(Elem), write(" in Block: "), write(Block), write(" on position "), writeln(Index),
-    nth1(Index, Block, Elem),
-    NewIndex is Index + 1,
-    elements_block(Tail, Block, NewIndex).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR DOMAIN SOLVING
@@ -190,6 +163,14 @@ make_domains([ Row | Tail ]) <=>
     domain(Row, DomainList),
     make_domains(Tail).
 
+% nth1_list(Index, List, ElemList): On position Index, List contains all elements of ElemList
+nth1_list(_, _, []).
+nth1_list(Index, List, [ Elem | Tail ]) :-
+    write("        Element: "), write(Elem), write(" in Block: "), write(List), write(" on position "), writeln(Index),
+    nth1(Index, List, Elem),
+    Next is Index + 1,
+    nth1_list(Next, List, Tail).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HELPER RULES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -209,11 +190,11 @@ print_board([ Row | Tail ]) <=>
     print_numbers(Row),
     print_board(Tail).
 
-% take_first_elements(List1, I, List2): List2 contains List1[1..I]
+% take_first_elements(List1, I, List2): List2 contains [List1[1..I]]
 take_first_elements(List1, N, List2) :-
     take_elements(List1, 1, N, List2).
 
-% take_elements(List1, I, J, List2): List2 contains List1[I..J]
+% take_elements(List1, I, J, List2): List2 contains [List1[I..J]]
 take_elements(_, 1, 0, []):-
     true.
 
@@ -228,6 +209,12 @@ take_elements([_ | Tail], I, J, List) :-
     II is I-1,
     JJ is J-1,
     take_elements(Tail, II, JJ, List).
+
+% set_matrix_lengths(Rows, N): sets the lengths of rows in Rows to N
+set_array_lengths([], _).
+set_array_lengths([ Row | Rows ], N) :-
+    length(Row, N),
+    set_array_lengths(Rows, N).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAMPLE PROBLEMS
