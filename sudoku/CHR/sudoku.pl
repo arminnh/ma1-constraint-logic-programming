@@ -5,7 +5,9 @@
 :- chr_constraint solve/1, sudoku/1, print_board/1, print_numbers/1,
                   diff/2, list_diff/1, list_diff/2, rows_different/1, enum/1,
                   enum_board/1, upto/2, domain/2, make_domains/1, board_blocks/2,
-                  solve1/0, solve2/0, solve3/0, solve4/0, solve5/0.
+                  solve1/0, solve2/0, solve3/0, solve4/0, solve5/0,
+                  take_first_elements/3, take_elements/4, set_array_lengths/2,
+                  rows_blocks/4, board_blocks/4.
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
@@ -82,15 +84,16 @@ board_blocks(Board, Blocks) <=>
     sqrt(N, NN),
     SN is round(NN),
     board_blocks(Board, Blocks, SN, SN).
-board_blocks(_, _, _, 0).
-board_blocks(Board, Blocks, SN, Count) :-
+board_blocks(_, _, _, 0)<=> true.
+board_blocks(Board, Blocks, SN, Count) <=>
     I is (SN-Count) * SN + 1,
     J is I + SN - 1,
     write("\nboard_blocks | Count: "), write(Count), write(", I: "), write(I), write(", J: "), writeln(J),
-    write("    "), writeln(Blocks),
+    write("   BLOCKS: "), writeln(Blocks),
     % take rows I to J of board
     take_elements(Board, I, J, Rows),
     % take blocks I to J of board
+    writeln("Take elements for Blocks"),
     take_elements(Blocks, I, J, Blocks2),
     write("    partition rows:"), write(Rows), write(", into blocks: "), writeln(Blocks2),
     % put correct parts of the rows in the blocks
@@ -100,10 +103,11 @@ board_blocks(Board, Blocks, SN, Count) :-
     board_blocks(Board, Blocks, SN, Count2).
 
 % rows_blocks(Rows, Blocks, SN, Count): takes certain parts of Rows in Rows and puts them into blcosk
-rows_blocks([], _, _, _).
-rows_blocks([ _ | Rows ], Blocks, SN, 0) :-
+rows_blocks([], _, _, _)<=> true.
+rows_blocks([ _ | Rows ], Blocks, SN, 0) <=>
     rows_blocks(Rows, Blocks, SN, SN).
-rows_blocks([ Row | Rows ], Blocks, SN, Count) :-
+
+rows_blocks([ Row | Rows ], Blocks, SN, Count) <=>
     write("    rows_blocks | partition row:"), write(Row), write(", into blocks: "), writeln(Blocks),
     write("      SN: "), write(SN), write(", Count: "), writeln(Count),
     I is (SN - Count) * SN + 1,
@@ -191,28 +195,34 @@ print_board([ Row | Tail ]) <=>
     print_board(Tail).
 
 % take_first_elements(List1, I, List2): List2 contains [List1[1..I]]
-take_first_elements(List1, N, List2) :-
+take_first_elements(List1, N, List2) <=>
     take_elements(List1, 1, N, List2).
 
 % take_elements(List1, I, J, List2): List2 contains [List1[I..J]]
-take_elements(_, 1, 0, []):-
+take_elements(_, 0, 0, []) <=>
     true.
 
-take_elements([X | Tail], 1, J, [X | Tail2]) :-
+take_elements([X | Tail], 0, J, [X | Tail2]) <=>
+    write("take_elements: "), writeln(X),
     J > 0,
     JJ is J-1,
-    take_elements(Tail, 1, JJ, Tail2).
+    %write("take_elements: "), writeln(X),
+    take_elements(Tail, 0, JJ, Tail2).
 
-take_elements([_ | Tail], I, J, List) :-
+take_elements([_ | Tail], I, J, List) <=>
+    write("take_elements2: "), writeln(Tail),
+    write("I: "), write(I), write(" J: "), writeln(J),
+
     I > 1,
     J > 0,
     II is I-1,
     JJ is J-1,
+    write("II: "), write(II), write(" JJ: "), writeln(JJ),
     take_elements(Tail, II, JJ, List).
 
 % set_matrix_lengths(Rows, N): sets the lengths of rows in Rows to N
-set_array_lengths([], _).
-set_array_lengths([ Row | Rows ], N) :-
+set_array_lengths([], _) <=> true.
+set_array_lengths([ Row | Rows ], N) <=>
     length(Row, N),
     set_array_lengths(Rows, N).
 
