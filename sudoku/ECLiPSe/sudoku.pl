@@ -1,30 +1,20 @@
-% TODO: change construction of NumbersPositions again:
-%       do not need to keep X coords as it will always be the same as the Position index
-%       so dimensions can become [N, N] again and only the Y coords need to be kept explicitly
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% GIVEN SUDOKU SOLUTION WITH TRIVIAL VIEWPOINT
-%
-% Viewpoint(X, D)
-% Variables X: sets of rows, sets of columns, sets of blocks
-% Domain D: sets of values 1..N2
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%
-% ECLiPSe sample code - Sudoku problem
-%
 %	This is a puzzle, originating from Japan, where you have a
 %	9x9 grid, consisting of 9 3x3 sub-grids. The challenge is
 %	to fill the grid with numbers from 1 to 9 such that every row,
 %	every column, and every 3x3 sub-grid contains the digits 1 to 9.
 %	Some of these numbers are given, which is the way different
 %	instances of the problem are made. The solution is usually unique.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% GIVEN SUDOKU SOLUTION WITH TRIVIAL VIEWPOINT
+% Author: Joachim Schimpf, IC-Parc --- ECLiPSe sample code - Sudoku problem
 %
-%	Compile this file with ECLiPSe and call e.g.
-%	:- solve(1).
-%
-% Author: Joachim Schimpf, IC-Parc
-%
+% Viewpoint(X, D)
+% Variables X: sets of rows, sets of columns, sets of blocks
+% Domain D: sets of values 1..N2
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :- lib(ic).
 :- import alldifferent/1, sorted/2 from ic_global.
@@ -70,6 +60,10 @@ sudoku(Board) :-
 %     each array for a number contains positions of the sudoku board that that number lies on
 %     all of the numbers appear an equal amount of times, so each array has equal length
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% TODO: change construction of NumbersPositions again:
+%       do not need to keep X coords as it will always be the same as the Position index
+%       so dimensions can become [N, N] again and only the Y coords need to be kept explicitly
 
 % findall(_, solve2(13), Sols), length(Sols, N), writeln(["amount of solutions: ", N]).
 
@@ -252,7 +246,6 @@ sudoku_constraints(NumbersPositions, N) :-
 
     % rules for blocks
     SN is integer(sqrt(N)),
-
 	% For every number
 	(for(Number, 1,N), param(SN, NumbersPositions) do
 		% There are SN block rows
@@ -264,43 +257,16 @@ sudoku_constraints(NumbersPositions, N) :-
 				X1 is NumbersPositions[Number,Index, 1],
 				Y1 is NumbersPositions[Number,Index, 2],
 				block_index(X1, Y1, SN, BlockIndex1),
-				%writeln(["X1: ", X1, "Y1: ", Y1]),
 				(for(K, I+1, SN), param(SN, NumbersPositions, Number, BlockRow, BlockIndex1)do
 					Index2 is (BlockRow-1) * SN + K,
 					X2 is NumbersPositions[Number, Index2, 1],
 					Y2 is NumbersPositions[Number, Index2, 2],
 					block_index(X2, Y2, SN, BlockIndex2),
-					%writeln(["X2: ", X2, "Y2: ", Y2]),
-					%writeln(["BlockIndex1: ", BlockIndex1, "BlockIndex2: ", BlockIndex2]),
 					BlockIndex1 #\= BlockIndex2
-
 				)
 			)
 		)
-	),
-
-	%
-	%
-	%
-	% 1 -> (1, Y1), (2, Y2), (3,Y3),
-	%	   (4, Y4),(5, Y5), (6, Y6),
-	%      (7,Y7), (8, Y8), (9,Y9)
-	%
-	% Number * J * I*K
-	% N * sqrt(N) * (sqrt(N)-1)!
-	%
-	% 9 * 2 * 3 = 9 * 6 = 54
-	% _,1,_,_
-	% _,_,1,_
-	% _,_,_,_
-	% _,_,_,_
-	%
-	% sqrt(N)-1
-	%
-	% BlockY1, BlockY2
-	% BlockY1 #\= BlockY2
-
-    true.
+	).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SOME SEARCH STRATEGIES TAKEN FROM SLIDES
