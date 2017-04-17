@@ -5,7 +5,7 @@
 % :- import nth1/3 from listut.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Hashiwokakero, also called Bridges is a logic puzzle in which dierent islands
+% Hashiwokakero, also called Bridges is a logic puzzle in which different islands
 % have to be connected by bridges. A bridges puzzle consists of a square grid
 % in which some numbers are placed. Squares on which a number is placed are
 % referred to as islands. The goal of the puzzle is to draw bridges between
@@ -21,45 +21,51 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 solve(Number) :-
-    % Each puzzle(Id, S, Islands) fact denes the input of one problem:
-    % its identier Id, the size S (width and height), and the list of islands Islands.
-    puzzle(Number, Size, Islands),
+    ( puzzle(Number, _, _) ->
+        % Each puzzle(Id, S, Islands) fact defines the input of one problem:
+        % its identier Id, the size S (width and height), and the list of islands Islands.
+        puzzle(Number, Size, Islands),
 
-    % create a board with the islands on it
-    hashiwokakero_board(Islands, Size, IslandBoard),
+        % create a board with the islands on it
+        hashiwokakero_board(Islands, Size, Board)
+    ;
+        % create a board from a matrix that contains the islands
+        board(Number, Matrix),
+        hashiwokakero_matrix_board(Matrix, Board)
+    ),
+
     writeln("Given board:"),
-	print_board(IslandBoard),
+	print_board(Board),
 
     % create bridges and set constraints
-    hashiwokakero(IslandBoard, Bridges),
+    hashiwokakero(Board),
 
     % do search on variables
-	search(naive, Bridges),
+	search(naive, Board),
 
     % print results
     writeln("Search done:"),
-    print_board(IslandBoard, Bridges).
+    print_board(Board).
 
-% IslandBoard is an square of zeros and island values,
-% Bridges is an array of arrays of 4 variables North, East, South, West
-% Those variables represent how many bridges are going in a certain direction
-hashiwokakero(IslandBoard, Bridges) :-
-    dim(IslandBoard, [XMax, YMax]),
-    dim(Bridges, [XMax, YMax, 4]),   % 4 variables N, E, S, W for each field
+% The board can be viewed as a matrix in which each position contains an array
+% of 5 variables: The amount of bridges that need to be connected to the position,
+% and the amounts of briges going North, East, South, or West from the position
+hashiwokakero(Board) :-
+    dim(Board, [XMax, YMax, 5]), % 5 variables: Amount, N, E, S, W for each position
 
-    ( foreachindex([X, Y], IslandBoard), param(IslandBoard, Bridges, XMax, YMax) do
-        Amount is IslandBoard[X, Y],
-        N is Bridges[X, Y, 1],
-        E is Bridges[X, Y, 2],
-        S is Bridges[X, Y, 3],
-        W is Bridges[X, Y, 4],
+    ( multifor([X, Y], 1, [XMax, YMax]), param(Board, XMax, YMax) do
+        Amount is Board[X, Y, 1],
+        N is Board[X, Y, 2],
+        E is Board[X, Y, 3],
+        S is Board[X, Y, 4],
+        W is Board[X, Y, 5],
 
         % if this position is not on the edges of the board, then the amount of bridges
         % going in one direction needs to equals the amount in the other direction
-        ( X > 1    -> N #= Bridges[X-1,   Y, 3] ; N = 0 ),
-        ( X < XMax -> S #= Bridges[X+1,   Y, 1] ; S = 0 ),
-        ( Y > 1    -> W #= Bridges[  X, Y-1, 2] ; W = 0 ),
-        ( Y < YMax -> E #= Bridges[  X, Y+1, 4] ; E = 0 ),
+        ( X > 1    -> N #= Board[X-1,   Y, 4] ; N = 0 ),
+        ( X < XMax -> S #= Board[X+1,   Y, 2] ; S = 0 ),
+        ( Y > 1    -> W #= Board[  X, Y-1, 3] ; W = 0 ),
+        ( Y < YMax -> E #= Board[  X, Y+1, 5] ; E = 0 ),
 
         % if this position requires an amount of bridges,
         % make the sum of all bridges equal this amount
@@ -70,7 +76,7 @@ hashiwokakero(IslandBoard, Bridges) :-
             N = S, E = W,
             (N #= 0) or (E #= 0)
         ),
-        true
+    true
     ).
 
 
@@ -78,47 +84,57 @@ hashiwokakero(IslandBoard, Bridges) :-
 % HELPER PROCEDURES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Create a usable board from the given Islands
-% Each island takes the form (X, Y,  N) where X is the row number, Y is the column
+% create a usable board from an array of Islands
+% each island takes the form (X, Y, N) where X is the row number, Y is the column
 % number and N the number of bridges that should arrive in this island.
-hashiwokakero_board(Islands, Size, IslandBoard) :-
-    dim(IslandBoard, [Size, Size]),
+hashiwokakero_board(Islands, Size, Board) :-
+    dim(Board, [Size, Size, 5]),
 
-    % fill in the island values first
-    ( foreacharg(Island, Islands), param(IslandBoard) do
+    % fill in the island bridge amounts first
+    ( foreacharg(Island, Islands), param(Board) do
         X is Island[1],
         Y is Island[2],
         Amount is Island[3],
-        IslandBoard[X, Y] #= Amount
+        Board[X, Y, 1] #= Amount
     ),
 
     % then fill in zeros
-    ( foreachelem(Position, IslandBoard) do
-        ( var(Position) -> Position #= 0 ; true )
+    ( foreacharg(Row, Board) do
+        ( foreacharg(Position, Row) do
+            Amount is Position[1],
+            ( var(Amount) -> Position[1] #= 0 ; true )
+        )
     ).
 
-print_board(IslandBoard) :-
-    ( foreachindex([X, Y], IslandBoard), param(IslandBoard) do
-        ( Y = 1 -> nl ; true ),
-        Amount is IslandBoard[X, Y],
-        write(Amount),
-        write(' ')
-    ),
-    nl, nl.
+% create a usable board from a matrix that contains the islands
+hashiwokakero_matrix_board(Matrix, Board) :-
+    dim(Matrix, [XMax, YMax]),
+    dim(Board, [XMax, YMax, 5]),
 
-print_board(IslandBoard, Bridges) :-
-    ( foreachindex([X, Y], IslandBoard), param(IslandBoard, Bridges) do
-        ( Y = 1 -> nl ; true ),
-        Amount is IslandBoard[X,Y],
-        ( Amount > 0 ->
-            write(Amount)
-        ;
-            NS is Bridges[X, Y, 1],
-            EW is Bridges[X, Y, 2],
-            symbol(NS, EW, Char),
-            write(Char)
+    % fill in the island bridge amounts first
+    ( multifor([X, Y], 1, [XMax, YMax]), param(Matrix, Board) do
+        Board[X, Y, 1] #= Matrix[X, Y]
+    ).
+
+print_board(Board) :-
+    ( foreacharg(Row, Board) do
+        ( foreacharg(Position, Row) do
+            Amount is Position[1],
+            ( Amount > 0 ->
+                write(Amount)
+            ;
+                NS is Position[2],
+                EW is Position[3],
+                ( nonvar(NS), nonvar(EW) ->
+                    symbol(NS, EW, Char),
+                    write(Char)
+                ;
+                    true
+                )
+            ),
+            write(' ')
         ),
-        write(' ')
+        nl
     ),
     nl, nl.
 
@@ -164,7 +180,8 @@ puzzle(1, 7, [](
     [](4,1,2), [](4,4,8), [](4,6,5), [](4,7,2),
     [](5,1,3), [](5,3,3), [](5,7,1),
     [](6,3,2), [](6,6,3), [](6,7,4),
-    [](7,1,3), [](7,4,3), [](7,5,1), [](7,7,2))).
+    [](7,1,3), [](7,4,3), [](7,5,1), [](7,7,2)
+)).
 
 % puzzle 2, moderate
 % http://en.wikipedia.org/wiki/File:Bridges-example.png
@@ -182,7 +199,8 @@ puzzle(2, 13, [](
     [](10,1,2), [](10,3,2), [](10,5,3),  [](10,9,3),  [](10,11,2), [](10,13,3),
     [](11,6,2), [](11,8,4), [](11,10,4), [](11,12,3),
     [](12,3,1), [](12,5,2),
-    [](13,1,3), [](13,6,3), [](13,8,1),  [](13,10,2), [](13,13,2))).
+    [](13,1,3), [](13,6,3), [](13,8,1),  [](13,10,2), [](13,13,2)
+)).
 
 % puzzle 3
 % http://www.conceptispuzzles.com/index.aspx?uri=puzzle/hashi/techniques
@@ -192,7 +210,8 @@ puzzle(3, 6, [](
     [](3,1,4), [](3,3,7), [](3,5,1),
     [](4,4,2), [](4,6,5),
     [](5,3,3), [](5,5,1),
-    [](6,1,3), [](6,4,3), [](6,6,3))).
+    [](6,1,3), [](6,4,3), [](6,6,3)
+)).
 
 % puzzle 4
 % http://www.conceptispuzzles.com/index.aspx?uri=puzzle/euid/010000008973f050f28ceb4b11c74e73d34e1c47d885e0d8449ab61297e5da2ec85ea0804f0c5a024fbf51b5a0bd8f573565bc1b/play
@@ -204,4 +223,36 @@ puzzle(4, 8, [](
     [](5,1,3), [](5,3,1), [](5,6,2), [](5,8,6),
     [](6,2,2),
     [](7,1,1), [](7,3,3), [](7,5,5), [](7,8,3),
-    [](8,2,2), [](8,4,3), [](8,7,2))).
+    [](8,2,2), [](8,4,3), [](8,7,2)
+)).
+
+% http://stackoverflow.com/questions/20337029/hashi-puzzle-representation-to-solve-all-solutions-with-prolog-restrictions/20364306#20364306
+board(5, [](
+    [](3, 0, 6, 0, 0, 0, 6, 0, 3),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 1, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](2, 0, 0, 0, 0, 1, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](1, 0, 3, 0, 0, 2, 0, 0, 0),
+    [](0, 3, 0, 0, 0, 0, 4, 0, 1)
+)).
+
+% same as puzzle 2
+% https://en.wikipedia.org/wiki/Hashiwokakero#/media/File:Bridges-example.png
+board(6, [](
+    [](2, 0, 4, 0, 3, 0, 1, 0, 2, 0, 0, 1, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 1),
+    [](0, 0, 0, 0, 2, 0, 3, 0, 2, 0, 0, 0, 0),
+    [](2, 0, 3, 0, 0, 2, 0, 0, 0, 3, 0, 1, 0),
+    [](0, 0, 0, 0, 2, 0, 5, 0, 3, 0, 4, 0, 0),
+    [](1, 0, 5, 0, 0, 2, 0, 1, 0, 0, 0, 2, 0),
+    [](0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 4, 0, 2),
+    [](0, 0, 4, 0, 4, 0, 0, 3, 0, 0, 0, 3, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](2, 0, 2, 0, 3, 0, 0, 0, 3, 0, 2, 0, 3),
+    [](0, 0, 0, 0, 0, 2, 0, 4, 0, 4, 0, 3, 0),
+    [](0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](3, 0, 0, 0, 0, 3, 0, 1, 0, 2, 0, 0, 2)
+)).
