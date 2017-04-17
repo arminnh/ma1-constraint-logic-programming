@@ -27,11 +27,11 @@ solve(Number) :-
         puzzle(Number, Size, Islands),
 
         % create a board with the islands on it
-        hashiwokakero_board(Islands, Size, Board)
+        islands_board(Islands, Size, Board)
     ;
         % create a board from a matrix that contains the islands
         board(Number, Matrix),
-        hashiwokakero_matrix_board(Matrix, Board)
+        matrix_board(Matrix, Board)
     ),
 
     writeln("Given board:"),
@@ -75,9 +75,14 @@ hashiwokakero(Board) :-
         ; % else make sure bridges don't cross each other
             N = S, E = W,
             (N #= 0) or (E #= 0)
-        ),
-    true
-    ).
+        )
+    ),
+
+    board_islands(Board, Islands),
+    writeln(Islands),
+    board_connected_set(Board, Islands),
+
+    true.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -87,7 +92,7 @@ hashiwokakero(Board) :-
 % create a usable board from an array of Islands
 % each island takes the form (X, Y, N) where X is the row number, Y is the column
 % number and N the number of bridges that should arrive in this island.
-hashiwokakero_board(Islands, Size, Board) :-
+islands_board(Islands, Size, Board) :-
     dim(Board, [Size, Size, 5]),
 
     % fill in the island bridge amounts first
@@ -107,13 +112,61 @@ hashiwokakero_board(Islands, Size, Board) :-
     ).
 
 % create a usable board from a matrix that contains the islands
-hashiwokakero_matrix_board(Matrix, Board) :-
+matrix_board(Matrix, Board) :-
     dim(Matrix, [XMax, YMax]),
     dim(Board, [XMax, YMax, 5]),
 
     % fill in the island bridge amounts first
     ( multifor([X, Y], 1, [XMax, YMax]), param(Matrix, Board) do
         Board[X, Y, 1] #= Matrix[X, Y]
+    ).
+
+board_islands(Board, Islands) :-
+    dim(Board, [XMax, YMax, 5]),
+
+    ( multifor([X, Y], 1, [XMax, YMax]), param(Board, Islands) do
+        Amount is Board[X, Y, 1],
+        ( Amount > 0 ->
+            member([X, Y], Islands)
+        ;
+            true
+        )
+    ).
+
+% % board_connected_sets(Board, Sets): Board is an N*N*5 array representing the hashi board,
+% % Sets is a list of lists of islands that belong to the same connected set
+% board_connected_sets(_, []).
+% board_connected_sets(Board, [Set | Sets]) :-
+%     length(Set, N),
+%     N #> 1,
+%     board_connected_set(Board, Set),
+%     board_connected_sets(Board, Sets).
+
+% board_connected_set(Board, Set): Set is a list of islands that belong to a connected set of the board
+board_connected_set(_, [_, _]).
+board_connected_set(Board, [[X1, Y1], [X2, Y2] | Set]) :-
+    printf("board_connected_set: (%d, %d) - (%d, %d)\n", [X1, Y1, X2, Y2]),
+    N #= Board[X1, Y1, 2],
+    E #= Board[X1, Y1, 3],
+    S #= Board[X1, Y1, 4],
+    W #= Board[X1, Y1, 5],
+
+    ( N #> 0 , X1 #> X2 -> islands_connected(Board, X1, Y1, X2, Y2, -1, 0) ; true ),
+    ( E #> 0 , Y1 #< Y2 -> islands_connected(Board, X1, Y1, X2, Y2, 0,  1) ; true ),
+    ( S #> 0 , X1 #< X2 -> islands_connected(Board, X1, Y1, X2, Y2, 1,  0) ; true ),
+    ( W #> 0 , Y1 #> Y2 -> islands_connected(Board, X1, Y1, X2, Y2, 0, -1) ; true ),
+    board_connected_set(Board, [[X2, Y2] | Set]),
+    true.
+
+islands_connected(Board, X1, Y1, X2, Y2, XMove, YMove) :-
+    printf("  islands_connected: (%d, %d) - (%d, %d) - (%d, %d)\n", [X1, Y1, X2, Y2, XMove, YMove]),
+    XNext is X1 + XMove,
+    YNext is Y1 + YMove,
+    Amount is Board[XNext, YNext, 1],
+    ( Amount #= 0 ->
+        islands_connected(Board, XNext, YNext, X2, Y2, XMove, YMove)
+    ;
+        ( XNext #= X2 , YNext #= Y2 -> true ; false)
     ).
 
 print_board(Board) :-
@@ -255,4 +308,10 @@ board(6, [](
     [](0, 0, 0, 0, 0, 2, 0, 4, 0, 4, 0, 3, 0),
     [](0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0),
     [](3, 0, 0, 0, 0, 3, 0, 1, 0, 2, 0, 0, 2)
+)).
+
+board(7, [](
+    [](1, 0, 1, 0, 2),
+    [](0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 2)
 )).
