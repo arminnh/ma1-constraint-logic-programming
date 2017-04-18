@@ -41,8 +41,8 @@ solve(Number) :-
     hashiwokakero(Board),
 
     % do search on variables
-	% search(naive, Board),
-    labeling(Board),
+	search(naive, Board),
+    % labeling(Board),
 
     % print results
     writeln("Search done:"),
@@ -52,8 +52,7 @@ solve(Number) :-
 % of 5 variables: The amount of bridges that need to be connected to the position,
 % and the amounts of briges going North, East, South, or West from the position
 hashiwokakero(Board) :-
-    dim(Board, [XMax, YMax, 6]), % 5 variables: Amount, N, E, S, W for each position
-    Board[1..XMax, 1..YMax, 6] #:: 0..1,
+    dim(Board, [XMax, YMax, 5]), % 5 variables: Amount, N, E, S, W for each position
 
     ( multifor([X, Y], 1, [XMax, YMax]), param(Board, XMax, YMax) do
         Amount is Board[X, Y, 1],
@@ -84,7 +83,9 @@ hashiwokakero(Board) :-
     length(Islands, L1),
     writeln(["Islands: ", L1, Islands]),
     writeln(["Sets: ", Sets]),
-    board_connected_sets(Board, Islands, Sets),
+    dim(Visited, [XMax, YMax]),
+    board_connected_sets(Board, Islands, Sets, Visited),
+    % L2 #= 1,
     length(Sets, L2),
     writeln(["Connected sets: ", L2, Sets]),
 
@@ -99,7 +100,7 @@ hashiwokakero(Board) :-
 % each island takes the form (X, Y, N) where X is the row number, Y is the column
 % number and N the number of bridges that should arrive in this island.
 islands_board(Islands, Size, Board) :-
-    dim(Board, [Size, Size, 6]),
+    dim(Board, [Size, Size, 5]),
 
     % fill in the island bridge amounts first
     ( foreacharg(Island, Islands), param(Board) do
@@ -120,8 +121,7 @@ islands_board(Islands, Size, Board) :-
 % create a usable board from a matrix that contains the islands
 matrix_board(Matrix, Board) :-
     dim(Matrix, [XMax, YMax]),
-    dim(Board, [XMax, YMax, 6]),
-    Board[1..XMax, 1..YMax, 6] #:: 1..1,
+    dim(Board, [XMax, YMax, 5]),
 
     % fill in the island bridge amounts first
     ( multifor([X, Y], 1, [XMax, YMax]), param(Matrix, Board) do
@@ -129,7 +129,7 @@ matrix_board(Matrix, Board) :-
     ).
 
 board_islands(Board, Islands) :-
-    dim(Board, [XMax, YMax, 6]),
+    dim(Board, [XMax, YMax, 5]),
 
     ( multifor([X, Y], 1, [XMax, YMax]), param(Board, Islands) do
         Amount is Board[X, Y, 1],
@@ -143,8 +143,8 @@ board_islands(Board, Islands) :-
 % board_connected_sets(Board, Islands, Sets): Board is an N*N*5 array representing the hashi board,
 % Islands is a list of positions on which there are islands on the board
 % Sets is a list of lists of islands that belong to the same connected set
-board_connected_sets(_, [], _).
-board_connected_sets(Board, [ [X, Y] | Islands ], [ Set | Sets ]) :-
+board_connected_sets(_, [], [], _).
+board_connected_sets(Board, [ [X, Y] | Islands ], [ Set | Sets ], Visited) :-
     Position is Board[X, Y],
     writeln(["board_connected_sets  ", [X, Y], " --- ", Position]),
 
@@ -153,7 +153,7 @@ board_connected_sets(Board, [ [X, Y] | Islands ], [ Set | Sets ]) :-
     writeln(["  member of set:", Set]),
 
     % set position to visited
-    Board[X, Y, 6] #= 1,
+    Visited[X, Y] #= 1,
 
     % travel to the neighbors of the current position and fill the current set
     N #= Board[X, Y, 2],
@@ -161,27 +161,27 @@ board_connected_sets(Board, [ [X, Y] | Islands ], [ Set | Sets ]) :-
     S #= Board[X, Y, 4],
     W #= Board[X, Y, 5],
 
-    ( N #> 0 -> write("[    visiting N"), next_pos([X, Y], 2, Pos2), write(", got pos: "), writeln([Pos2]), fill_set(Board, Pos2, 2, Set), writeln(["    N visited: ", Set]) ; true ),
-    ( E #> 0 -> write("[    visiting E"), next_pos([X, Y], 3, Pos3), write(", got pos: "), writeln([Pos3]), fill_set(Board, Pos3, 3, Set), writeln(["    E visited: ", Set]) ; true ),
-    ( S #> 0 -> write("[    visiting S"), next_pos([X, Y], 4, Pos4), write(", got pos: "), writeln([Pos4]), fill_set(Board, Pos4, 4, Set), writeln(["    S visited: ", Set]) ; true ),
-    ( W #> 0 -> write("[    visiting W"), next_pos([X, Y], 5, Pos5), write(", got pos: "), writeln([Pos5]), fill_set(Board, Pos5, 5, Set), writeln(["    W visited: ", Set]) ; true ),
+    ( N #> 0 -> write("[    visiting N"), next_pos([X, Y], 2, Pos2), write(", got pos: "), writeln([Pos2]), fill_set(Board, Pos2, 2, Set, Visited), writeln(["    N visited: ", Set]) ; true ),
+    ( E #> 0 -> write("[    visiting E"), next_pos([X, Y], 3, Pos3), write(", got pos: "), writeln([Pos3]), fill_set(Board, Pos3, 3, Set, Visited), writeln(["    E visited: ", Set]) ; true ),
+    ( S #> 0 -> write("[    visiting S"), next_pos([X, Y], 4, Pos4), write(", got pos: "), writeln([Pos4]), fill_set(Board, Pos4, 4, Set, Visited), writeln(["    S visited: ", Set]) ; true ),
+    ( W #> 0 -> write("[    visiting W"), next_pos([X, Y], 5, Pos5), write(", got pos: "), writeln([Pos5]), fill_set(Board, Pos5, 5, Set, Visited), writeln(["    W visited: ", Set]) ; true ),
 
-    length(Set, _),
+    length(Set, _), % <- backtracks to here and adds a variable to the Set each time
     % find the remaining islands and create next sets
     writeln(["  subtracting from islands: ", Islands, Set]),
     subtract(Islands, Set, RemainingIslands),
     writeln(["\n  remaining islands: ", RemainingIslands]),
-    board_connected_sets(Board, RemainingIslands, Sets),
+    board_connected_sets(Board, RemainingIslands, Sets, Visited),
     true.
 
-fill_set(Board, [X, Y], Direction, Set) :-
+fill_set(Board, [X, Y], Direction, Set, Visited) :-
     Position is Board[X, Y],
     writeln(["         fill_set --- ", [X, Y], " --- ", Position, " --- ", Set]),
-    Visited is Board[X, Y, 6],
+    Visited is Visited[X, Y],
     ( nonvar(Visited) ->
         writeln(["         already visited: "])
     ;
-        Board[X, Y, 6] #= 1,
+        Visited[X, Y] #= 1,
         writeln(["         visited: ", [X, Y]]),
         Amount is Board[X, Y, 1],
         ( Amount > 0 ->
@@ -192,10 +192,10 @@ fill_set(Board, [X, Y], Direction, Set) :-
             S #= Board[X, Y, 4],
             W #= Board[X, Y, 5],
 
-            ( N #> 0 -> write("[             visiting N"), next_pos([X, Y], 2, Pos2), write(", got pos: "), writeln([Pos2]), fill_set(Board, Pos2, 2, Set), writeln(["             N visited: ", Set]) ; true ),
-            ( E #> 0 -> write("[             visiting E"), next_pos([X, Y], 3, Pos3), write(", got pos: "), writeln([Pos3]), fill_set(Board, Pos3, 3, Set), writeln(["             E visited: ", Set]) ; true ),
-            ( S #> 0 -> write("[             visiting S"), next_pos([X, Y], 4, Pos4), write(", got pos: "), writeln([Pos4]), fill_set(Board, Pos4, 4, Set), writeln(["             S visited: ", Set]) ; true ),
-            ( W #> 0 -> write("[             visiting W"), next_pos([X, Y], 5, Pos5), write(", got pos: "), writeln([Pos5]), fill_set(Board, Pos5, 5, Set), writeln(["             W visited: ", Set]) ; true )
+            ( N #> 0 -> write("[             visiting N"), next_pos([X, Y], 2, Pos2), write(", got pos: "), writeln([Pos2]), fill_set(Board, Pos2, 2, Set, Visited), writeln(["             N visited: ", Set]) ; true ),
+            ( E #> 0 -> write("[             visiting E"), next_pos([X, Y], 3, Pos3), write(", got pos: "), writeln([Pos3]), fill_set(Board, Pos3, 3, Set, Visited), writeln(["             E visited: ", Set]) ; true ),
+            ( S #> 0 -> write("[             visiting S"), next_pos([X, Y], 4, Pos4), write(", got pos: "), writeln([Pos4]), fill_set(Board, Pos4, 4, Set, Visited), writeln(["             S visited: ", Set]) ; true ),
+            ( W #> 0 -> write("[             visiting W"), next_pos([X, Y], 5, Pos5), write(", got pos: "), writeln([Pos5]), fill_set(Board, Pos5, 5, Set, Visited), writeln(["             W visited: ", Set]) ; true )
         ;
             next_pos([X, Y], Direction, Pos),
             fill_set(Board, Pos, Direction, Set)

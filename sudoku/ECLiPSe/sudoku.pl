@@ -257,7 +257,7 @@ sudoku_constraints(NumbersPositions, N) :-
 				X1 is NumbersPositions[Number,Index, 1],
 				Y1 is NumbersPositions[Number,Index, 2],
 				block_index(X1, Y1, SN, BlockIndex1),
-				(for(K, I+1, SN), param(SN, NumbersPositions, Number, BlockRow, BlockIndex1)do
+				(for(K, I+1, SN), param(SN, NumbersPositions, Number, BlockRow, BlockIndex1) do
 					Index2 is (BlockRow-1) * SN + K,
 					X2 is NumbersPositions[Number, Index2, 1],
 					Y2 is NumbersPositions[Number, Index2, 2],
