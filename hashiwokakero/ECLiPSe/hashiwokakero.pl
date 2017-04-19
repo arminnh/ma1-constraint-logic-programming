@@ -202,7 +202,10 @@ fill_set_visit(Board, X, Y, Set) :-
             %write("[    visiting "), %write(Word),
             next_pos([X, Y], Direction, Pos),
             %write(", got pos: "), %writeln([Pos]),
-            fill_set(Board, Pos, Direction, Set),
+            count_nonvars(Set, Count),
+            SetIndex is Count + 1,
+
+            fill_set(Board, Pos, Direction, Set, SetIndex),
             %writeln(["    ", Word, " visited: ", Set]),
             true
         ;
@@ -210,7 +213,7 @@ fill_set_visit(Board, X, Y, Set) :-
         )
     ).
 
-fill_set(Board, [X, Y], Direction, Set) :-
+fill_set(Board, [X, Y], Direction, Set, SetIndex) :-
     %writeln(["         fill_set --- getting position: ", [X, Y], " --- ", Set]),
     Vars is Board[X, Y],
     %writeln(["         fill_set --- vars at position:", Vars]),
@@ -224,16 +227,25 @@ fill_set(Board, [X, Y], Direction, Set) :-
         Amount is Vars[1],
         %writeln(["         amount of bridges: ", Amount]),
         ( Amount > 0 ->
-            member([X, Y], Set),
+            nth1(SetIndex, Set, [X, Y]),
             %writeln(["         member of set: ", Set]),
 
             fill_set_visit(Board, X, Y, Set)
         ;
             next_pos([X, Y], Direction, Pos),
             %writeln(["         moving on to: ", Pos]),
-            fill_set(Board, Pos, Direction, Set)
+            fill_set(Board, Pos, Direction, Set, SetIndex)
         )
     ).
+
+% count the nonvars of a list, assuming that all of the nonvars are at the end of the list
+count_nonvars([], 0).
+count_nonvars([ Head | _ ], 0) :-
+    var(Head).
+count_nonvars([ Head | Tail ], Count) :-
+    nonvar(Head),
+    count_nonvars(Tail, Count2),
+    Count is Count2 + 1.
 
 next_pos([X, Y], 2, [X2, Y]) :- X2 is X-1. % north
 next_pos([X, Y], 4, [X2, Y]) :- X2 is X+1. % south
