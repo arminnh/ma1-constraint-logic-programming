@@ -5,7 +5,7 @@
 :- chr_constraint solve/1, sudoku/1, print_board/1, print_numbers/1,
                   diff/2, list_diff/1, list_diff/2, rows_different/1, enum/1,
                   enum_board/1, upto/2, domain/2, make_domains/1, board_blocks/2,
-                  solve1/0, solve2/0, solve3/0, solve4/0, solve5/0,
+                  solve1/0, solve2/0, solve3/0, solve4/0, solve5/0, solve6/0,
                   take_first_elements/3, take_elements/4, set_array_lengths/2,
                   rows_blocks/4, board_blocks/4.
 
@@ -20,7 +20,7 @@ solve2 <=> solve(2).
 solve3 <=> solve(3).
 solve4 <=> solve(4).
 solve5 <=> solve(5).
-
+solve6 <=> solve(6).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SUDOKU SOLUTION USING TRIVIAL VIEWPOINT
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -84,6 +84,7 @@ board_blocks(Board, Blocks) <=>
     sqrt(N, NN),
     SN is round(NN),
     board_blocks(Board, Blocks, SN, SN).
+
 board_blocks(_, _, _, 0)<=> true.
 board_blocks(Board, Blocks, SN, Count) <=>
     I is (SN-Count) * SN + 1,
@@ -104,12 +105,13 @@ board_blocks(Board, Blocks, SN, Count) <=>
     Count2 is Count-1,
     board_blocks(Board, Blocks, SN, Count2).
 
-% rows_blocks(Rows, Blocks, SN, Count): takes certain parts of Rows in Rows and puts them into blcosk
+% rows_blocks(Rows, Blocks, SN, Count): takes certain parts of Rows in Rows and puts them into blocks
 rows_blocks([], _, _, _)<=> true.
-rows_blocks([ _ | Rows ], Blocks, SN, 0) <=>
+rows_blocks([ _ | Rows ], Blocks, SN, Count) <=> Count == 0 |
+    writeln("kkkk"),
     rows_blocks(Rows, Blocks, SN, SN).
 
-rows_blocks([ Row | Rows ], Blocks, SN, Count) <=>
+rows_blocks([ Row | Rows ], Blocks, SN, Count) <=> Count > 0 |
     write("    rows_blocks | partition row:"), write(Row), write(", into blocks: "), writeln(Blocks),
     write("      SN: "), write(SN), write(", Count: "), writeln(Count),
     I is (SN - Count) * SN + 1,
