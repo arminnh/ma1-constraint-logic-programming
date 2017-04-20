@@ -91,6 +91,8 @@ board_blocks(Board, Blocks, SN, Count) <=>
     write("\nboard_blocks | Count: "), write(Count), write(", I: "), write(I), write(", J: "), writeln(J),
     write("   BLOCKS: "), writeln(Blocks),
     % take rows I to J of board
+    L is J-I+1,
+    length(Rows, L),
     take_elements(Board, I, J, Rows),
     % take blocks I to J of board
     writeln("Take elements for Blocks"),
@@ -199,22 +201,22 @@ take_first_elements(List1, N, List2) <=>
     take_elements(List1, 1, N, List2).
 
 % take_elements(List1, I, J, List2): List2 contains [List1[I..J]]
-take_elements(_, 0, 0, []) <=>
+take_elements(_, 1, 0, []) <=>
     true.
 
-take_elements([X | Tail], 0, J, [X | Tail2]) <=>
+take_elements([X | Tail], 1, J, [X | Tail2]) <=> J > 0 |
     write("take_elements: "), writeln(X),
-    J > 0,
     JJ is J-1,
     %write("take_elements: "), writeln(X),
-    take_elements(Tail, 0, JJ, Tail2).
+    take_elements(Tail, 1, JJ, Tail2).
 
-take_elements([_ | Tail], I, J, List) <=>
+take_elements([_ | Tail], I, J, List) <=> I > 1, J > 0 |
     write("take_elements2: "), writeln(Tail),
     write("I: "), write(I), write(" J: "), writeln(J),
+    writeln(List),
 
-    I > 1,
-    J > 0,
+    %I > 1,
+    %J > 0,
     II is I-1,
     JJ is J-1,
     write("II: "), write(II), write(" JJ: "), writeln(JJ),
