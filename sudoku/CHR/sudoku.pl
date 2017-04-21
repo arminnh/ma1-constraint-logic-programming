@@ -6,8 +6,8 @@
                   diff/2, list_diff/1, list_diff/2, rows_different/1, enum/1,
                   enum_board/1, upto/2, domain/2, make_domains/1, board_blocks/2,
                   solve1/0, solve2/0, solve3/0, solve4/0, solve5/0, solve6/0,
-                  take_first_elements/3, take_elements/4, set_array_lengths/2,
-                  rows_blocks/4, board_blocks/4.
+                  take_first_elements/3, take_elements/4, take_elements/3,
+                  set_array_lengths/2, rows_blocks/4, board_blocks/4, putlist/1.
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
@@ -85,25 +85,36 @@ board_blocks(Board, Blocks) <=>
     SN is round(NN),
     board_blocks(Board, Blocks, SN, SN).
 
+board_blocks(Board, Blocks, SN, Count), putlist(Blocks2), putlist(Rows) <=>
+
+        write("    partition rows:"), write(Rows), write(", into blocks: "), writeln(Blocks2),
+        % put correct parts of the rows in the blocks
+        % We have the rows
+        % and the blocks
+        rows_blocks(Rows, Blocks2, SN, SN),
+
+        Count2 is Count-1,
+        board_blocks(Board, Blocks, SN, Count2).
+
 board_blocks(_, _, _, 0)<=> true.
-board_blocks(Board, Blocks, SN, Count) <=>
+board_blocks(Board, Blocks, SN, Count) ==>
     I is (SN-Count) * SN + 1,
     J is I + SN - 1,
     write("\nboard_blocks | Count: "), write(Count), write(", I: "), write(I), write(", J: "), writeln(J),
     write("   BLOCKS: "), writeln(Blocks),
     % take rows I to J of board
-    L is J-I+1,
-    length(Rows, L),
-    take_elements(Board, I, J, Rows),
-    % take blocks I to J of board
-    writeln("Take elements for Blocks"),
-    take_elements(Blocks, I, J, Blocks2),
-    write("    partition rows:"), write(Rows), write(", into blocks: "), writeln(Blocks2),
-    % put correct parts of the rows in the blocks
-    rows_blocks(Rows, Blocks2, SN, SN),
+    writeln("Going to take rows from boards"),
+    %length(Rows, L),
+    take_elements(Board, I, J).
 
-    Count2 is Count-1,
-    board_blocks(Board, Blocks, SN, Count2).
+board_blocks(Board, Blocks, SN, Count), putlist(Rows) ==>
+    I is (SN-Count) * SN + 1,
+    J is I + SN - 1,
+    write("Rows: "), writeln(Rows),
+    %take blocks I to J of board
+    writeln("Take elements for Blocks"),
+    take_elements(Blocks, I, J).
+
 
 % rows_blocks(Rows, Blocks, SN, Count): takes certain parts of Rows in Rows and puts them into blocks
 rows_blocks([], _, _, _)<=> true.
@@ -111,7 +122,22 @@ rows_blocks([ _ | Rows ], Blocks, SN, Count) <=> Count == 0 |
     writeln("kkkk"),
     rows_blocks(Rows, Blocks, SN, SN).
 
-rows_blocks([ Row | Rows ], Blocks, SN, Count) <=> Count > 0 |
+rows_blocks([ Row | Rows ], Blocks, SN, Count), putlist(Elements) <=> Count > 0 |
+        X is SN - Count + 1,
+        % take blocks I to J of board
+        nth1(X, Blocks, Block),
+        write("      Elements: "), write(Elements), write(" in Block: "), writeln(Block),
+        % Elements is in Block
+        length(Blocks, N),
+        length(Rows, L),
+        write("N: "), write(N), write(" L: "), writeln(L),
+        Index is (N - L - 1) * SN + 1,
+        nth1_list(Index, Block, Elements),
+
+        Count2 is Count-1,
+        rows_blocks([ Row | Rows ], Blocks, SN, Count2).
+
+rows_blocks([ Row | Rows ], Blocks, SN, Count) ==> Count > 0 |
     write("    rows_blocks | partition row:"), write(Row), write(", into blocks: "), writeln(Blocks),
     write("      SN: "), write(SN), write(", Count: "), writeln(Count),
     I is (SN - Count) * SN + 1,
@@ -120,18 +146,8 @@ rows_blocks([ Row | Rows ], Blocks, SN, Count) <=> Count > 0 |
     write("      I: "), write(I), write(", J: "), write(J), write(", X: "), writeln(X),
 
     % take rows I to J of board
-    take_elements(Row, I, J, Elements),
-    % take blocks I to J of board
-    nth1(X, Blocks, Block),
-    write("      Elements: "), write(Elements), write(" in Block: "), writeln(Block),
-    % Elements is in Block
-    length(Blocks, N),
-    length(Rows, L),
-    Index is (N - L - 1) * SN + 1,
-    nth1_list(Index, Block, Elements),
+    take_elements(Row, I, J).
 
-    Count2 is Count-1,
-    rows_blocks([ Row | Rows ], Blocks, SN, Count2).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR DOMAIN SOLVING
@@ -203,26 +219,44 @@ take_first_elements(List1, N, List2) <=>
     take_elements(List1, 1, N, List2).
 
 % take_elements(List1, I, J, List2): List2 contains [List1[I..J]]
-take_elements(_, 1, 0, []) <=>
-    true.
-
-take_elements([X | Tail], 1, J, [X | Tail2]) <=> J > 0 |
-    write("take_elements: "), writeln(X),
-    JJ is J-1,
-    %write("take_elements: "), writeln(X),
-    take_elements(Tail, 1, JJ, Tail2).
-
-take_elements([_ | Tail], I, J, List) <=> I > 1, J > 0 |
-    write("take_elements2: "), writeln(Tail),
+take_elements([_ | Tail], I, J) <=> I > 1, J > 0 |
+    %write("take_elements2: "), writeln(Tail),
     write("I: "), write(I), write(" J: "), writeln(J),
-    writeln(List),
+    %writeln(List),
 
     %I > 1,
     %J > 0,
     II is I-1,
     JJ is J-1,
     write("II: "), write(II), write(" JJ: "), writeln(JJ),
-    take_elements(Tail, II, JJ, List).
+    take_elements(Tail, II, JJ).
+
+take_elements(_, 1, 0, Rows2) <=>
+    putlist(Rows2),
+    write("Putting these rows in putlist: "), writeln(Rows2),
+    true.
+
+take_elements([X | Tail], 1, J, Rows) <=> J > 0, length(Rows, N), N > 0|
+    %write("take_elements: "), writeln(X),
+    JJ is J-1,
+    Rows2 = [X| Rows],
+    %write("take_elements: "), writeln(X),
+    take_elements(Tail, 1, JJ, Rows2).
+
+take_elements([X | Tail], 1, J) <=> J > 0|
+    write("take_elements: "), writeln(X),
+    JJ is J-1,
+    Rows2 = [X],
+    %write("take_elements: "), writeln(X),
+    take_elements(Tail, 1, JJ, Rows2).
+
+% take_elements([X | Tail], 1, J, [X | Tail2]) <=> J > 0 |
+%     write("take_elements: "), writeln(X),
+%     JJ is J-1,
+%     %write("take_elements: "), writeln(X),
+%     take_elements(Tail, 1, JJ, Tail2).
+%
+
 
 % set_matrix_lengths(Rows, N): sets the lengths of rows in Rows to N
 set_array_lengths([], _) <=> true.
