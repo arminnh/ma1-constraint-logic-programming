@@ -1,0 +1,8 @@
+Questions:
+
+Hoeveel Prolog code is ok voor in de chr versies?
+
+Ik denk dat we het punt van chr niet echt hebben begrepen. We zijn gewoon onze Prolog
+oplossing aan het omzetten naar chr door de procedures om te zetten naar chr procedures.
+Is deze manier ok? We hebben gemerkt dat de chr versie extreem veel trager is
+dan de ECLiPSe versie.
