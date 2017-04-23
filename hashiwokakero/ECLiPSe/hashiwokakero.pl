@@ -20,21 +20,10 @@
 % Solution started from http://stackoverflow.com/questions/20337029/hashi-puzzle-representation-to-solve-all-solutions-with-prolog-restrictions/20364306#20364306
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%  findall(_, solve(9), Sols), length(Sols, N), %writeln(["amount of solutions: ", N]).
-
+% solve a given game board
 solve(Number) :-
-    ( puzzle(Number, _, _) ->
-        % Each puzzle(Id, S, Islands) fact defines the input of one problem:
-        % its identier Id, the size S (width and height), and the list of islands Islands.
-        puzzle(Number, Size, Islands),
-
-        % create a board with the islands on it
-        islands_board(Islands, Size, Board)
-    ;
-        % create a board from a matrix that contains the islands
-        board(Number, Matrix),
-        matrix_board(Matrix, Board)
-    ),
+    % find the game board
+    puzzle_board(Number, Board),
 
     writeln("Given board:"),
 	print_board(Board),
@@ -43,13 +32,20 @@ solve(Number) :-
     hashiwokakero(Board),
 
     % do search on variables
-	% search(naive, Board),
-    labeling(Board),
+ 	search(naive, Board),
 
     % print results
     writeln("Search done:"),
     print_board(Board),
     true.
+
+% find all solutions
+findall(Number) :-
+    % puzzle_board(Number, Board),
+    findall(_, solve(Number), Sols),
+    length(Sols, N),
+    write(N), writeln(" solutions.").
+    % print_connected_sets(Board, Sols).
 
 % The board can be viewed as a matrix in which each position contains an array
 % of 5 variables: The amount of bridges that need to be connected to the position,
@@ -86,13 +82,15 @@ hashiwokakero(Board) :-
         )
     ),
 
-    board_connected_set(Board, FirstIsland, Set),
-    writeln(Set),
+    % print_board(Board),
+    % board_connected_set(Board, FirstIsland, Set),
+    % writeln(Set),
+    % print_board(Board),
 
     ( foreacharg(Row, Board) do
         ( foreacharg(Vars, Row) do
             Visited is Vars[6],
-            ( Visited = 1 -> true ; Visited #= 0)
+            ( nonvar(Visited) -> true ; Visited #= 0)
         )
     ),
 
@@ -102,6 +100,33 @@ hashiwokakero(Board) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HELPER PROCEDURES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% load the board from a puzzle fact
+puzzle_board(Number, Board) :-
+    % Each puzzle(Id, S, Islands) fact defines the input of one problem:
+    % its identier Id, the size S (width and height), and the list of islands Islands.
+    puzzle(Number, Size, Islands),
+
+    % create a board with the islands on it
+    islands_board(Islands, Size, Board).
+
+% load the baord from a matrix fact
+puzzle_board(Number, Board) :-
+    % create a board from a matrix that contains the islands
+    board(Number, Matrix),
+    matrix_board(Matrix, Board).
+
+print_connected_sets(_, []).
+
+print_connected_sets(Board, [ Sol | Sols ]) :-
+    board_connected_set(Board, [1, 1], Sol),
+    writeln("Connected set:"),
+    print_board(Board),
+    print_connected_sets(Board, Sols).
+
+print_connected_sets(Board, [ _ | Sols ]) :-
+    print_connected_sets(Board, Sols).
+
 
 % create a usable board from an array of Islands
 % each island takes the form (X, Y, N) where X is the row number, Y is the column
@@ -176,12 +201,12 @@ board_islands(Board, X, Y, XMax, YMax, Count, Islands) :-
 % Creat list Set, set its length, fill the set by visiting the given island's neighbors
 board_connected_set(Board, [X, Y], Set) :-
     board_islands_count(Board, IslandCount),
-    % writeln(["Amount of islands: ", IslandCount]),
+    writeln(["Amount of islands: ", IslandCount]),
     length(Set, IslandCount),
 
     % make the island be member of current set
     nth1(1, Set, [X, Y]),
-    %writeln(["  member of set:", Set]),
+    writeln(["  member of set:", Set]),
 
     % set position to visited
     Board[X, Y, 6] #= 1,
@@ -199,14 +224,13 @@ fill_set_visit(Board, X, Y, Set) :-
         Val #= Board[X, Y, Direction],
         ( Val #> 0 ->
             direction(Direction, Word),
-            %write("[    visiting "), %write(Word),
+            write("[    visiting "), write(Word),
             next_pos([X, Y], Direction, Pos),
-            %write(", got pos: "), %writeln([Pos]),
+            write(", got pos: "), writeln([Pos]),
             count_nonvars(Set, Count),
             SetIndex is Count + 1,
-
             fill_set(Board, Pos, Direction, Set, SetIndex),
-            %writeln(["    ", Word, " visited: ", Set]),
+            writeln(["    ", Word, " visited: ", Set]),
             true
         ;
             true
@@ -214,26 +238,25 @@ fill_set_visit(Board, X, Y, Set) :-
     ).
 
 fill_set(Board, [X, Y], Direction, Set, SetIndex) :-
-    %writeln(["         fill_set --- getting position: ", [X, Y], " --- ", Set]),
+    writeln(["         fill_set --- getting position: ", [X, Y], " --- ", Set]),
     Vars is Board[X, Y],
-    %writeln(["         fill_set --- vars at position:", Vars]),
+    writeln(["         fill_set --- vars at position:", Vars]),
     Visited is Vars[6],
     ( nonvar(Visited) ->
-        %writeln(["         already visited: "]),
+        writeln(["         already visited: "]),
         true
     ;
         Visited #= 1,
-        %writeln(["         visited: ", [X, Y]]),
+        writeln(["         visited: ", [X, Y]]),
         Amount is Vars[1],
-        %writeln(["         amount of bridges: ", Amount]),
+        writeln(["         amount of bridges: ", Amount]),
         ( Amount > 0 ->
             nth1(SetIndex, Set, [X, Y]),
-            %writeln(["         member of set: ", Set]),
-
+            writeln(["         member of set: ", Set]),
             fill_set_visit(Board, X, Y, Set)
         ;
             next_pos([X, Y], Direction, Pos),
-            %writeln(["         moving on to: ", Pos]),
+            writeln(["         moving on to: ", Pos]),
             fill_set(Board, Pos, Direction, Set, SetIndex)
         )
     ).
@@ -246,11 +269,6 @@ count_nonvars([ Head | Tail ], Count) :-
     nonvar(Head),
     count_nonvars(Tail, Count2),
     Count is Count2 + 1.
-
-next_pos([X, Y], 2, [X2, Y]) :- X2 is X-1. % north
-next_pos([X, Y], 4, [X2, Y]) :- X2 is X+1. % south
-next_pos([X, Y], 3, [X, Y2]) :- Y2 is Y+1. % east
-next_pos([X, Y], 5, [X, Y2]) :- Y2 is Y-1. % west
 
 print_board(Board) :-
     ( foreacharg(Row, Board) do
@@ -278,6 +296,11 @@ symbol(0, 1, '-').
 symbol(0, 2, '=').
 symbol(1, 0, '|').
 symbol(2, 0, '"').
+
+next_pos([X, Y], 2, [X2, Y]) :- X2 is X-1. % north
+next_pos([X, Y], 4, [X2, Y]) :- X2 is X+1. % south
+next_pos([X, Y], 3, [X, Y2]) :- Y2 is Y+1. % east
+next_pos([X, Y], 5, [X, Y2]) :- Y2 is Y-1. % west
 
 direction(2, "North").
 direction(3, "East").
