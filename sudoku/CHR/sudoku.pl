@@ -1,14 +1,9 @@
 :- use_module(library(chr)).
-% TODO: ask if transpose is allowed
-:- use_module(library(clpfd), [ transpose/2 ]).
 
 :- chr_constraint solve/1, sudoku/1, print_board/1, print_numbers/1,
-                  diff/2, list_diff/1, list_diff/2, rows_different/1, enum/1,
-                  enum_board/1, upto/2, domain/2, make_domains/1, board_blocks/2,
-                  solve1/0, solve2/0, solve3/0, solve4/0, solve5/0, solve6/0,
-                  take_first_elements/3, take_elements/4, take_elements/3,
-                  set_array_lengths/2, rows_blocks/4, board_blocks/4, putlist/1,
-                  block/2, board_blocks2/1, generate_board/3, sn/1, n/1, board/4.
+                  diff/2, enum/1, enum_board/1, upto/2, domain/2, make_domains/1,
+                  board/4, generate_board_facts/3, sn/1, n/1.
+
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
@@ -16,12 +11,6 @@
 :- op(600, xfx, '..').
 :- chr_constraint le/2, eq/2, in/2, add/3.
 
-solve1 <=> solve(1).
-solve2 <=> solve(2).
-solve3 <=> solve(3).
-solve4 <=> solve(4).
-solve5 <=> solve(5).
-solve6 <=> solve(6).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SUDOKU SOLUTION USING TRIVIAL VIEWPOINT
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -34,88 +23,51 @@ solve(ProblemName) <=>
     % sill the sudoku board
     sudoku(Board),
     writeln("\nResult:"),
-    print_board(Board).
-
-% (X, Y , Value, Block)
-
+    print_board(Board),
+    writeln(Board),
+    true.
 
 sudoku(Board) <=>
     % set the numbers's domains
     make_domains(Board),
 
     length(Board, N),
+    n(N), % store N for later reuse
+
     sqrt(N, NN),
     SN is round(NN),
-    sn(SN),
-    n(N),
+    sn(SN), % store SN for later reuse
 
-    generate_board(Board, 1, 1),
-    % row constraints
-    %rows_different(Board),
+    % generate (X, Y, BlockIndex, Value) facts
+    % those facts will later be used for insertion of diff(A, B) rules
+    generate_board_facts(Board, 1, 1),
 
-    % column constraints
-    %transpose(Board, Board2),
-    %rows_different(Board2),
-
-    % block constraintss
-    %board_blocks2(Board),
-
-    %board_blocks(Board, Blocks),
-    %rows_different(Blocks),
-
-    % get the values
-    enum_board(Board).
+    % search for values
+    enum_board(Board),
+    true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR CONSTRAINTS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-diff(X,Y) <=> nonvar(X), nonvar(Y) | X \== Y.
+% generate_board_facts(Board, X, Y) will generate board(X,Y, BlockIndex, Value)
+% facts which will later be used to instert diff rules into the constraint store
 
-list_diff(_, []) <=> true.
-list_diff(Val, [ Val2 | Vals ]) <=>
-    diff(Val, Val2),
-    list_diff(Val, Vals).
-
-list_diff([]) <=> true.
-list_diff([ Val | Vals ]) <=>
-    list_diff(Val, Vals),
-    list_diff(Vals).
-
-rows_different([]) <=> true.
-rows_different([ Row | Rows ]) <=>
-    list_diff(Row),
-    rows_different(Rows).
-
-
-board(_,Y, _, Value1), board(_,Y, _, Value2) ==>
-    diff(Value1, Value2).
-
-board(X,_, _, Value1), board(X,_, _, Value2) ==>
-        diff(Value1, Value2).
-
-board(X1,Y1, BlockIndex, Value1), board(X2,Y2, BlockIndex, Value2) ==>
-        diff(Value1, Value2).
-
-%block(Index, Value1), block(Index,Value2) ==>
-%    diff(Value1, Value2).
-
-% generate_blocks(Board, X, Y) will generate the blocks with the block predicate
-% It will do this by calculating the block index of each value in the board
-% and it will store the value alongside it's block index in de block constraint.
-
-% end case
-n(N) \ generate_board(_, X, _) <=> N2 is N+1, X == N2 |
+% got all values on the board
+n(N) \ generate_board_facts(_, X, _) <=> N2 is N+1, X == N2 |
     true.
 
-% When we have looped over all our columns
-n(N) \ generate_board(Board, X, Y) <=> N2 is N+1, Y == N2 |
+% after going over all columns, go to next row and start from column 1 again
+n(N) \ generate_board_facts(Board, X, Y) <=> N2 is N+1, Y == N2 |
     X2 is X + 1,
-    generate_board(Board, X2, 1).
+    generate_board_facts(Board, X2, 1).
 
-sn(SN) \ generate_board(Board, X, Y) <=>
-    %write("Generate_blocks: X: "), write(X), write(" Y: "), writeln(Y), writeln(SN),
-    % First we calculate the block index
+sn(SN) \ generate_board_facts(Board, X, Y) <=>
+    % get the value on position (X, Y) on the board
+    nth1(X, Board, Row),
+    nth1(Y, Row, Value),
+
+    % calculate block index
     XX is X-1,
     XXX is XX // SN,
     BlockRow is XXX + 1,
@@ -125,17 +77,27 @@ sn(SN) \ generate_board(Board, X, Y) <=>
     BlockCol is YYY + 1,
     BlockIndex is (BlockRow-1) * SN + BlockCol,
 
-    % Then we need to get the number outside of the board
-    nth1(X, Board, Row),
-    nth1(Y, Row, Number),
+    % save this data for later use
+    board(X,Y, BlockIndex, Value),
 
-    % save this number for this block index
-    board(X,Y, BlockIndex, Number),
-
-    % Go to the next case
+    % go to the next case
     Y2 is Y + 1,
-    generate_board(Board, X, Y2).
+    generate_board_facts(Board, X, Y2).
 
+% all values in same columns must be different
+board(_, Y, _, Value1), board(_, Y, _, Value2) ==>
+    diff(Value1, Value2).
+
+% all values in same rows must be different
+board(X, _, _, Value1), board(X, _, _, Value2) ==>
+    diff(Value1, Value2).
+
+% all values in same blocks must be different
+board(_, _, BlockIndex, Value1), board(_, _, BlockIndex, Value2) ==>
+    diff(Value1, Value2).
+
+% X and Y are different
+diff(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR DOMAIN SOLVING
@@ -175,25 +137,15 @@ make_domains([ Row | Tail ]) <=>
     domain(Row, DomainList),
     make_domains(Tail).
 
-% nth1_list(Index, List, ElemList): On position Index, List contains all elements of ElemList
-nth1_list(_, _, []).
-nth1_list(Index, List, [ Elem | Tail ]) :-
-    write("        Element: "), write(Elem), write(" in Block: "), write(List), write(" on position "), writeln(Index),
-    nth1(Index, List, Elem),
-    Next is Index + 1,
-    nth1_list(Next, List, Tail).
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HELPER RULES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 print_numbers([]) <=> writeln("").
-print_numbers([ Number | Tail ]) <=>
-    nonvar(Number) |
+print_numbers([ Number | Tail ]) <=> nonvar(Number) |
     write(" "),
     write(Number),
     print_numbers(Tail).
-
 print_numbers([ _ | Tail ]) <=>
     write(" _"),
     print_numbers(Tail).
@@ -203,11 +155,13 @@ print_board([ Row | Tail ]) <=>
     print_numbers(Row),
     print_board(Tail).
 
-% set_matrix_lengths(Rows, N): sets the lengths of rows in Rows to N
-set_array_lengths([], _) <=> true.
-set_array_lengths([ Row | Rows ], N) <=>
-    length(Row, N),
-    set_array_lengths(Rows, N).
+solve1 :- solve(1).
+solve2 :- solve(2).
+solve3 :- solve(3).
+solve4 :- solve(4).
+solve5 :- solve(5).
+solve6 :- solve(6).
+solve7 :- solve(7).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAMPLE PROBLEMS
