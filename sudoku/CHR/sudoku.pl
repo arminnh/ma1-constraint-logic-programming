@@ -1,9 +1,8 @@
 :- use_module(library(chr)).
 
 :- chr_constraint solve/1, sudoku/1, print_board/1, print_numbers/1,
-                  diff/2, enum/1, enum_board/1, upto/2, domain/2, make_domains/1,
+                  diff/2, enum/1, enum_board/1, upto/2, domain_list/1, make_domain/1, make_domains/1,
                   board/4, generate_board_facts/3, sn/1, n/1.
-
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
@@ -16,27 +15,41 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 solve(ProblemName) <=>
+    % statistics(walltime, [TimeSinceStart | [TimeSinceLastCall]]),
+    statistics(walltime, [_ | [_]]),
+
     % get the sudoku board
     problem(ProblemName, Board),
     print_board(Board),
 
-    % sill the sudoku board
+    % fill the sudoku board
     sudoku(Board),
+
     writeln("\nResult:"),
     print_board(Board),
     writeln(Board),
+
+    % statistics(walltime, [NewTimeSinceStart | [ExecutionTime]]),
+    statistics(walltime, [_ | [ExecutionTime]]),
+    write('Execution took '), write(ExecutionTime), write(' ms.'), nl,
     true.
 
 sudoku(Board) <=>
-    % set the numbers's domains
-    make_domains(Board),
-
+    % store N for later reuse = size of N*N board
     length(Board, N),
-    n(N), % store N for later reuse
+    n(N),
 
+    % store SN for later reuse = sqrt(N) = amount of sudoku blocks
     sqrt(N, NN),
     SN is round(NN),
-    sn(SN), % store SN for later reuse
+    sn(SN),
+
+    % create and store a list that contains the domain of the possible values on the board
+    upto(DomainList, N),
+    domain_list(DomainList),
+
+    % set the domains of the possible values on the board
+    make_domains(Board),
 
     % generate (X, Y, BlockIndex, Value) facts
     % those facts will later be used for insertion of diff(A, B) rules
@@ -103,7 +116,7 @@ diff(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
 % RULES USED FOR DOMAIN SOLVING
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% enum(L): fills L with values
+% enum(L): assigns values to variables X in L
 enum([])                        <=> true.
 enum([ X | Tail ])              <=> number(X) | enum(Tail).
 enum([ X | Tail ]), X in Domain <=> member(X, Domain), enum(Tail).
@@ -114,8 +127,6 @@ enum_board([ Row | Rows ]) <=>
     enum(Row),
     enum_board(Rows).
 
-% length(X, 4), length(Y, 4), domain(X, Y), upto(Y, 4).
-% length(X, 4), length(Y, 4), domain(X, Y), upto(Y, 4), enum(X).
 % upto(N, L): L = [1..N]
 upto([], 0).
 upto([ N | L ], N) :-
@@ -123,18 +134,18 @@ upto([ N | L ], N) :-
     N1 is N-1,
     upto(L, N1).
 
-% domain(L, D): create 'X in D' constraints for all X from L
-domain([], _) <=> true.
-domain([ Val | Tail ], Domain) <=>
-    Val in Domain,
-    domain(Tail, Domain).
+% make_domain(L, D): create 'X in D' constraints for all variables X in L
+make_domain([]) <=> true.
+domain_list(DomainList) \ make_domain([ Val | Tail ]) <=> var(Val) |
+    Val in DomainList,
+    make_domain(Tail).
+make_domain([ _ | Tail ]) <=>
+    make_domain(Tail).
 
 % make_domains(L): L is an list of N elements, make_domains creates 'X in [1..N]' constraints
 make_domains([]) <=> true.
 make_domains([ Row | Tail ]) <=>
-    length(Row, N),
-    upto(DomainList, N),
-    domain(Row, DomainList),
+    make_domain(Row),
     make_domains(Tail).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -155,13 +166,14 @@ print_board([ Row | Tail ]) <=>
     print_numbers(Row),
     print_board(Tail).
 
-solve1 :- solve(1).
-solve2 :- solve(2).
-solve3 :- solve(3).
-solve4 :- solve(4).
-solve5 :- solve(5).
-solve6 :- solve(6).
-solve7 :- solve(7).
+solve1() :- solve(1).
+solve2() :- solve(2).
+solve3() :- solve(3).
+solve4() :- solve(4).
+solve5() :- solve(5).
+solve6() :- solve(6).
+solve7() :- solve(7).
+solve8() :- solve(8).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAMPLE PROBLEMS
@@ -212,6 +224,17 @@ problem(7, [ [1, _, 3, _, _, 5, 4, 8],
              [7, 4, _, 6, _, _, 3, _],
              [8, _, _, _, _, _, 6, _] ]).
 
+% very easy sudoku from http://www.sudokukingdom.com/very-easy-sudoku.php
+problem(8, [ [8, _, 4, _, 5, 7, _, _, 9],
+             [5, 7, _, _, _, _, 5, _, 1],
+             [1, _, _, 4, 8, 2, 7, 3, _],
+             [6, 1, _, _, _, 3, 8, _, 4],
+             [_, 4, _, 2, _, 8, 1, 5, _],
+             [2, _, 8, _, 1, 4, _, _, 3],
+             [_, 2, 9, 3, _, _, _, 1, _],
+             [_, 8, 1, 9, 2, _, _, 7, 6],
+             [_, _, 5, 8, 7, _, 9, 4, _] ]).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SOLUTIONS
@@ -237,7 +260,17 @@ solution(4, [ [1, 2, 3],
               [3, 1, 2],
               [2, 3, 1] ]).
 
-sulution(5, [ [1, 4, 3, 2],
+solution(5, [ [1, 4, 3, 2],
               [3, 2, 1, 4],
               [2, 1, 4, 3],
               [4, 3, 2, 1] ]).
+
+solution(8, [ [8, 3, 4, 1, 5, 7, 2, 6, 9],
+              [5, 7, 2, 6, 3, 9, 5, 8, 1],
+              [1, 9, 6, 4, 8, 2, 7, 3, 5],
+              [6, 1, 7, 5, 9, 3, 8, 2, 4],
+              [9, 4, 3, 2, 6, 8, 1, 5, 7],
+              [2, 5, 8, 7, 1, 4, 6, 9, 3],
+              [7, 2, 9, 3, 4, 6, 5, 1, 8],
+              [4, 8, 1, 9, 2, 5, 3, 7, 6],
+              [3, 6, 5, 8, 7, 1, 9, 4, 2] ]).
