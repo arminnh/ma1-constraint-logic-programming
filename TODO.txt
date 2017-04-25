@@ -6,3 +6,5 @@ Ik denk dat we het punt van chr niet echt hebben begrepen. We zijn gewoon onze P
 oplossing aan het omzetten naar chr door de procedures om te zetten naar chr procedures.
 Is deze manier ok? We hebben gemerkt dat de chr versie extreem veel trager is
 dan de ECLiPSe versie.
+
+Vraag over eclipseclp member vs nth1 implementatie om dubbele oplossingen weg te werken. Is er een betere manier om dat te doen? 
