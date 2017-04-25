@@ -56,7 +56,7 @@ sudoku(Board) <=>
     generate_board_facts(Board, 1, 1),
 
     % search for values
-    enum_board(Board),
+    % enum_board(Board),
     true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -97,20 +97,23 @@ sn(SN) \ generate_board_facts(Board, X, Y) <=>
     Y2 is Y + 1,
     generate_board_facts(Board, X, Y2).
 
-% all values in same columns must be different
-board(_, Y, _, Value1), board(_, Y, _, Value2) ==>
+% all values in same columns must be different, guards used to break symmetry
+board(X1, Y, _, Value1), board(X2, Y, _, Value2) ==> X1 < X2 |
     diff(Value1, Value2).
 
-% all values in same rows must be different
-board(X, _, _, Value1), board(X, _, _, Value2) ==>
+% all values in same rows must be different, guards used to break symmetry
+board(X, Y1, _, Value1), board(X, Y2, _, Value2) ==> Y1 < Y2 |
     diff(Value1, Value2).
 
-% all values in same blocks must be different
-board(_, _, BlockIndex, Value1), board(_, _, BlockIndex, Value2) ==>
+% all values in same blocks must be different, guards used to break symmetry
+board(X1, Y, BlockIndex, Value1), board(X2, Y, BlockIndex, Value2) ==> (X1 < X2) |
+    diff(Value1, Value2).
+board(_, Y1, BlockIndex, Value1), board(_, Y2, BlockIndex, Value2) ==> (Y1 < Y2) |
     diff(Value1, Value2).
 
-% X and Y are different
-diff(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
+
+% X and Y are intsantiated and are different
+% diff(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR DOMAIN SOLVING
