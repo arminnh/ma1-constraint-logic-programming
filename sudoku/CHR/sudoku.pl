@@ -106,6 +106,7 @@ sn(SN) \ generate_board_facts(Board, X, Y) <=>
 % 9x9 board: 1458 diff rules -> 972 rules = sum([1..8]) * 9 * 3
 %                                         = sum([1..N-1]) * N * SN
 
+%% All these symmetry breaking things should go into the report
 % all values in same columns must be different, guards used to break symmetry
 board(X1, Y, _, Value1), board(X2, Y, _, Value2) ==> X1 < X2 |
     diff(Value1, Value2).
@@ -115,14 +116,16 @@ board(X, Y1, _, Value1), board(X, Y2, _, Value2) ==> Y1 < Y2 |
     diff(Value1, Value2).
 
 % all values in same blocks must be different, guards used to break symmetry
-board(X1, Y, BlockIndex, Value1), board(X2, Y, BlockIndex, Value2) ==> (X1 < X2) |
+board(X1, Y1, BlockIndex, Value1), board(X2, Y2, BlockIndex, Value2) ==> (X1 < X2), (Y1 < Y2) |
     diff(Value1, Value2).
-board(_, Y1, BlockIndex, Value1), board(_, Y2, BlockIndex, Value2) ==> (Y1 < Y2) |
-    diff(Value1, Value2).
+
+%board(_, Y1, BlockIndex, Value1), board(_, Y2, BlockIndex, Value2) ==> (Y1 < Y2) |
+%    diff(Value1, Value2).
 
 
 % X and Y are instantiated and are different
 diff(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
+% Put improvement into report!
 diff(Y, X) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 
@@ -160,10 +163,15 @@ make_domain([ _ | Tail ], DomainList) <=>
 % make_domains(L): L is an list of N elements, make_domains creates 'X in [1..N]' constraints
 make_domains([]) <=> true.
 domain_list(DomainList) \ make_domains([ Row | Tail ]) <=>
-    list_remove_vars(Row, NewRow),
-    subtract(DomainList, NewRow, SmallerDomainList),
+    %list_remove_vars(Row, NewRow),
+    % Domain list is 1..N, NewRow are the values on a specific Row
+    %subtract(DomainList, NewRow, SmallerDomainList),
     writeln([DomainList, Row, NewRow, SmallerDomainList]),
-    make_domain(Row, SmallerDomainList),
+
+    % For a specific row
+    make_domain(Row, DomainList),
+
+    % For the rest of the board
     make_domains(Tail).
 
 list_remove_vars([], []).
