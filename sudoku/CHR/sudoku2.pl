@@ -1,10 +1,12 @@
 :- use_module(library(chr)).
 
-:- chr_constraint solve/1, sudoku/1, print_board/1, print_numbers/1.
-:- chr_constraint diff/2, enum/1, enum_board/1, upto/2, domain_list/1, make_domain/2, make_domains/1.
-:- chr_constraint board/4.
+:- chr_constraint solve/1, sudoku/1, print_board/2.
+:- chr_constraint diff/2, enum/1, enum_board/0, upto/2, domain_list/1, make_domain/2, make_domains/1.
+:- chr_constraint board/4, known_board/4.
 :- chr_constraint generate_board_facts/3.
 :- chr_constraint sn/1, n/1.
+:- chr_constraint generate_list/1, iterate/2.
+
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
@@ -23,14 +25,12 @@ solve(ProblemName) <=>
 
     % get the sudoku board
     problem(ProblemName, Board),
-    print_board(Board),
 
     % fill the sudoku board
     sudoku(Board),
 
     writeln("\nResult:"),
-    print_board(Board),
-    writeln(Board),
+    print_board(1,1),
 
     % statistics(walltime, [NewTimeSinceStart | [ExecutionTime]]),
     statistics(walltime, [_ | [ExecutionTimeMS]]),
@@ -58,14 +58,16 @@ sudoku(Board) <=>
     domain_list(DomainList),
 
     % set the domains of the possible values on the board
-    make_domains(Board),
+    % make_domains,
 
     % generate (X, Y, BlockIndex, Value) facts
     % those facts will later be used for insertion of diff(A, B) rules
-    generate_board_facts(Board, 1, 1),
+    generate_list(N),
 
+    generate_board_facts(Board, 1, 1),
+    print_board(1,1),
     % search for values
-    enum_board(Board),
+    enum_board,
     true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -84,10 +86,12 @@ n(N) \ generate_board_facts(Board, X, Y) <=> N2 is N+1, Y == N2 |
     X2 is X + 1,
     generate_board_facts(Board, X2, 1).
 
-sn(SN) \ generate_board_facts(Board, X, Y) <=>
+generate_board_facts(Board, X, Y) <=>  nth1(X, Board, Row), nth1(Y, Row, Value), var(Value) |
+    Y2 is Y + 1,
+    generate_board_facts(Board, X, Y2).
+
+sn(SN) \ generate_board_facts(Board, X, Y) <=> nth1(X, Board, Row), nth1(Y, Row, Value), nonvar(Value) |
     % get the value on position (X, Y) on the board
-    nth1(X, Board, Row),
-    nth1(Y, Row, Value),
 
     % calculate block index
     XX is X-1,
@@ -100,11 +104,32 @@ sn(SN) \ generate_board_facts(Board, X, Y) <=>
     BlockIndex is (BlockRow-1) * SN + BlockCol,
 
     % save this data for later use
-    board(Value, X,Y, BlockIndex),
+    known_board(Value, X,Y, BlockIndex),
 
     % go to the next case
     Y2 is Y + 1,
     generate_board_facts(Board, X, Y2).
+
+board(Value, X, Y, BlockIndex1), known_board(Value, X, Y2, BlockIndex2), Y in YL, BlockIndex1 in BI <=> var(Y) |
+    board(Value, X, Y2, BlockIndex2).
+
+iterate(_, 0) <=>
+    true.
+
+domain_list(Domain) \ iterate(Value, Index) <=> Index > 0|
+    board(Value, Index, Y, BlockIndex),
+    Y in Domain,
+    BlockIndex in Domain,
+    Index2 is Index - 1,
+    iterate(Value, Index2).
+
+generate_list(0) <=>
+    true.
+
+n(N) \ generate_list(Value) <=>
+    iterate(Value, N),
+    Value2 is Value - 1,
+    generate_list(Value2).
 
 % 9x9 board: 1458 diff rules -> 972 rules = sum([1..8]) * 9 * 2 + 5 * 9
 %                                         = sum([1..N-1]) * N * SN
@@ -113,8 +138,11 @@ sn(SN) \ generate_board_facts(Board, X, Y) <=>
 % all values in same columns must be different, guards used to break symmetry
 
 % all values in same blocks must be different, guards used to break symmetry
-board(Value, X1, Y1, BlockIndex1), board(Value, X2, Y2, BlockIndex2) ==>
-    diff(X1, X2), diff(Y1,Y2), diff(BlockIndex1, BlockIndex2).
+board(Value, _, Y1, BlockIndex1), board(Value, _, Y2, BlockIndex2) ==>
+    diff(Y1,Y2), diff(BlockIndex1, BlockIndex2).
+
+board(Value1, X, Y1, _), board(Value2, X, Y2, _) ==> Value1 \== Value2 |
+    diff(Y1,Y2).
 
 %board(_, Y1, BlockIndex, Value1), board(_, Y2, BlockIndex, Value2) ==> (Y1 < Y2) |
 %    diff(Value1, Value2).
@@ -123,6 +151,7 @@ board(Value, X1, Y1, BlockIndex1), board(Value, X2, Y2, BlockIndex2) ==>
 % X and Y are instantiated and are different
 diff(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
 % Put improvement into report!
+
 diff(Y, X) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 
@@ -131,15 +160,21 @@ diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % enum(L): assigns values to variables X in L
-enum([])                        <=> true.
-enum([ X | Tail ])              <=> number(X) | enum(Tail).
-enum([ X | Tail ]), X in Domain <=> member(X, Domain), enum(Tail).
+enum(X)              <=> number(X) | true .
+enum(X), X in Domain <=> member(X, Domain).
 
 % enum_board(Board): fills Board with values
-enum_board([]) <=> true.
-enum_board([ Row | Rows ]) <=>
-    enum(Row),
-    enum_board(Rows).
+sn(SN), board(_, X, Y, BlockIndex), enum_board ==>
+    enum(X), enum(Y),
+
+    XX is X-1,
+    XXX is XX // SN,
+    BlockRow is XXX + 1,
+
+    YY is Y-1,
+    YYY is YY // SN,
+    BlockCol is YYY + 1,
+    BlockIndex is (BlockRow-1) * SN + BlockCol.
 
 % upto(N, L): L = [1..N]
 upto([], 0).
@@ -195,19 +230,31 @@ list_remove_vars([ Head | Tail1 ], [ Head | Tail2 ]) :-
 % HELPER RULES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-print_numbers([]) <=> writeln("").
-print_numbers([ Number | Tail ]) <=> nonvar(Number) |
-    write(" "),
-    write(Number),
-    print_numbers(Tail).
-print_numbers([ _ | Tail ]) <=>
-    write(" _"),
-    print_numbers(Tail).
+n(N) \ print_board(X,_) <=> X > N |
+        true.
 
-print_board([]) <=> writeln("").
-print_board([ Row | Tail ]) <=>
-    print_numbers(Row),
-    print_board(Tail).
+n(N) \ print_board(X,Y) <=> Y > N |
+    X2 is X + 1,
+    writeln(""),
+    print_board(X2, 1).
+
+
+board(Value, X, Y, _) \ print_board(X,Y) <=>  nonvar(Value) |
+    write(" "),
+    write(Value),
+    Y2 is Y + 1,
+    print_board(X,Y2).
+
+ board(Value, X, Y, _) \ print_board(X,Y) <=> var(Value) |
+    write(" _"),
+    Y2 is Y + 1,
+    print_board(X,Y2).
+
+% If board on this position doesn't exist.
+print_board(X,Y2) <=>
+    write(" _"),
+    Y3 is Y2 + 1,
+    print_board(X,Y3).
 
 solve1() :- solve(1).
 solve2() :- solve(2).
