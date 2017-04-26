@@ -1,15 +1,19 @@
 :- use_module(library(chr)).
 
-:- chr_constraint solve/1, sudoku/1, print_board/1, print_numbers/1,
-                  diff/2, enum/1, enum_board/1, upto/2, domain_list/1, make_domain/2, make_domains/1,
-                  board/4, generate_board_facts/3, sn/1, n/1.
+:- chr_constraint solve/1, sudoku/1, print_board/1, print_numbers/1.
+:- chr_constraint diff/2, enum/1, enum_board/1, upto/2, domain_list/1, make_domain/2, make_domains/1.
+:- chr_constraint board/4.
+:- chr_constraint generate_board_facts/3.
+:- chr_constraint sn/1, n/1.
+
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
 :- op(700, xfx, eq).
 :- op(600, xfx, '..').
 :- chr_constraint le/2, eq/2, in/2, add/3.
-
+:- chr_option(debug,off).
+:- chr_option(optimize,full).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SUDOKU SOLUTION USING TRIVIAL VIEWPOINT
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -103,7 +107,7 @@ sn(SN) \ generate_board_facts(Board, X, Y) <=>
     Y2 is Y + 1,
     generate_board_facts(Board, X, Y2).
 
-% 9x9 board: 1458 diff rules -> 972 rules = sum([1..8]) * 9 * 3
+% 9x9 board: 1458 diff rules -> 972 rules = sum([1..8]) * 9 * 2 + 5 * 9
 %                                         = sum([1..N-1]) * N * SN
 
 %% All these symmetry breaking things should go into the report
@@ -163,13 +167,13 @@ make_domain([ _ | Tail ], DomainList) <=>
 % make_domains(L): L is an list of N elements, make_domains creates 'X in [1..N]' constraints
 make_domains([]) <=> true.
 domain_list(DomainList) \ make_domains([ Row | Tail ]) <=>
-    %list_remove_vars(Row, NewRow),
+    list_remove_vars(Row, NewRow),
     % Domain list is 1..N, NewRow are the values on a specific Row
-    %subtract(DomainList, NewRow, SmallerDomainList),
+    subtract(DomainList, NewRow, SmallerDomainList),
     writeln([DomainList, Row, NewRow, SmallerDomainList]),
 
     % For a specific row
-    make_domain(Row, DomainList),
+    make_domain(Row, SmallerDomainList),
 
     % For the rest of the board
     make_domains(Tail).
