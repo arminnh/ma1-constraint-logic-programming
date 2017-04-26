@@ -1,7 +1,7 @@
 :- use_module(library(chr)).
 
 :- chr_constraint solve/1, sudoku/1, print_board/1, print_numbers/1,
-                  diff/2, enum/1, enum_board/1, upto/2, domain_list/1, make_domain/1, make_domains/1,
+                  diff/2, enum/1, enum_board/1, upto/2, domain_list/1, make_domain/2, make_domains/1,
                   board/4, generate_board_facts/3, sn/1, n/1.
 
 :- op(700, xfx, in).
@@ -30,8 +30,14 @@ solve(ProblemName) <=>
     writeln(Board),
 
     % statistics(walltime, [NewTimeSinceStart | [ExecutionTime]]),
-    statistics(walltime, [_ | [ExecutionTime]]),
-    write('Execution took '), write(ExecutionTime), write(' ms.'), nl,
+    statistics(walltime, [_ | [ExecutionTimeMS]]),
+    write('Execution took '), write(ExecutionTimeMS), write(' ms.'), nl,
+
+    ExTimeS is ExecutionTimeMS / 1000,
+    write('Execution took '), write(ExTimeS), write(' s.'), nl,
+
+    ExTimeM is ExTimeS / 60,
+    write('Execution took '), write(ExTimeM), write(' min.'), nl,
     true.
 
 sudoku(Board) <=>
@@ -117,8 +123,8 @@ board(_, Y1, BlockIndex, Value1), board(_, Y2, BlockIndex, Value2) ==> (Y1 < Y2)
 
 % X and Y are instantiated and are different
 diff(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
-diff(Y,X) \ X in L <=> nonvar(Y), select(Y,L,NL) | X in NL.
-diff(X,Y) \ X in L <=> nonvar(Y), select(Y,L,NL) | X in NL.
+diff(Y, X) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
+diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR DOMAIN SOLVING
@@ -142,19 +148,43 @@ upto([ N | L ], N) :-
     N1 is N-1,
     upto(L, N1).
 
+
 % make_domain(L, D): create 'X in D' constraints for all variables X in L
-make_domain([]) <=> true.
-domain_list(DomainList) \ make_domain([ Val | Tail ]) <=> var(Val) |
+make_domain([], _) <=> true.
+make_domain([ Val | Tail ], DomainList) <=> var(Val) |
     Val in DomainList,
-    make_domain(Tail).
-make_domain([ _ | Tail ]) <=>
-    make_domain(Tail).
+    make_domain(Tail, DomainList).
+make_domain([ _ | Tail ], DomainList) <=>
+    make_domain(Tail, DomainList).
 
 % make_domains(L): L is an list of N elements, make_domains creates 'X in [1..N]' constraints
 make_domains([]) <=> true.
-make_domains([ Row | Tail ]) <=>
-    make_domain(Row),
+domain_list(DomainList) \ make_domains([ Row | Tail ]) <=>
+    list_remove_vars(Row, NewRow),
+    subtract(DomainList, NewRow, SmallerDomainList),
+    writeln([DomainList, Row, NewRow, SmallerDomainList]),
+    make_domain(Row, SmallerDomainList),
     make_domains(Tail).
+
+list_remove_vars([], []).
+list_remove_vars([ Head | Tail1 ], FilteredList) :-
+    var(Head),
+    list_remove_vars(Tail1, FilteredList).
+list_remove_vars([ Head | Tail1 ], [ Head | Tail2 ]) :-
+    list_remove_vars(Tail1, Tail2).
+
+
+% filter_list(DomainList, Row) :- filter_list(DomainList, Row, []).
+%
+%
+% :- chr_constraint filter_list/3.
+%
+%
+% filter_list(_, [], _) <=> true.
+% filter_list(List, [ _ | Tail ], FilteredList) <=> nonvar(Head), select(Head, List, FilteredList) ,
+%     filter_list(List, Tail, FilteredList).
+% filter_list(List, [ _ | Tail ], FilteredList) <=>
+%     filter_list(List, Tail, FilteredList).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HELPER RULES
