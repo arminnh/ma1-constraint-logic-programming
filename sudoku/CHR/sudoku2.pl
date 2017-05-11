@@ -1,12 +1,11 @@
 :- use_module(library(chr)).
 
 :- chr_constraint solve/1, sudoku/1, print_board/2.
-:- chr_constraint diff/2, enum/1, enum_board/0, upto/2, domain_list/1, make_domain/2, make_domains/1.
-:- chr_constraint board/4, known_board/4.
-:- chr_constraint generate_board_facts/3.
+:- chr_constraint diff/2, enum/1, enum_board/0, upto/2, domain_list/1.
+:- chr_constraint board/4, generate_known_board_facts/3.
 :- chr_constraint sn/1, n/1.
-:- chr_constraint generate_list/1, iterate/2.
-
+:- chr_constraint generate_remaining_board_facts/1, generate_board_value_facts/2.
+:- chr_constraint do_diffs/0.
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
@@ -15,6 +14,7 @@
 :- chr_constraint le/2, eq/2, in/2, add/3.
 :- chr_option(debug,off).
 :- chr_option(optimize,full).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SUDOKU SOLUTION USING TRIVIAL VIEWPOINT
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,40 +57,67 @@ sudoku(Board) <=>
     upto(DomainList, N),
     domain_list(DomainList),
 
-    % set the domains of the possible values on the board
-    % make_domains,
-
     % generate (X, Y, BlockIndex, Value) facts
     % those facts will later be used for insertion of diff(A, B) rules
-    generate_list(N),
+    generate_known_board_facts(Board, 1, 1),
 
-    generate_board_facts(Board, 1, 1),
+    % set the domains of the possible values on the board
+    generate_remaining_board_facts(N),
+
+    % allows diffs to start being generated
+    do_diffs,
+
     print_board(1,1),
+
     % search for values
-    enum_board,
+    % enum_board,
     true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR CONSTRAINTS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% generate_board_facts(Board, X, Y) will generate board(X,Y, BlockIndex, Value)
+generate_board_value_facts(_, 0) <=>
+    true.
+
+% if fact already exists on this X value for the Value, don't generate another one
+generate_board_value_facts(Value, Index) <=> board(Value, Index, _, _) |
+    Index2 is Index - 1,
+    generate_board_value_facts(Value, Index2).
+
+domain_list(Domain) \ generate_board_value_facts(Value, Index) <=> Index > 0 |
+    board(Value, Index, Y, BlockIndex),
+    Y in Domain,
+    BlockIndex in Domain,
+    Index2 is Index - 1,
+    generate_board_value_facts(Value, Index2).
+
+generate_remaining_board_facts(0) <=>
+    true.
+
+n(N) \ generate_remaining_board_facts(Value) <=>
+    generate_board_value_facts(Value, N),
+    Value2 is Value - 1,
+    generate_remaining_board_facts(Value2).
+
+
+% generate_known_board_facts(Board, X, Y) will generate board(X,Y, BlockIndex, Value)
 % facts which will later be used to instert diff rules into the constraint store
 
 % got all values on the board
-n(N) \ generate_board_facts(_, X, _) <=> N2 is N+1, X == N2 |
+n(N) \ generate_known_board_facts(_, X, _) <=> N2 is N+1, X == N2 |
     true.
 
 % after going over all columns, go to next row and start from column 1 again
-n(N) \ generate_board_facts(Board, X, Y) <=> N2 is N+1, Y == N2 |
+n(N) \ generate_known_board_facts(Board, X, Y) <=> N2 is N+1, Y == N2 |
     X2 is X + 1,
-    generate_board_facts(Board, X2, 1).
+    generate_known_board_facts(Board, X2, 1).
 
-generate_board_facts(Board, X, Y) <=>  nth1(X, Board, Row), nth1(Y, Row, Value), var(Value) |
+generate_known_board_facts(Board, X, Y) <=>  nth1(X, Board, Row), nth1(Y, Row, Value), var(Value) |
     Y2 is Y + 1,
-    generate_board_facts(Board, X, Y2).
+    generate_known_board_facts(Board, X, Y2).
 
-sn(SN) \ generate_board_facts(Board, X, Y) <=> nth1(X, Board, Row), nth1(Y, Row, Value), nonvar(Value) |
+sn(SN) \ generate_known_board_facts(Board, X, Y) <=> nth1(X, Board, Row), nth1(Y, Row, Value), nonvar(Value) |
     % get the value on position (X, Y) on the board
 
     % calculate block index
@@ -104,60 +131,37 @@ sn(SN) \ generate_board_facts(Board, X, Y) <=> nth1(X, Board, Row), nth1(Y, Row,
     BlockIndex is (BlockRow-1) * SN + BlockCol,
 
     % save this data for later use
-    known_board(Value, X,Y, BlockIndex),
+    board(Value, X,Y, BlockIndex),
 
     % go to the next case
     Y2 is Y + 1,
-    generate_board_facts(Board, X, Y2).
+    generate_known_board_facts(Board, X, Y2).
 
-board(Value, X, Y, BlockIndex1), known_board(Value, X, Y2, BlockIndex2), Y in YL, BlockIndex1 in BI <=> var(Y) |
-    board(Value, X, Y2, BlockIndex2).
 
-iterate(_, 0) <=>
-    true.
-
-domain_list(Domain) \ iterate(Value, Index) <=> Index > 0|
-    board(Value, Index, Y, BlockIndex),
-    Y in Domain,
-    BlockIndex in Domain,
-    Index2 is Index - 1,
-    iterate(Value, Index2).
-
-generate_list(0) <=>
-    true.
-
-n(N) \ generate_list(Value) <=>
-    iterate(Value, N),
-    Value2 is Value - 1,
-    generate_list(Value2).
-
-% 9x9 board: 1458 diff rules -> 972 rules = sum([1..8]) * 9 * 2 + 5 * 9
-%                                         = sum([1..N-1]) * N * SN
-
-%% All these symmetry breaking things should go into the report
-% all values in same columns must be different, guards used to break symmetry
+% amount of diffs: sum([1..N-1]) * N * 3
+%     3 because: positions for values on different columns,
+%                posistions for values in different blocks
+%                no 2 values on same block
 
 % all values in same blocks must be different, guards used to break symmetry
-board(Value, _, Y1, BlockIndex1), board(Value, _, Y2, BlockIndex2) ==>
+do_diffs, board(Value, X1, Y1, BlockIndex1), board(Value, X2, Y2, BlockIndex2) ==> X1 < X2 |
     diff(Y1,Y2), diff(BlockIndex1, BlockIndex2).
 
-board(Value1, X, Y1, _), board(Value2, X, Y2, _) ==> Value1 \== Value2 |
+do_diffs, board(Value1, X, Y1, _), board(Value2, X, Y2, _) ==> Value1 < Value2 |
     diff(Y1,Y2).
 
-%board(_, Y1, BlockIndex, Value1), board(_, Y2, BlockIndex, Value2) ==> (Y1 < Y2) |
-%    diff(Value1, Value2).
-
-
-% X and Y are instantiated and are different
-diff(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
-% Put improvement into report!
-
-diff(Y, X) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
-diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
+% no need for symmetry breaking here as it's been done during construction
+% diff(X, Y), diff(X, Y) <=> diff(X, Y).
+% diff(Y, X), diff(X, Y) <=> diff(X, Y).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR DOMAIN SOLVING
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% X and Y are instantiated and are different
+diff(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
+% diff(Y, X) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
+% diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 
 % enum(L): assigns values to variables X in L
 enum(X)              <=> number(X) | true .
@@ -165,7 +169,8 @@ enum(X), X in Domain <=> member(X, Domain).
 
 % enum_board(Board): fills Board with values
 sn(SN), board(_, X, Y, BlockIndex), enum_board ==>
-    enum(X), enum(Y),
+    enum(Y),
+    % enum(BlockIndex),
 
     XX is X-1,
     XXX is XX // SN,
@@ -182,49 +187,6 @@ upto([ N | L ], N) :-
     N > 0,
     N1 is N-1,
     upto(L, N1).
-
-
-% make_domain(L, D): create 'X in D' constraints for all variables X in L
-make_domain([], _) <=> true.
-make_domain([ Val | Tail ], DomainList) <=> var(Val) |
-    Val in DomainList,
-    make_domain(Tail, DomainList).
-make_domain([ _ | Tail ], DomainList) <=>
-    make_domain(Tail, DomainList).
-
-% make_domains(L): L is an list of N elements, make_domains creates 'X in [1..N]' constraints
-make_domains([]) <=> true.
-domain_list(DomainList) \ make_domains([ Row | Tail ]) <=>
-    list_remove_vars(Row, NewRow),
-    % Domain list is 1..N, NewRow are the values on a specific Row
-    subtract(DomainList, NewRow, SmallerDomainList),
-    writeln([DomainList, Row, NewRow, SmallerDomainList]),
-
-    % For a specific row
-    make_domain(Row, SmallerDomainList),
-
-    % For the rest of the board
-    make_domains(Tail).
-
-list_remove_vars([], []).
-list_remove_vars([ Head | Tail1 ], FilteredList) :-
-    var(Head),
-    list_remove_vars(Tail1, FilteredList).
-list_remove_vars([ Head | Tail1 ], [ Head | Tail2 ]) :-
-    list_remove_vars(Tail1, Tail2).
-
-
-% filter_list(DomainList, Row) :- filter_list(DomainList, Row, []).
-%
-%
-% :- chr_constraint filter_list/3.
-%
-%
-% filter_list(_, [], _) <=> true.
-% filter_list(List, [ _ | Tail ], FilteredList) <=> nonvar(Head), select(Head, List, FilteredList) ,
-%     filter_list(List, Tail, FilteredList).
-% filter_list(List, [ _ | Tail ], FilteredList) <=>
-%     filter_list(List, Tail, FilteredList).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HELPER RULES
