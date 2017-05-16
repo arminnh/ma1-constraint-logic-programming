@@ -64,13 +64,13 @@ sudoku(Board) <=>
     % set the domains of the possible values on the board
     generate_remaining_board_facts(N),
 
-    % allows diffs to start being generated
+    % start generation of diffs
     do_diffs,
 
     print_board(1,1),
 
-    % search for values
-    % enum_board,
+    % start search for values
+    enum_board,
     true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -167,7 +167,6 @@ diff(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
 enum(X)              <=> number(X) | true .
 enum(X), X in Domain <=> member(X, Domain).
 
-% enum_board(Board): fills Board with values
 sn(SN), board(_, X, Y, BlockIndex), enum_board ==>
     enum(Y),
     % enum(BlockIndex),
