@@ -1,3 +1,6 @@
+% http://tidel.mie.utoronto.ca/pubs/explorations.pdf
+% https://www.google.be/search?q=constraint+programming+connectivity&ie=UTF-8&sa=Search&channel=fe&client=browser-ubuntu&hl=en&gws_rd=cr,ssl&ei=BtkaWbw8wrBp6LeukAg
+
 :- lib(ic).
 % :- import alldifferent/1, sorted/2 from ic_global.
 % :- coroutine.
