@@ -3,6 +3,7 @@
 % :- coroutine.
 :- lib(lists).
 :- import nth1/3 from listut.
+:- import sumlist/2 from ic_global.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Hashiwokakero, also called Bridges is a logic puzzle in which different islands
@@ -51,20 +52,21 @@ hashiwokakero(Board) :-
     dim(Board, [XMax, YMax, 5]), % 6 variables: Amount, N, E, S, W for each position
     
     board_islands(Board, Islands),
-    length(Islands, IslandCount),
+    board_islands_count(Board, IslandCount),
     
     dim(Vertices, [IslandCount, 4]), 
     % 4 variables: X, Y, Value = degree , list of possible neighbors
-    % The degree of a verte x is the number of edges incident on it.
+    % The degree of a verte x is the number of edges incident on it
     dim(Edges, [IslandCount, IslandCount]),
     Edges #:: 0..2,
+    
 
     % fill in the Vertices array
     ( for(I, 1, IslandCount), param(Board, Islands, Vertices) do
         nth1(I, Islands, [X, Y]),
         Amount is Board[X, Y, 1],
-        island_neighbors(Board, X, Y, Neighbors),
-
+        island_neighbors(Board, [X, Y], Neighbors),
+ 
         VX is Vertices[I, 1],
         VY is Vertices[I, 2],
         VDegree is Vertices[I, 3],
@@ -72,50 +74,55 @@ hashiwokakero(Board) :-
         VX = X,
         VY = Y,
         VDegree = Amount,
-        VPossbileNeighbors = Neighbors,
-        
-        true
+        VPossbileNeighbors = Neighbors
     ),
+    
+    writeln(["IslandCount: ", IslandCount, "Islands: ", Islands]),
+    writeln(["Vertices: ", Vertices]),
+    writeln(["Edges: ", Edges]),
 
-    ( for(I, 1, IslandCount), param(Board, Islands, Vertices) do
+    ( for(I, 1, IslandCount), param(Edges, Islands, Vertices, IslandCount) do
+        writeln(["I: ", I]),
+        A is Vertices[I],
+        writeln(["A: ", A]),
         PossibleNeighbors is Vertices[I, 4],
+        writeln(["PossibleNeighbors: ", PossibleNeighbors]),
     
         % in adjacency matrix, set the edges to other nodes that cannot be neighbors to 0
-        ( for(J, 1, IslandCount), param(Edges, Vertices, PossibleNeighbors, I) do
+        % => this means that edges are only possible between possible neighbors on the board
+        ( for(J, 1, IslandCount), param(Edges, Islands, PossibleNeighbors, I) do
+            writeln(["J: ", J]),
+            writeln([J, Islands]),
             nth1(J, Islands, [JX, JY]),
-            ( member(PossibleNeighbors, [JX, JY]) ->
+            writeln(["[JX, JY]: ", JX, JY]),
+            ( member([JX, JY], PossibleNeighbors) ->
+                writeln(["[JX, JY]: is member"]),
                 true
             ;
-                Edges is Edges[I, J],
-                Edges = 0
+                writeln(["[JX, JY]: no member"]),
+                Edge is Edges[I, J],
+                writeln(["Edge is", Edge]),
+                Edge #= 0
             )
         ),
         
         % the amount of edges leaving this vertex equals the degree of this vertex
         Row is Edges[I, 1..IslandCount],
-        sum(Row, Sum),
+        writeln(["sum of row: ", Row]),
+        sumlist(Row, Sum),
+        writeln(["sum is: ", Sum]),
         Degree is Vertices[I, 3],
-        Sum #= Degree,
-        
-        true
+        Sum #= Degree
     ),
     
     % set constraints on the Edges array
-    ( multifor([I, J], [1, 1], [IslandCount, IslandCount]), param(Vertices, Edges) do
+    ( multifor([I, J], [1, 1], [IslandCount, IslandCount]), param(Edges) do
+        % no edge from a node to itsel
         SelfLoop is Edges[I, I],
         SelfLoop = 0,
-        Edges[I, J] #= Edges[J, I],
         
-        % J can only be a neighbor if J is in the PossibleNeighbors set of I
-        PossibleNeighbors is Vertices[I, 4],
-        JX is Vertices[J, 1],
-        JY is Vertices[J, 2],
-        % Edges[I, J] => member(PossibleNeighbors, [JX, JY])
-        ( Edges[I, J] #> 0 ->
-            member(PossibleNeighbors, [JX, JY])
-        ;
-            true
-        )
+        % same amount of edges in both directions
+        Edges[I, J] #= Edges[J, I],
         
         true
         % transitivity of connectivity, BUT THIS DOESN'T WORK!!!!!!!!!
@@ -125,8 +132,37 @@ hashiwokakero(Board) :-
     % search for possible Edges
     search(naive, Edges),
     
+    print_matrix(Edges),
+    
     true.
 
+% Neighbors is a list of possible neighbors of Pos on the Board
+island_neighbors(Board, Pos, Neighbors) :-
+    ( foreachelem(Direction, [](2, 3, 4, 5)), param(Board, Pos, Neighbors) do
+        next_pos(Pos, Direction, NextPos),
+        find_neighbor(Board, NextPos, Direction, Neighbor),
+        member(Neighbor, Neighbors)
+    ),
+    length(Neighbors, _).
+    
+% Neighbor is a possible neighbor in a certain direction from position (X, Y) on the Board
+find_neighbor(Board, [X, Y], Direction, Neighbor) :-
+    dim(Board, [XMax, YMax, _]),
+    
+    X > 0,
+    X =< XMax,
+    Y > 0,
+    Y =< YMax,
+    
+    Amount is Board[X, Y, 1],
+    ( Amount > 0 ->
+        Neighbor = [X, Y]
+    ;
+        next_pos([X, Y], Direction, NextPos),
+        find_neighbor(Board, NextPos, Direction, Neighbor)
+    ).
+
+find_neighbor(_, _, _, _).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HELPER PROCEDURES
@@ -158,13 +194,20 @@ print_connected_sets(Board, [ Sol | Sols ]) :-
 print_connected_sets(Board, [ _ | Sols ]) :-
     print_connected_sets(Board, Sols).
 
+% prints a matrix that is in an array variable
+print_matrix(Matrix) :-
+    ( foreacharg(Row, Matrix) do
+        ( foreachelem(Edge, Row) do
+            write(Edge), write(" ")
+        ), nl
+    ).
 
 connected(Board, Islands1, Islands2) :-
     X \= Islands1,
     X \= Islands2,
     connected(Board, Islands1, X), connected(Board, X, Islands2).
 
-connected(Board, [X, Y], [X, Y]) :-
+connected(_, [X, Y], [X, Y]) :-
     true.
 
 connected(Board, Islands1, Islands2) :-
