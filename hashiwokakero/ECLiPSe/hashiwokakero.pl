@@ -5,17 +5,17 @@
 :- import nth1/3 from listut.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Hashiwokakero, also called Bridges is a logic puzzle in which different islands
+% Hashiwokakero, also called Bridges is a logic puzzle in which different islands
 % have to be connected by bridges. A bridges puzzle consists of a square grid
 % in which some numbers are placed. Squares on which a number is placed are
 % referred to as islands. The goal of the puzzle is to draw bridges between
-% islands subject to the following restrictions.
+% islands subject to the following restrictions.
 %     Bridges can only run horizontally or vertically.
-%     Bridges run in one straight line.
-%     Bridges cannot cross other bridges or islands.
-%     At most two bridges connect a pair of islands.
-%     The number of bridges connected to each island must match the number on that island.
-%     The bridges must connect the islands into a single connected group.
+%     Bridges run in one straight line.
+%     Bridges cannot cross other bridges or islands.
+%     At most two bridges connect a pair of islands.
+%     The number of bridges connected to each island must match the number on that island.
+%     The bridges must connect the islands into a single connected group.
 %
 % Solution started from http://stackoverflow.com/questions/20337029/hashi-puzzle-representation-to-solve-all-solutions-with-prolog-restrictions/20364306#20364306
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -30,22 +30,6 @@ solve(Number) :-
 
     % create bridges and set constraints
     hashiwokakero(Board),
-
-    % do search on variables
-    search(naive, Board),
-
-    % Check that everything is connected
-    board_islands(Board, AllIslands),
-
-    length(AllIslands, N),
-
-    (for(I,1, N), param(AllIslands, Board, N) do
-        (for(J, 1, N), param(AllIslands, Board) do
-            nth1(I, AllIslands, Islands1),
-            nth1(J, AllIslands, Islands2),
-            connected(Board, Islands1, Islands2)
-        )
-    ),
 
     % print results
     writeln("Search done:"),
@@ -64,48 +48,83 @@ findall(Number) :-
 % of 5 variables: The amount of bridges that need to be connected to the position,
 % and the amounts of briges going North, East, South, or West from the position
 hashiwokakero(Board) :-
-    dim(Board, [XMax, YMax, 6]), % 6 variables: Amount, N, E, S, W, visited for each position
-    Board[1..XMax, 1..YMax, 6] #:: 0..1,
+    dim(Board, [XMax, YMax, 5]), % 6 variables: Amount, N, E, S, W for each position
+    
+    board_islands(Board, Islands),
+    length(Islands, IslandCount),
+    
+    dim(Vertices, [IslandCount, 4]), 
+    % 4 variables: X, Y, Value = degree , list of possible neighbors
+    % The degree of a verte x is the number of edges incident on it.
+    dim(Edges, [IslandCount, IslandCount]),
+    Edges #:: 0..2,
 
-    var(FirstIsland),
-
-    ( multifor([X, Y], 1, [XMax, YMax]), param(Board, XMax, YMax, FirstIsland) do
+    % fill in the Vertices array
+    ( for(I, 1, IslandCount), param(Board, Islands, Vertices) do
+        nth1(I, Islands, [X, Y]),
         Amount is Board[X, Y, 1],
-        N is Board[X, Y, 2],
-        E is Board[X, Y, 3],
-        S is Board[X, Y, 4],
-        W is Board[X, Y, 5],
+        island_neighbors(Board, X, Y, Neighbors),
 
-        % if this position is not on the edges of the board, then the amount of bridges
-        % going in one direction needs to equals the amount in the other direction
-        ( X > 1    -> N #= Board[X-1,   Y, 4] ; N = 0 ),
-        ( Y < YMax -> E #= Board[  X, Y+1, 5] ; E = 0 ),
-        ( X < XMax -> S #= Board[X+1,   Y, 2] ; S = 0 ),
-        ( Y > 1    -> W #= Board[  X, Y-1, 3] ; W = 0 ),
-
-        % if this position requires an amount of bridges,
-        % make the sum of all bridges equal this amount
-        ( Amount > 0 ->
-            [N, E, S, W] #:: 0..2,
-            N + E + S + W #= Amount,
-            ( var(FirstIsland) -> FirstIsland = [X, Y] ; true)
-        ; % else make sure bridges don't cross each other
-            N = S, E = W,
-            (N #= 0) or (E #= 0)
-        )
+        VX is Vertices[I, 1],
+        VY is Vertices[I, 2],
+        VDegree is Vertices[I, 3],
+        VPossbileNeighbors is Vertices[I, 4],
+        VX = X,
+        VY = Y,
+        VDegree = Amount,
+        VPossbileNeighbors = Neighbors,
+        
+        true
     ),
 
-    print_board(Board),
-    %board_connected_set(Board, FirstIsland, Set),
-    %writeln(Set),
-
-    ( foreacharg(Row, Board) do
-        ( foreacharg(Vars, Row) do
-            Visited is Vars[6],
-            ( nonvar(Visited) -> true ; Visited #= 0)
-        )
+    ( for(I, 1, IslandCount), param(Board, Islands, Vertices) do
+        PossibleNeighbors is Vertices[I, 4],
+    
+        % in adjacency matrix, set the edges to other nodes that cannot be neighbors to 0
+        ( for(J, 1, IslandCount), param(Edges, Vertices, PossibleNeighbors, I) do
+            nth1(J, Islands, [JX, JY]),
+            ( member(PossibleNeighbors, [JX, JY]) ->
+                true
+            ;
+                Edges is Edges[I, J],
+                Edges = 0
+            )
+        ),
+        
+        % the amount of edges leaving this vertex equals the degree of this vertex
+        Row is Edges[I, 1..IslandCount],
+        sum(Row, Sum),
+        Degree is Vertices[I, 3],
+        Sum #= Degree,
+        
+        true
     ),
-
+    
+    % set constraints on the Edges array
+    ( multifor([I, J], [1, 1], [IslandCount, IslandCount]), param(Vertices, Edges) do
+        SelfLoop is Edges[I, I],
+        SelfLoop = 0,
+        Edges[I, J] #= Edges[J, I],
+        
+        % J can only be a neighbor if J is in the PossibleNeighbors set of I
+        PossibleNeighbors is Vertices[I, 4],
+        JX is Vertices[J, 1],
+        JY is Vertices[J, 2],
+        % Edges[I, J] => member(PossibleNeighbors, [JX, JY])
+        ( Edges[I, J] #> 0 ->
+            member(PossibleNeighbors, [JX, JY])
+        ;
+            true
+        )
+        
+        true
+        % transitivity of connectivity, BUT THIS DOESN'T WORK!!!!!!!!!
+        % Edges[X, Y] > 0 && Edges[Y, Z] > 0 -> Edges[X, Z],
+    ),
+    
+    % search for possible Edges
+    search(naive, Edges),
+    
     true.
 
 
@@ -259,7 +278,7 @@ bridge(Board, [StartX,StartY], [EndX,EndY]) :-
 % each island takes the form (X, Y, N) where X is the row number, Y is the column
 % number and N the number of bridges that should arrive in this island.
 islands_board(Islands, Size, Board) :-
-    dim(Board, [Size, Size, 6]),
+    dim(Board, [Size, Size, 5]),
 
     % fill in the island bridge amounts first
     ( foreacharg(Island, Islands), param(Board) do
@@ -280,7 +299,7 @@ islands_board(Islands, Size, Board) :-
 % create a usable board from a matrix that contains the islands
 matrix_board(Matrix, Board) :-
     dim(Matrix, [XMax, YMax]),
-    dim(Board, [XMax, YMax, 6]),
+    dim(Board, [XMax, YMax, 5]),
 
     % fill in the island bridge amounts first
     ( multifor([X, Y], 1, [XMax, YMax]), param(Matrix, Board) do
@@ -302,7 +321,7 @@ board_islands_count(Board, Count) :-
 
 
 board_islands(Board, Islands) :-
-    dim(Board, [XMax, YMax, 6]),
+    dim(Board, [XMax, YMax, 5]),
     board_islands(Board, 1, 0, XMax, YMax, 1, Islands).
 
 board_islands(_, X, Y, X, Y, _, _).
