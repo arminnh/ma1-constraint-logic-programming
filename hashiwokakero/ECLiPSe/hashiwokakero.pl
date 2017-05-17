@@ -48,28 +48,36 @@ findall(Number) :-
     write(N), writeln(" solutions.").
     % print_connected_sets(Board, Sols).
 
+
+incr_list([], _).
+incr_list([J|T], J) :-
+       H is J+1,
+       incr_list(T, H).
+
 % The board can be viewed as a matrix in which each position contains an array
 % of 5 variables: The amount of bridges that need to be connected to the position,
 % and the amounts of briges going North, East, South, or West from the position
 hashiwokakero(Board) :-
     dim(Board, [XMax, YMax, 5]), % 6 variables: Amount, N, E, S, W for each position
-    
+
     board_islands(Board, Islands),
     board_islands_count(Board, IslandCount),
-    
-    dim(Vertices, [IslandCount, 4]), 
+
     % 4 variables: X, Y, Value = degree , list of possible neighbors
-    % The degree of a verte x is the number of edges incident on it
+    % The degree of a vertex is the number of edges incident on it
+    dim(Vertices, [IslandCount, 4]),
+
     dim(Edges, [IslandCount, IslandCount]),
     Edges #:: 0..2,
-    
 
     % fill in the Vertices array
     ( for(I, 1, IslandCount), param(Board, Islands, Vertices) do
+        % Take i'th item from islands
         nth1(I, Islands, [X, Y]),
         Amount is Board[X, Y, 1],
+        % Get the neighbors of an islands
         island_neighbors(Board, [X, Y], Neighbors),
- 
+
         VX is Vertices[I, 1],
         VY is Vertices[I, 2],
         VDegree is Vertices[I, 3],
@@ -79,7 +87,7 @@ hashiwokakero(Board) :-
         VDegree = Amount,
         VPossbileNeighbors = Neighbors
     ),
-    
+
     writeln(["IslandCount: ", IslandCount, "Islands: ", Islands]),
     writeln(["Vertices: ", Vertices]),
     writeln(["Edges: ", Edges]),
@@ -90,7 +98,7 @@ hashiwokakero(Board) :-
         writeln(["A: ", A]),
         PossibleNeighbors is Vertices[I, 4],
         writeln(["PossibleNeighbors: ", PossibleNeighbors]),
-    
+
         % in adjacency matrix, set the edges to other nodes that cannot be neighbors to 0
         % => this means that edges are only possible between possible neighbors on the board
         ( for(J, 1, IslandCount), param(Edges, Islands, PossibleNeighbors, I) do
@@ -108,7 +116,7 @@ hashiwokakero(Board) :-
                 Edge #= 0
             )
         ),
-        
+
         % the amount of edges leaving this vertex equals the degree of this vertex
         Row is Edges[I, 1..IslandCount],
         writeln(["sum of row: ", Row]),
@@ -117,26 +125,32 @@ hashiwokakero(Board) :-
         Degree is Vertices[I, 3],
         Sum #= Degree
     ),
-    
+
     % set constraints on the Edges array
     ( multifor([I, J], [1, 1], [IslandCount, IslandCount]), param(Edges) do
         % no edge from a node to itsel
         SelfLoop is Edges[I, I],
         SelfLoop = 0,
-        
+
         % same amount of edges in both directions
         Edges[I, J] #= Edges[J, I],
-        
+
         true
         % transitivity of connectivity, BUT THIS DOESN'T WORK!!!!!!!!!
         % Edges[X, Y] > 0 && Edges[Y, Z] > 0 -> Edges[X, Z],
     ),
-    
+
+    % connectivity
+    length(V, IslandCount),
+    % I dedicate this to armin because he always 1 ups me :smirk:
+    incr_list(V, 1),
+
+
     % search for possible Edges
     search(naive, Edges),
-    
+
     print_matrix(Edges),
-    
+
     true.
 
 % Neighbors is a list of possible neighbors of Pos on the Board
@@ -147,16 +161,16 @@ island_neighbors(Board, Pos, Neighbors) :-
         member(Neighbor, Neighbors)
     ),
     length(Neighbors, _).
-    
+
 % Neighbor is a possible neighbor in a certain direction from position (X, Y) on the Board
 find_neighbor(Board, [X, Y], Direction, Neighbor) :-
     dim(Board, [XMax, YMax, _]),
-    
+
     X > 0,
     X =< XMax,
     Y > 0,
     Y =< YMax,
-    
+
     Amount is Board[X, Y, 1],
     ( Amount > 0 ->
         Neighbor = [X, Y]
