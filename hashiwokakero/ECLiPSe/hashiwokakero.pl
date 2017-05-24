@@ -30,22 +30,26 @@ solve(Number) :-
 
     % create bridges and set constraints
     hashiwokakero(Board),
+    writeln("kk"),
 
     % do search on variables
     search(naive, Board),
-
     % Check that everything is connected
-    board_islands(Board, AllIslands),
+    %board_islands(Board, AllIslands),
+    writeln("kk"),
+    %length(AllIslands, N),
 
-    length(AllIslands, N),
-
-    (for(I,1, N), param(AllIslands, Board, N) do
-        (for(J, 1, N), param(AllIslands, Board) do
-            nth1(I, AllIslands, Islands1),
-            nth1(J, AllIslands, Islands2),
-            connected(Board, Islands1, Islands2)
-        )
-    ),
+    % Check if connected
+    % (for(I,1, N), param(AllIslands, Board, N) do
+    %     Start is I+1,
+    %     (for(J, 1, N), param(AllIslands, Board) do
+    %         nth1(I, AllIslands, Islands1),
+    %         nth1(J, AllIslands, Islands2),
+    %         connected(Board, Islands1, Islands2,X),
+    %         X #= 1
+    %
+    %     )
+    % ),
 
     % print results
     writeln("Search done:"),
@@ -68,7 +72,6 @@ hashiwokakero(Board) :-
     Board[1..XMax, 1..YMax, 6] #:: 0..1,
 
     var(FirstIsland),
-
     ( multifor([X, Y], 1, [XMax, YMax]), param(Board, XMax, YMax, FirstIsland) do
         Amount is Board[X, Y, 1],
         N is Board[X, Y, 2],
@@ -82,7 +85,6 @@ hashiwokakero(Board) :-
         ( Y < YMax -> E #= Board[  X, Y+1, 5] ; E = 0 ),
         ( X < XMax -> S #= Board[X+1,   Y, 2] ; S = 0 ),
         ( Y > 1    -> W #= Board[  X, Y-1, 3] ; W = 0 ),
-
         % if this position requires an amount of bridges,
         % make the sum of all bridges equal this amount
         ( Amount > 0 ->
@@ -94,17 +96,16 @@ hashiwokakero(Board) :-
             (N #= 0) or (E #= 0)
         )
     ),
-
-    print_board(Board),
+    writeln("kk"),
     %board_connected_set(Board, FirstIsland, Set),
     %writeln(Set),
 
-    ( foreacharg(Row, Board) do
-        ( foreacharg(Vars, Row) do
-            Visited is Vars[6],
-            ( nonvar(Visited) -> true ; Visited #= 0)
-        )
-    ),
+    % ( foreacharg(Row, Board) do
+    %     ( foreacharg(Vars, Row) do
+    %         Visited is Vars[6],
+    %         ( nonvar(Visited) -> true ; Visited #= 0)
+    %     )
+    % ),
 
     true.
 
@@ -139,18 +140,16 @@ print_connected_sets(Board, [ Sol | Sols ]) :-
 print_connected_sets(Board, [ _ | Sols ]) :-
     print_connected_sets(Board, Sols).
 
+connected(Board, [X, Y], [X, Y], true) :-
+    true.
 
-connected(Board, Islands1, Islands2) :-
+connected(Board, Islands1, Islands2, true) :-
+    bridge(Board, Islands1, Islands2).
+
+connected(Board, Islands1, Islands2, X) :-
     X \= Islands1,
     X \= Islands2,
     connected(Board, Islands1, X), connected(Board, X, Islands2).
-
-connected(Board, [X, Y], [X, Y]) :-
-    true.
-
-connected(Board, Islands1, Islands2) :-
-    bridge(Board, Islands1, Islands2).
-
 
 % We had problems with internal xor so created our own
 xor_bool( 0 , 0 , 0).
@@ -176,9 +175,12 @@ bridge(Board, [StartX,StartY], [EndX,EndY]) :-
         % W is Board[X, Y, 5],
 
         %Answer is (IsZeroX+IsZeroY) * (\+ (IsZeroX) + \+ (IsZeroY)),
-
         (Answer =:= 1 ->
             % Oke so our XPos is pos, this means that we have an islands on our right
+            write("XPos "),
+            writeln(XPos),
+            write("YPos "),
+            writeln(YPos),
             ( XPos > 0 ->
                 ( for(X, 1, XPos), param(Board, StartX, StartY, EndX) do
                     % If there is a bridge the value is not zero
@@ -259,7 +261,7 @@ bridge(Board, [StartX,StartY], [EndX,EndY]) :-
 % each island takes the form (X, Y, N) where X is the row number, Y is the column
 % number and N the number of bridges that should arrive in this island.
 islands_board(Islands, Size, Board) :-
-    dim(Board, [Size, Size, 6]),
+    dim(Board, [Size, Size, 5]),
 
     % fill in the island bridge amounts first
     ( foreacharg(Island, Islands), param(Board) do
@@ -280,7 +282,7 @@ islands_board(Islands, Size, Board) :-
 % create a usable board from a matrix that contains the islands
 matrix_board(Matrix, Board) :-
     dim(Matrix, [XMax, YMax]),
-    dim(Board, [XMax, YMax, 6]),
+    dim(Board, [XMax, YMax, 5]),
 
     % fill in the island bridge amounts first
     ( multifor([X, Y], 1, [XMax, YMax]), param(Matrix, Board) do
@@ -302,7 +304,7 @@ board_islands_count(Board, Count) :-
 
 
 board_islands(Board, Islands) :-
-    dim(Board, [XMax, YMax, 6]),
+    dim(Board, [XMax, YMax, 5]),
     board_islands(Board, 1, 0, XMax, YMax, 1, Islands).
 
 board_islands(_, X, Y, X, Y, _, _).
