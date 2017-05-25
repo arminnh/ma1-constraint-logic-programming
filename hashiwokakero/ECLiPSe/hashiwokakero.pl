@@ -36,20 +36,9 @@ solve(Number) :-
     search(naive, Board),
     % Check that everything is connected
     %board_islands(Board, AllIslands),
-    writeln("kk"),
     %length(AllIslands, N),
-
-    % Check if connected
-    % (for(I,1, N), param(AllIslands, Board, N) do
-    %     Start is I+1,
-    %     (for(J, 1, N), param(AllIslands, Board) do
-    %         nth1(I, AllIslands, Islands1),
-    %         nth1(J, AllIslands, Islands2),
-    %         connected(Board, Islands1, Islands2,X),
-    %         X #= 1
-    %
-    %     )
-    % ),
+    writeln("connected"),
+    board_connected_set(Board),
 
     % print results
     writeln("Search done:"),
@@ -96,15 +85,6 @@ hashiwokakero(Board) :-
             (N #= 0) or (E #= 0)
         )
     ),
-    %board_connected_set(Board, FirstIsland, Set),
-    %writeln(Set),
-
-    % ( foreacharg(Row, Board) do
-    %     ( foreacharg(Vars, Row) do
-    %         Visited is Vars[6],
-    %         ( nonvar(Visited) -> true ; Visited #= 0)
-    %     )
-    % ),
 
     true.
 
@@ -138,123 +118,6 @@ print_connected_sets(Board, [ Sol | Sols ]) :-
 
 print_connected_sets(Board, [ _ | Sols ]) :-
     print_connected_sets(Board, Sols).
-
-connected(Board, [X, Y], [X, Y], true) :-
-    true.
-
-connected(Board, Islands1, Islands2, true) :-
-    bridge(Board, Islands1, Islands2).
-
-connected(Board, Islands1, Islands2, X) :-
-    X \= Islands1,
-    X \= Islands2,
-    connected(Board, Islands1, X), connected(Board, X, Islands2).
-
-% We had problems with internal xor so created our own
-xor_bool( 0 , 0 , 0).
-xor_bool( 0 , 1 , 1).
-xor_bool( 1 , 0 , 1).
-xor_bool( 1 , 1 , 0).
-
-%The bridge function is to check if there is an immediate bridge between two Islands
-% This bridge can only move into the NSEW direction and not diagonal!
-bridge(Board, [StartX,StartY], [EndX,EndY]) :-
-        XPos is StartX - EndX,
-        YPos is StartY - EndY,
-
-        IsZeroX is (XPos =\= 0),
-        IsZeroY is (YPos =\= 0),
-
-        xor_bool(IsZeroX, IsZeroY, Answer),
-        % One of them is not zero
-        %writeln(Answer),
-        % N is Board[X, Y, 2],
-        % E is Board[X, Y, 3],
-        % S is Board[X, Y, 4],
-        % W is Board[X, Y, 5],
-
-        %Answer is (IsZeroX+IsZeroY) * (\+ (IsZeroX) + \+ (IsZeroY)),
-        (Answer =:= 1 ->
-            % Oke so our XPos is pos, this means that we have an islands on our right
-            write("XPos "),
-            writeln(XPos),
-            write("YPos "),
-            writeln(YPos),
-            ( XPos > 0 ->
-                ( for(X, 1, XPos), param(Board, StartX, StartY, EndX) do
-                    % If there is a bridge the value is not zero
-                    CurPos is StartX - X,
-                    % Check if we are in our destination
-                    (CurPos == EndX ->
-                        % if we are then it's ok, we have a connection
-                        true
-                        ;
-                        % if not check that there is a bridge
-                        Board[CurPos, StartY, 2] \= 0
-                        )
-                )
-                ;
-                (XPos < 0 ->
-                    NewXPos is XPos * -1,
-                    ( for(X, 1, NewXPos), param(Board, StartX, StartY, EndX) do
-                        % If there is a bridge the value is not zero
-                        CurPos is StartX + X,
-                        % Check if we are in our destination
-                        (CurPos == EndX ->
-                            % if we are then it's ok, we have a connection
-                            true
-                            ;
-                            % if not check that there is a bridge
-                            Board[CurPos, StartY, 4] \= 0
-                            )
-
-                    )
-
-                ;(YPos > 0 ->
-                    ( for(Y, 1, YPos), param(Board, StartX, StartY, EndY) do
-                        % If there is a bridge the value is not zero
-                        CurPos is StartY - Y,
-                        % Check if we are in our destination
-                        (CurPos == EndY ->
-                            % if we are then it's ok, we have a connection
-                            true
-                            ;
-                            % if not check that there is a bridge
-                            Board[StartX, CurPos, 5] \= 0
-                            )
-                    )
-                    ;
-                (YPos < 0 ->
-                    NewYPos is YPos * -1,
-                    ( for(Y, 1, NewYPos), param(Board, StartX, StartY, EndY) do
-                        % If there is a bridge the value is not zero
-                        CurPos is StartY + Y,
-                        % Check if we are in our destination
-                        (CurPos == EndY ->
-                            % if we are then it's ok, we have a connection
-                            true
-                            ;
-                            % if not check that there is a bridge
-                            Board[StartX, CurPos, 3] \= 0
-                            )
-                    )
-                    ;
-                    false)
-                    )
-                )
-            )
-        ;
-        false
-        ).
-
-
-    % Als islands 2 links Islands1 => x = 0, YPos positief (N)
-    % Als islands 2 rechts => YPos neg (S)
-    % Als islands2 boven dan Xpos pos (N)
-    % Als islands2 onder dan XPos neg (S)
-
-
-
 
 % create a usable board from an array of Islands
 % each island takes the form (X, Y, N) where X is the row number, Y is the column
@@ -301,10 +164,10 @@ board_islands_count(Board, Count) :-
     ),
     length(List, Count).
 
-
 board_islands(Board, Islands) :-
     dim(Board, [XMax, YMax, 5]),
-    board_islands(Board, 1, 0, XMax, YMax, 1, Islands).
+    board_islands(Board, 1, 0, XMax, YMax, 1, Islands),
+    length(Islands, _).
 
 board_islands(_, X, Y, X, Y, _, _).
 board_islands(Board, X, Y, XMax, YMax, Count, Islands) :-
@@ -327,54 +190,99 @@ board_islands(Board, X, Y, XMax, YMax, Count, Islands) :-
     board_islands(Board, XNext, YNext, XMax, YMax, CountNext, Islands).
 
 % Create list Set, set its length, fill the set by visiting the given island's neighbors
-board_connected_set(Board, Set) :-
-    board_islands_count(Board, IslandCount),
-    writeln(["Amount of islands: ", IslandCount]),
-    length(Set, IslandCount),
+board_connected_set(Board, Count) :-
+    %dim(Board, [XMax, YMax, 6]), % 6 variables: Amount, N, E, S, W, visited for each position
+    %writeln("dim"),
+    board_islands(Board, Islands),
+    writeln(Islands),
+    length(Islands, N),
+    length(Visited, N),
+
+    writeln(["Amount of islands: ", N]),
 
     % make the island be member of current set
-    nth1(1, Set, [X, Y]),
-    writeln(["  member of set:", Set]),
+    nth1(1, Islands, [X, Y]),
+    writeln(["         board_connected_set --- getting position: ", [X, Y], " --- ", Islands]),
 
     % set position to visited
-    Board[X, Y, 6] #= 1,
+    nth1(1, Visited, 1),
 
     % travel to the neighbors of the current position and fill the current set
     % DFS
-    fill_set_visit(Board, X, Y, Set),
+    fill_set_visit(Board, X, Y, Islands, Visited),
+    writeln("finished visiting"),
+    count_nonvars(Visited, Count),
+    writeln(Count),
+    Count = N,
+    %island_neighbors(Board, X,Y, Neighbors),
+    %writeln(Neighbors),
+    % array_list(SetArray, Set),
+    % ( foreachelem(Island, SetArray) do
+    %     nonvar(Island)
+    % ),
+    true.
 
-    array_list(SetArray, Set),
-    ( foreachelem(Island, SetArray) do
-        nonvar(Island)
-    ).
+fill_set_visit(Board, X, Y, Islands, Visited) :-
+    writeln(["         fill_set_visit --- getting position: ", [X, Y], " --- ", Islands]),
+    island_neighbors(Board, X,Y, Neighbors),
+    %writeln(Neighbors),
+    length(Neighbors, N),
+    % TODO
+    % PROBLEM IS HERE SOMEWHERE, AFTER FAILURE IT BACKTRACKS UNTILL HERE AND ADD'S A NEW VAR????
+    % LOOK FOR THE finished visiting STATEMENT, AFTER THIS STATEMENT IT COMES BACK TO HERE
+    % ONLY IF THE COUNT IS NOT THE SAME AS THE AMOUNT OF ISLANDS (board_connected_set)
+    writeln(["Pos: ", X, Y, " has neighbors ",Neighbors]),
 
-fill_set_visit(Board, X, Y, Set) :-
-    ( foreachelem(Direction, [](2, 3, 4, 5)), param(Board, X, Y, Set) do
-        Val #= Board[X, Y, Direction],
-        ( Val #> 0 ->
-            direction(Direction, Word),
-            write("[    visiting "), write(Word),
-            next_pos([X, Y], Direction, Pos),
-            write(", got pos: "), writeln([Pos]),
-            % Amount of islands you already visited
-            count_nonvars(Set, Count),
+    ( for(I,1,N), param(Board, Islands, Visited, Neighbors) do
 
-            % We visited this islands so +1
-            SetIndex is Count + 1,
+        nth1(I, Neighbors, [X1,Y1]),
+        nth1(Pos, Islands, [X1,Y1]),
+        nth1(Pos, Visited, HasVisited),
+        %member([X1,Y1], Neighbors),
+        writeln(["Checking neighbor: ", X1, Y1, "Which has Index: ", Pos, " in visited and has been visited: ", HasVisited ]),
+        writeln(["Neighbors ",Neighbors]),
 
-            fill_set(Board, Pos, Direction, Set, SetIndex),
-            writeln(["    ", Word, " visited: ", Set]),
-            true
-        ;
+        % If it is still a var, we haven't visited this islands yet so let's go and visit it :D
+        (var(HasVisited) ->
+            HasVisited is 1,
+            writeln(["         fill_set_visit --- Travelling to: ", [X1, Y1], " --- ", Visited]),
+
+            fill_set_visit(Board, X1, Y1, Islands, Visited)
+            ;
             true
         )
-    ).
+    ),
+    true
+    %
+    % ( foreachelem(Direction, [](2, 3, 4, 5)), param(Board, X, Y, Islands, Visited) do
+    %     Val is Board[X, Y, Direction],
+    %     writeln(Val),
+    %     ( Val #> 0 ->
+    %         direction(Direction, Word),
+    %         write("[    visiting "), write(Word),
+    %         next_pos([X, Y], Direction, Pos),
+    %         write(", got pos: "), writeln([Pos]),
+    %         % Amount of islands you already visited
+    %         count_nonvars(Islands, Count),
+    %
+    %         % We visited this islands so +1
+    %         SetIndex is Count + 1,
+    %
+    %         fill_set(Board, Pos, Direction, Set, SetIndex, Visited),
+    %         writeln(["    ", Word, " visited: ", Set]),
+    %         true
+    %     ;
+    %         true
+    %     )
+    %)
+    .
 
-fill_set(Board, [X, Y], Direction, Set, SetIndex) :-
+fill_set(Board, [X, Y], Direction, Set, SetIndex, VisitedList) :-
     writeln(["         fill_set --- getting position: ", [X, Y], " --- ", Set]),
-    Vars is Board[X, Y],
-    writeln(["         fill_set --- vars at position:", Vars]),
-    Visited is Vars[6],
+    nth1(Pos, Set, [X,Y]),
+    %writeln(["         fill_set --- vars at position:", Vars]),
+    nth1(Pos, VisitedList, Visited),
+    writeln(["         fill_set --- has been visited: ", Visited]),
     ( nonvar(Visited) ->
         writeln(["         already visited: "]),
         true
@@ -395,6 +303,41 @@ fill_set(Board, [X, Y], Direction, Set, SetIndex) :-
             fill_set(Board, Pos, Direction, Set, SetIndex)
         )
     ).
+
+
+% Neighbors is a list of neighbors of Pos on the Board
+island_neighbors(Board, X,Y, Neighbors) :-
+    writeln(["Checking island_neighbors for :", X, Y]),
+
+    ( foreachelem(Direction, [](2, 3, 4, 5)), param(Board, X,Y, Neighbors) do
+        Val is Board[X,Y,Direction],
+        (Val > 0 ->
+            next_pos([X,Y], Direction, NextPos),
+            find_neighbor(Board, NextPos, Direction, Neighbor),
+            member(Neighbor, Neighbors)
+            ;
+            true
+        )
+    ),
+    %length(Neighbors, _)
+    true.
+
+% Neighbor is a possible neighbor in a certain direction from position (X, Y) on the Board
+find_neighbor(Board, [X, Y], Direction, Neighbor) :-
+        dim(Board, [XMax, YMax, _]),
+
+        X > 0,
+        X =< XMax,
+        Y > 0,
+        Y =< YMax,
+
+        Amount is Board[X, Y, 1],
+        ( Amount > 0 ->
+            Neighbor = [X, Y]
+        ;
+            next_pos([X, Y], Direction, NextPos),
+            find_neighbor(Board, NextPos, Direction, Neighbor)
+        ).
 
 % count the nonvars of a list, assuming that all of the nonvars are at the end of the list
 count_nonvars([], 0).
