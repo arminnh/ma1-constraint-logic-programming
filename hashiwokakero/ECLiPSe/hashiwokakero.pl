@@ -69,7 +69,7 @@ findall(Number) :-
 % and the amounts of briges going North, East, South, or West from the position
 hashiwokakero(Board) :-
     dim(Board, [XMax, YMax, 5]), % 6 variables: Amount, N, E, S, W, visited for each position
-    Board[1..XMax, 1..YMax, 5] #:: 0..1,
+    %Board[1..XMax, 1..YMax, 5] #:: 0..1,
 
     var(FirstIsland),
     ( multifor([X, Y], 1, [XMax, YMax]), param(Board, XMax, YMax, FirstIsland) do
@@ -96,7 +96,6 @@ hashiwokakero(Board) :-
             (N #= 0) or (E #= 0)
         )
     ),
-    writeln("")
     %board_connected_set(Board, FirstIsland, Set),
     %writeln(Set),
 
