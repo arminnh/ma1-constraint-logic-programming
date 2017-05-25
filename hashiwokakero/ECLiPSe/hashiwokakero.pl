@@ -304,11 +304,31 @@ fill_set(Board, [X, Y], Direction, Set, SetIndex, VisitedList) :-
         )
     ).
 
+neighbors_amount([], 0):-
+    true.
+
+neighbors_amount([H|T], Count):-
+    H > 0,
+    neighbors_amount(T, C2),
+    Count is C2 + 1.
+
+
+neighbors_amount([H|T], Count):-
+    neighbors_amount(T, C2),
+    Count is C2
+    .
+
+
 
 % Neighbors is a list of neighbors of Pos on the Board
 island_neighbors(Board, X,Y, Neighbors) :-
     writeln(["Checking island_neighbors for :", X, Y]),
-
+    List is Board[X,Y, 2..5],
+    %writeln(List),
+    neighbors_amount(List,Count),
+    %writeln(List),
+    %writeln(Count),
+    length(Neighbors, Count),
     ( foreachelem(Direction, [](2, 3, 4, 5)), param(Board, X,Y, Neighbors) do
         Val is Board[X,Y,Direction],
         (Val > 0 ->
