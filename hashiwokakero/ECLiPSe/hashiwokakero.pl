@@ -214,16 +214,10 @@ board_connected_set(Board, Count) :-
     count_nonvars(Visited, Count),
     writeln(Count),
     Count = N,
-    %island_neighbors(Board, X,Y, Neighbors),
-    %writeln(Neighbors),
-    % array_list(SetArray, Set),
-    % ( foreachelem(Island, SetArray) do
-    %     nonvar(Island)
-    % ),
     true.
 
 fill_set_visit(Board, X, Y, Islands, Visited) :-
-    writeln(["         fill_set_visit --- getting position: ", [X, Y], " --- ", Islands]),
+    %writeln(["         fill_set_visit --- getting position: ", [X, Y], " --- ", Islands]),
     island_neighbors(Board, X,Y, Neighbors),
     %writeln(Neighbors),
     length(Neighbors, N),
@@ -231,7 +225,7 @@ fill_set_visit(Board, X, Y, Islands, Visited) :-
     % PROBLEM IS HERE SOMEWHERE, AFTER FAILURE IT BACKTRACKS UNTILL HERE AND ADD'S A NEW VAR????
     % LOOK FOR THE finished visiting STATEMENT, AFTER THIS STATEMENT IT COMES BACK TO HERE
     % ONLY IF THE COUNT IS NOT THE SAME AS THE AMOUNT OF ISLANDS (board_connected_set)
-    writeln(["Pos: ", X, Y, " has neighbors ",Neighbors]),
+    %writeln(["Pos: ", X, Y, " has neighbors ",Neighbors]),
 
     ( for(I,1,N), param(Board, Islands, Visited, Neighbors) do
 
@@ -239,13 +233,13 @@ fill_set_visit(Board, X, Y, Islands, Visited) :-
         nth1(Pos, Islands, [X1,Y1]),
         nth1(Pos, Visited, HasVisited),
         %member([X1,Y1], Neighbors),
-        writeln(["Checking neighbor: ", X1, Y1, "Which has Index: ", Pos, " in visited and has been visited: ", HasVisited ]),
-        writeln(["Neighbors ",Neighbors]),
+        %writeln(["Checking neighbor: ", X1, Y1, "Which has Index: ", Pos, " in visited and has been visited: ", HasVisited ]),
+        %writeln(["Neighbors ",Neighbors]),
 
         % If it is still a var, we haven't visited this islands yet so let's go and visit it :D
         (var(HasVisited) ->
             HasVisited is 1,
-            writeln(["         fill_set_visit --- Travelling to: ", [X1, Y1], " --- ", Visited]),
+            %writeln(["         fill_set_visit --- Travelling to: ", [X1, Y1], " --- ", Visited]),
 
             fill_set_visit(Board, X1, Y1, Islands, Visited)
             ;
@@ -253,56 +247,7 @@ fill_set_visit(Board, X, Y, Islands, Visited) :-
         )
     ),
     true
-    %
-    % ( foreachelem(Direction, [](2, 3, 4, 5)), param(Board, X, Y, Islands, Visited) do
-    %     Val is Board[X, Y, Direction],
-    %     writeln(Val),
-    %     ( Val #> 0 ->
-    %         direction(Direction, Word),
-    %         write("[    visiting "), write(Word),
-    %         next_pos([X, Y], Direction, Pos),
-    %         write(", got pos: "), writeln([Pos]),
-    %         % Amount of islands you already visited
-    %         count_nonvars(Islands, Count),
-    %
-    %         % We visited this islands so +1
-    %         SetIndex is Count + 1,
-    %
-    %         fill_set(Board, Pos, Direction, Set, SetIndex, Visited),
-    %         writeln(["    ", Word, " visited: ", Set]),
-    %         true
-    %     ;
-    %         true
-    %     )
-    %)
     .
-
-fill_set(Board, [X, Y], Direction, Set, SetIndex, VisitedList) :-
-    writeln(["         fill_set --- getting position: ", [X, Y], " --- ", Set]),
-    nth1(Pos, Set, [X,Y]),
-    %writeln(["         fill_set --- vars at position:", Vars]),
-    nth1(Pos, VisitedList, Visited),
-    writeln(["         fill_set --- has been visited: ", Visited]),
-    ( nonvar(Visited) ->
-        writeln(["         already visited: "]),
-        true
-    ;
-        Visited #= 1,
-        writeln(["         visited: ", [X, Y]]),
-        Amount is Vars[1],
-        writeln(["         amount of bridges: ", Amount]),
-        ( Amount > 0 ->
-            % Add islands to set
-            nth1(SetIndex, Set, [X, Y]),
-            writeln(["         member of set: ", Set]),
-            % Then start viting next islands?
-            fill_set_visit(Board, X, Y, Set)
-        ;
-            next_pos([X, Y], Direction, Pos),
-            writeln(["         moving on to: ", Pos]),
-            fill_set(Board, Pos, Direction, Set, SetIndex)
-        )
-    ).
 
 neighbors_amount([], 0):-
     true.
@@ -318,16 +263,11 @@ neighbors_amount([H|T], Count):-
     Count is C2
     .
 
-
-
 % Neighbors is a list of neighbors of Pos on the Board
 island_neighbors(Board, X,Y, Neighbors) :-
-    writeln(["Checking island_neighbors for :", X, Y]),
+    %writeln(["Checking island_neighbors for :", X, Y]),
     List is Board[X,Y, 2..5],
-    %writeln(List),
     neighbors_amount(List,Count),
-    %writeln(List),
-    %writeln(Count),
     length(Neighbors, Count),
     ( foreachelem(Direction, [](2, 3, 4, 5)), param(Board, X,Y, Neighbors) do
         Val is Board[X,Y,Direction],
@@ -339,7 +279,6 @@ island_neighbors(Board, X,Y, Neighbors) :-
             true
         )
     ),
-    %length(Neighbors, _)
     true.
 
 % Neighbor is a possible neighbor in a certain direction from position (X, Y) on the Board
