@@ -171,7 +171,14 @@ board_islands(Board, Islands) :-
     board_islands_count(Board, Count),
     length(Islands, Count).
 
-board_islands(_, X, Y, X, Y, _, _).
+board_islands(Board, X, Y, X, Y, Count, Islands):-
+    Amount is Board[X, Y, 1],
+    ( Amount > 0 ->
+        nth1(Count, Islands, [X, Y])
+    ;
+        true
+    )
+    .
 board_islands(Board, XNext, YNext, XMax, YMax, Count, Islands) :-
     XNext =< XMax,
     YNext =< YMax,
@@ -203,7 +210,6 @@ board_connected_set(Board) :-
     writeln(Islands),
     length(Islands, N),
     length(Visited, N),
-
     %writeln(["Amount of islands: ", N]),
 
     % make the island be member of current set
@@ -225,10 +231,11 @@ board_connected_set(Board) :-
     true.
 
 fill_set_visit(Board, X, Y, Islands, Visited) :-
-    %writeln(["         fill_set_visit --- getting position: ", [X, Y], " --- ", Islands]),
     island_neighbors(Board, X,Y, Neighbors),
     %writeln(Neighbors),
     length(Neighbors, N),
+    writeln(["         fill_set_visit --- getting position: ", [X, Y], " --- ", Neighbors]),
+
     % TODO
     % PROBLEM IS HERE SOMEWHERE, AFTER FAILURE IT BACKTRACKS UNTILL HERE AND ADD'S A NEW VAR????
     % LOOK FOR THE finished visiting STATEMENT, AFTER THIS STATEMENT IT COMES BACK TO HERE
@@ -239,12 +246,10 @@ fill_set_visit(Board, X, Y, Islands, Visited) :-
         %writeln(["I", I]),
         nth1(I, Neighbors, [X1,Y1]),
 
-        % invoc 2455
         nth1(Pos, Islands, [X1,Y1]),
-
         nth1(Pos, Visited, HasVisited),
         %member([X1,Y1], Neighbors),
-        %writeln(["Checking neighbor: ", X1, Y1, "Which has Index: ", Pos, " in visited and has been visited: ", HasVisited ]),
+        writeln(["Checking neighbor: ", X1, Y1, "Which has Index: ", Pos, " in visited and has been visited: ", HasVisited, "Visited set: ", Visited ]),
         %writeln(["Neighbors ",Neighbors]),
 
         % If it is still a var, we haven't visited this islands yet so let's go and visit it :D
@@ -257,7 +262,7 @@ fill_set_visit(Board, X, Y, Islands, Visited) :-
             true
         )
     ),
-    true
+    !
     .
 
 neighbors_amount([], 0):-
