@@ -5,17 +5,17 @@
 :- import nth1/3 from listut.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Hashiwokakero, also called Bridges is a logic puzzle in which different islands
+% Hashiwokakero, also called Bridges is a logic puzzle in which different islands
 % have to be connected by bridges. A bridges puzzle consists of a square grid
 % in which some numbers are placed. Squares on which a number is placed are
 % referred to as islands. The goal of the puzzle is to draw bridges between
-% islands subject to the following restrictions.
+% islands subject to the following restrictions.
 %     Bridges can only run horizontally or vertically.
-%     Bridges run in one straight line.
-%     Bridges cannot cross other bridges or islands.
-%     At most two bridges connect a pair of islands.
-%     The number of bridges connected to each island must match the number on that island.
-%     The bridges must connect the islands into a single connected group.
+%     Bridges run in one straight line.
+%     Bridges cannot cross other bridges or islands.
+%     At most two bridges connect a pair of islands.
+%     The number of bridges connected to each island must match the number on that island.
+%     The bridges must connect the islands into a single connected group.
 %
 % Solution started from http://stackoverflow.com/questions/20337029/hashi-puzzle-representation-to-solve-all-solutions-with-prolog-restrictions/20364306#20364306
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -30,39 +30,33 @@ solve(Number) :-
 
     % create bridges and set constraints
     hashiwokakero(Board),
-    writeln("kk"),
+    %writeln("kk"),
 
     % do search on variables
     search(naive, Board),
+
     % Check that everything is connected
-    %board_islands(Board, AllIslands),
-    %length(AllIslands, N),
-    writeln("connected"),
+    %writeln("connected"),
     board_connected_set(Board),
 
     % print results
     writeln("Search done:"),
-    print_board(Board),
-    true.
-
+    print_board(Board).
 
 % find all solutions
 findall(Number) :-
-    % puzzle_board(Number, Board),
     findall(_, solve(Number), Sols),
     length(Sols, N),
-    write(N), writeln(" solutions.").
-    % print_connected_sets(Board, Sols).
+    write(N),
+    writeln(" solution(s).").
 
 % The board can be viewed as a matrix in which each position contains an array
 % of 5 variables: The amount of bridges that need to be connected to the position,
 % and the amounts of briges going North, East, South, or West from the position
 hashiwokakero(Board) :-
-    dim(Board, [XMax, YMax, 5]), % 6 variables: Amount, N, E, S, W, visited for each position
-    %Board[1..XMax, 1..YMax, 5] #:: 0..1,
+    dim(Board, [XMax, YMax, 5]), % 5 variables: Amount, N, E, S, W, visited for each position
 
-    var(FirstIsland),
-    ( multifor([X, Y], 1, [XMax, YMax]), param(Board, XMax, YMax, FirstIsland) do
+    ( multifor([X, Y], 1, [XMax, YMax]), param(Board, XMax, YMax) do
         Amount is Board[X, Y, 1],
         N is Board[X, Y, 2],
         E is Board[X, Y, 3],
@@ -75,29 +69,46 @@ hashiwokakero(Board) :-
         ( Y < YMax -> E #= Board[  X, Y+1, 5] ; E = 0 ),
         ( X < XMax -> S #= Board[X+1,   Y, 2] ; S = 0 ),
         ( Y > 1    -> W #= Board[  X, Y-1, 3] ; W = 0 ),
+
         % if this position requires an amount of bridges,
         % make the sum of all bridges equal this amount
         ( Amount > 0 ->
             [N, E, S, W] #:: 0..2,
-            N + E + S + W #= Amount,
-            ( var(FirstIsland) -> FirstIsland = [X, Y] ; true)
+            N + E + S + W #= Amount
         ; % else make sure bridges don't cross each other
             N = S, E = W,
             (N #= 0) or (E #= 0)
         )
-    ),
+    ).
 
-    true.
+% checks whether the islands on the Board form a connected set. Done by starting on an island and visiting all of its neighbors and checking whether all islands have been visited.
+board_connected_set(Board) :-
+    board_islands(Board, Islands),
+    length(Islands, N),
+    length(Visited, N),
+
+    % make the island be member of current set
+    nth1(1, Islands, [X, Y]),
+
+    % set position to visited
+    nth1(1, Visited, 1),
+
+    % travel to the neighbors of the current position and fill the Islands/Visited set
+    fill_set_visit(Board, X, Y, Islands, Visited),
+
+    % if all free variables in Visited have been bound, then all islands form a connected set
+    count_nonvars(Visited, N).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% HELPER PROCEDURES
+% LOADING BOARDS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% load the board from a puzzle fact
+
+% load the Board from a puzzle fact
 puzzle_board(Number, Board) :-
     % Each puzzle(Id, S, Islands) fact defines the input of one problem:
-    % its identier Id, the size S (width and height), and the list of islands Islands.
+    % its identifier Id, the size S (width and height), and the list of islands Islands.
     puzzle(Number, Size, Islands),
 
     % create a board with the islands on it
@@ -109,18 +120,7 @@ puzzle_board(Number, Board) :-
     board(Number, Matrix),
     matrix_board(Matrix, Board).
 
-print_connected_sets(_, []).
-
-print_connected_sets(Board, [ Sol | Sols ]) :-
-    board_connected_set(Board, [1, 1], Sol),
-    writeln("Connected set:"),
-    print_board(Board),
-    print_connected_sets(Board, Sols).
-
-print_connected_sets(Board, [ _ | Sols ]) :-
-    print_connected_sets(Board, Sols).
-
-% create a usable board from an array of Islands
+% create a usable Board from an array of Islands
 % each island takes the form (X, Y, N) where X is the row number, Y is the column
 % number and N the number of bridges that should arrive in this island.
 islands_board(Islands, Size, Board) :-
@@ -142,7 +142,7 @@ islands_board(Islands, Size, Board) :-
         )
     ).
 
-% create a usable board from a matrix that contains the islands
+% create a usable Board from a matrix that contains the islands
 matrix_board(Matrix, Board) :-
     dim(Matrix, [XMax, YMax]),
     dim(Board, [XMax, YMax, 5]),
@@ -152,7 +152,13 @@ matrix_board(Matrix, Board) :-
         Board[X, Y, 1] #= Matrix[X, Y]
     ).
 
-% board_islands_count(Board, Count)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ISLANDS PROCEDURES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% Count is the amount of islands on the Board
 board_islands_count(Board, Count) :-
     dim(Board, [XMax, YMax, _]),
 
@@ -165,20 +171,23 @@ board_islands_count(Board, Count) :-
     ),
     length(List, Count).
 
+% Islands is a list of islands that are on the given Board. Done by passing over the entire board. nth1 is used to prevent permutations causing many solutions. TODO: try with 1 simple procedure using cuts instead?
 board_islands(Board, Islands) :-
     dim(Board, [XMax, YMax, 5]),
     board_islands(Board, 1, 1, XMax, YMax, 1, Islands),
     board_islands_count(Board, Count),
     length(Islands, Count).
 
+% Islands is a list of islands that are on the given Board. Done by passing over the entire board. nth1 is used to prevent permutations causing many solutions. TODO: try with 1 simple procedure using cuts instead?
 board_islands(Board, X, Y, X, Y, Count, Islands):-
     Amount is Board[X, Y, 1],
     ( Amount > 0 ->
         nth1(Count, Islands, [X, Y])
     ;
         true
-    )
-    .
+    ).
+
+% Islands is a list of islands that are on the given Board. Done by passing over the entire board. nth1 is used to prevent permutations causing many solutions. TODO: try with 1 simple procedure using cuts instead?
 board_islands(Board, XNext, YNext, XMax, YMax, Count, Islands) :-
     XNext =< XMax,
     YNext =< YMax,
@@ -190,10 +199,7 @@ board_islands(Board, XNext, YNext, XMax, YMax, Count, Islands) :-
         YNext2 is YNext + 1,
         XNext2 is XNext
     ),
-    % TODO: PROBLEM HERE
-    % Uncomment this below, to get endless loop
-    % XNext =< XMax,
-    %writeln(["XNext", XNext2, "YNext", YNext2]),
+
     ( Amount > 0 ->
         nth1(Count, Islands, [XNext, YNext]),
         CountNext is Count + 1
@@ -202,45 +208,12 @@ board_islands(Board, XNext, YNext, XMax, YMax, Count, Islands) :-
     ),
     board_islands(Board, XNext2, YNext2, XMax, YMax, CountNext, Islands).
 
-% Create list Set, set its length, fill the set by visiting the given island's neighbors
-board_connected_set(Board) :-
-    %dim(Board, [XMax, YMax, 6]), % 6 variables: Amount, N, E, S, W, visited for each position
-    writeln("board_connected_set"),
-    board_islands(Board, Islands),
-    writeln(Islands),
-    length(Islands, N),
-    length(Visited, N),
-    %writeln(["Amount of islands: ", N]),
-
-    % make the island be member of current set
-    nth1(1, Islands, [X, Y]),
-    %writeln(["         board_connected_set --- getting position: ", [X, Y], " --- ", Islands]),
-
-    % set position to visited
-    nth1(1, Visited, 1),
-
-    % travel to the neighbors of the current position and fill the current set
-    % DFS
-    %writeln("Start"),
-
-    fill_set_visit(Board, X, Y, Islands, Visited),
-    %writeln("finished visiting"),
-    count_nonvars(Visited, Count),
-    writeln(Count),
-    Count = N,
-    true.
-
+% Islands is a list of islands on the Board that form a connected set starting from a certain island. Visited is used to prevent visiting islands multiple times.
 fill_set_visit(Board, X, Y, Islands, Visited) :-
     island_neighbors(Board, X,Y, Neighbors),
     %writeln(Neighbors),
     length(Neighbors, N),
-    writeln(["         fill_set_visit --- getting position: ", [X, Y], " --- ", Neighbors]),
-
-    % TODO
-    % PROBLEM IS HERE SOMEWHERE, AFTER FAILURE IT BACKTRACKS UNTILL HERE AND ADD'S A NEW VAR????
-    % LOOK FOR THE finished visiting STATEMENT, AFTER THIS STATEMENT IT COMES BACK TO HERE
-    % ONLY IF THE COUNT IS NOT THE SAME AS THE AMOUNT OF ISLANDS (board_connected_set)
-    %writeln(["Pos: ", X, Y, " has neighbors ",Neighbors]),
+    % writeln(["         fill_set_visit --- getting position: ", [X, Y], " --- ", Neighbors]),
 
     ( for(I,1,N), param(Board, Islands, Visited, Neighbors) do
         %writeln(["I", I]),
@@ -248,44 +221,41 @@ fill_set_visit(Board, X, Y, Islands, Visited) :-
 
         nth1(Pos, Islands, [X1,Y1]),
         nth1(Pos, Visited, HasVisited),
-        %member([X1,Y1], Neighbors),
-        writeln(["Checking neighbor: ", X1, Y1, "Which has Index: ", Pos, " in visited and has been visited: ", HasVisited, "Visited set: ", Visited ]),
-        %writeln(["Neighbors ",Neighbors]),
+        % member([X1,Y1], Neighbors),
+        % writeln(["Checking neighbor: ", X1, Y1, "Which has Index: ", Pos, " in visited and has been visited: ", HasVisited, "Visited set: ", Visited ]),
+        % writeln(["Neighbors ",Neighbors]),
 
-        % If it is still a var, we haven't visited this islands yet so let's go and visit it :D
+        % If it is still a var, we haven't visited this islands yet so let's go and visit it :D yaayyyy :D :D :D i agree!
         (var(HasVisited) ->
             HasVisited is 1,
-            %writeln(["         fill_set_visit --- Travelling to: ", [X1, Y1], " --- ", Visited]),
-
             fill_set_visit(Board, X1, Y1, Islands, Visited)
-            ;
+        ;
             true
         )
     ),
-    %http://www.learnprolognow.org/lpnpage.php?pagetype=html&pageid=lpn-htmlse43
-    !
-    .
+    !.
 
-neighbors_amount([], 0):-
+% TODO pls fill in
+neighbors_count([], 0):-
     true.
 
-neighbors_amount([H|T], Count):-
+% TODO pls fill in
+neighbors_count([H | T], Count):-
     H > 0,
-    neighbors_amount(T, C2),
+    neighbors_count(T, C2),
     Count is C2 + 1.
 
+% TODO pls fill in
+neighbors_count([_ | T], Count):-
+    neighbors_count(T, C2),
+    Count is C2.
 
-neighbors_amount([H|T], Count):-
-    neighbors_amount(T, C2),
-    Count is C2
-    .
-
-% Neighbors is a list of neighbors of Pos on the Board
-island_neighbors(Board, X,Y, Neighbors) :-
-    %writeln(["Checking island_neighbors for :", X, Y]),
-    List is Board[X,Y, 2..5],
-    neighbors_amount(List,Count),
+% Neighbors is a list of neighboring islands (not just positions) of position (X, Y) on the Board
+island_neighbors(Board, X, Y, Neighbors) :-
+    List is Board[X, Y, 2..5],
+    neighbors_count(List, Count),
     length(Neighbors, Count),
+
     ( foreachelem(Direction, [](2, 3, 4, 5)), param(Board, X,Y, Neighbors) do
         Val is Board[X,Y,Direction],
         (Val > 0 ->
@@ -300,20 +270,27 @@ island_neighbors(Board, X,Y, Neighbors) :-
 
 % Neighbor is a possible neighbor in a certain direction from position (X, Y) on the Board
 find_neighbor(Board, [X, Y], Direction, Neighbor) :-
-        dim(Board, [XMax, YMax, _]),
+    dim(Board, [XMax, YMax, _]),
 
-        X > 0,
-        X =< XMax,
-        Y > 0,
-        Y =< YMax,
+    X > 0,
+    X =< XMax,
+    Y > 0,
+    Y =< YMax,
 
-        Amount is Board[X, Y, 1],
-        ( Amount > 0 ->
-            Neighbor = [X, Y]
-        ;
-            next_pos([X, Y], Direction, NextPos),
-            find_neighbor(Board, NextPos, Direction, Neighbor)
-        ).
+    Amount is Board[X, Y, 1],
+    ( Amount > 0 ->
+        Neighbor = [X, Y]
+    ;
+        next_pos([X, Y], Direction, NextPos),
+        find_neighbor(Board, NextPos, Direction, Neighbor)
+    ).
+
+% TODO: was this wrong?
+% find_neighbor(_, _, _, _).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% HELPER PROCEDURES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % count the nonvars of a list, assuming that all of the nonvars are at the end of the list
 count_nonvars([], 0).
@@ -492,4 +469,44 @@ board(9, [](
     [](2, 0, 0, 0, 2),
     [](0, 0, 0, 0, 0),
     [](2, 0, 0, 0, 2)
+)).
+
+board(10, [](
+    [](2, 0, 3, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0),  
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 3, 0, 3),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](2, 0, 0, 0, 0, 0, 8, 0, 0, 0, 5, 0, 2),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](3, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 1),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 3, 0, 4),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](3, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 2)
+)).
+
+board(11, [](
+    [](0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 3, 0, 2, 0),  
+    [](4, 0, 0, 0, 4, 0, 0, 3, 0, 0, 0, 4, 0, 4, 0, 0, 2, 0, 0, 0, 1),  
+    [](0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 4, 0),  
+    [](4, 0, 0, 0, 0, 0, 0, 0, 2, 0, 3, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0),  
+    [](0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),  
+    [](0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0),  
+    [](0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 3, 0, 0, 0, 0, 0),  
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0),  
+    [](0, 4, 0, 0, 0, 0, 0, 0, 2, 0, 0, 3, 0, 0, 0, 0, 0, 4, 0, 1, 0),  
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 3, 0, 1, 0, 0, 0, 0, 0),  
+    [](0, 0, 3, 0, 6, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 2, 0),  
+    [](0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 4, 0, 6, 0, 0, 0, 0, 0, 0, 5),  
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),  
+    [](0, 0, 2, 0, 4, 0, 1, 0, 2, 0, 0, 3, 0, 4, 0, 0, 0, 0, 2, 0, 0),  
+    [](0, 5, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6),  
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 4, 0, 0, 0, 0, 0, 0, 1, 0),  
+    [](3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),  
+    [](0, 3, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 5),  
+    [](0, 0, 0, 1, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0),  
+    [](0, 3, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 2),  
+    [](1, 0, 2, 0, 3, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 4, 0, 2, 0)
 )).
