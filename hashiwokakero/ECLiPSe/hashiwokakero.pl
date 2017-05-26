@@ -262,6 +262,7 @@ fill_set_visit(Board, X, Y, Islands, Visited) :-
             true
         )
     ),
+    %http://www.learnprolognow.org/lpnpage.php?pagetype=html&pageid=lpn-htmlse43
     !
     .
 
