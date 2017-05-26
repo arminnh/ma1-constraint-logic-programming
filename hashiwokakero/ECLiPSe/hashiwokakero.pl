@@ -1,12 +1,8 @@
-% http://tidel.mie.utoronto.ca/pubs/explorations.pdf
-% https://www.google.be/search?q=constraint+programming+connectivity&ie=UTF-8&sa=Search&channel=fe&client=browser-ubuntu&hl=en&gws_rd=cr,ssl&ei=BtkaWbw8wrBp6LeukAg
-
 :- lib(ic).
 % :- import alldifferent/1, sorted/2 from ic_global.
 % :- coroutine.
 :- lib(lists).
 :- import nth1/3 from listut.
-:- import sumlist/2 from ic_global.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Hashiwokakero, also called Bridges is a logic puzzle in which different islands
@@ -30,7 +26,7 @@ solve(Number) :-
     puzzle_board(Number, Board),
 
     writeln("Given board:"),
-	print_board(Board),
+    print_board(Board),
 
     % create bridges and set constraints
     hashiwokakero(Board),
@@ -40,17 +36,8 @@ solve(Number) :-
     search(naive, Board),
 
     % Check that everything is connected
-    board_islands(Board, AllIslands),
-
-    length(AllIslands, N),
-
-    (for(I,1, N), param(AllIslands, Board, N) do
-        (for(J, 1, N), param(AllIslands, Board) do
-            nth1(I, AllIslands, Islands1),
-            nth1(J, AllIslands, Islands2),
-            connected(Board, Islands1, Islands2)
-        )
-    ),
+    %writeln("connected"),
+    board_connected_set(Board),
 
     % print results
     writeln("Search done:"),
@@ -63,60 +50,54 @@ findall(Number) :-
     write(N),
     writeln(" solution(s).").
 
-
-incr_list([], _).
-incr_list([J|T], J) :-
-       H is J+1,
-       incr_list(T, H).
-
 % The board can be viewed as a matrix in which each position contains an array
 % of 5 variables: The amount of bridges that need to be connected to the position,
 % and the amounts of briges going North, East, South, or West from the position
 hashiwokakero(Board) :-
-    dim(Board, [XMax, YMax, 6]), % 6 variables: Amount, N, E, S, W, visited for each position
-    Board[1..XMax, 1..YMax, 6] #:: 0..1,
+    dim(Board, [XMax, YMax, 5]), % 5 variables: Amount, N, E, S, W, visited for each position
 
-    var(FirstIsland),
-
-    ( multifor([X, Y], 1, [XMax, YMax]), param(Board, XMax, YMax, FirstIsland) do
+    ( multifor([X, Y], 1, [XMax, YMax]), param(Board, XMax, YMax) do
         Amount is Board[X, Y, 1],
-        % Get the neighbors of an islands
-        island_neighbors(Board, [X, Y], Neighbors),
+        N is Board[X, Y, 2],
+        E is Board[X, Y, 3],
+        S is Board[X, Y, 4],
+        W is Board[X, Y, 5],
 
-        VX is Vertices[I, 1],
-        VY is Vertices[I, 2],
-        VDegree is Vertices[I, 3],
-        VPossbileNeighbors is Vertices[I, 4],
-        VX = X,
-        VY = Y,
-        VDegree = Amount,
-        VPossbileNeighbors = Neighbors
-    ),
+        % if this position is not on the edges of the board, then the amount of bridges
+        % going in one direction needs to equals the amount in the other direction
+        ( X > 1    -> N #= Board[X-1,   Y, 4] ; N = 0 ),
+        ( Y < YMax -> E #= Board[  X, Y+1, 5] ; E = 0 ),
+        ( X < XMax -> S #= Board[X+1,   Y, 2] ; S = 0 ),
+        ( Y > 1    -> W #= Board[  X, Y-1, 3] ; W = 0 ),
 
         % if this position requires an amount of bridges,
         % make the sum of all bridges equal this amount
         ( Amount > 0 ->
             [N, E, S, W] #:: 0..2,
-            N + E + S + W #= Amount,
-            ( var(FirstIsland) -> FirstIsland = [X, Y] ; true)
+            N + E + S + W #= Amount
         ; % else make sure bridges don't cross each other
             N = S, E = W,
             (N #= 0) or (E #= 0)
         )
-    ),
+    ).
 
-    print_board(Board),
-    %board_connected_set(Board, FirstIsland, Set),
-    %writeln(Set),
+% checks whether the islands on the Board form a connected set. Done by starting on an island and visiting all of its neighbors and checking whether all islands have been visited.
+board_connected_set(Board) :-
+    board_islands(Board, Islands),
+    length(Islands, N),
+    length(Visited, N),
 
-    ( foreacharg(Row, Board) do
-        ( foreacharg(Vars, Row) do
-            Visited is Vars[6],
-            ( nonvar(Visited) -> true ; Visited #= 0)
-        )
-    ),
+    % make the island be member of current set
+    nth1(1, Islands, [X, Y]),
 
-    true.
+    % set position to visited
+    nth1(1, Visited, 1),
+
+    % travel to the neighbors of the current position and fill the Islands/Visited set
+    fill_set_visit(Board, X, Y, Islands, Visited),
+
+    % if all free variables in Visited have been bound, then all islands form a connected set
+    count_nonvars(Visited, N).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -139,134 +120,7 @@ puzzle_board(Number, Board) :-
     board(Number, Matrix),
     matrix_board(Matrix, Board).
 
-print_connected_sets(_, []).
-
-print_connected_sets(Board, [ Sol | Sols ]) :-
-    board_connected_set(Board, [1, 1], Sol),
-    writeln("Connected set:"),
-    print_board(Board),
-    print_connected_sets(Board, Sols).
-
-print_connected_sets(Board, [ _ | Sols ]) :-
-    print_connected_sets(Board, Sols).
-
-
-connected(Board, Islands1, Islands2) :-
-    X \= Islands1,
-    X \= Islands2,
-    connected(Board, Islands1, X), connected(Board, X, Islands2).
-
-connected(Board, [X, Y], [X, Y]) :-
-    true.
-
-connected(Board, Islands1, Islands2) :-
-    bridge(Board, Islands1, Islands2).
-
-
-% We had problems with internal xor so created our own
-xor_bool( 0 , 0 , 0).
-xor_bool( 0 , 1 , 1).
-xor_bool( 1 , 0 , 1).
-xor_bool( 1 , 1 , 0).
-
-%The bridge function is to check if there is an immediate bridge between two Islands
-% This bridge can only move into the NSEW direction and not diagonal!
-bridge(Board, [StartX,StartY], [EndX,EndY]) :-
-        XPos is StartX - EndX,
-        YPos is StartY - EndY,
-
-        IsZeroX is (XPos =\= 0),
-        IsZeroY is (YPos =\= 0),
-
-        xor_bool(IsZeroX, IsZeroY, Answer),
-        % One of them is not zero
-        %writeln(Answer),
-        % N is Board[X, Y, 2],
-        % E is Board[X, Y, 3],
-        % S is Board[X, Y, 4],
-        % W is Board[X, Y, 5],
-
-        %Answer is (IsZeroX+IsZeroY) * (\+ (IsZeroX) + \+ (IsZeroY)),
-
-        (Answer =:= 1 ->
-            % Oke so our XPos is pos, this means that we have an islands on our right
-            ( XPos > 0 ->
-                ( for(X, 1, XPos), param(Board, StartX, StartY, EndX) do
-                    % If there is a bridge the value is not zero
-                    CurPos is StartX - X,
-                    % Check if we are in our destination
-                    (CurPos == EndX ->
-                        % if we are then it's ok, we have a connection
-                        true
-                        ;
-                        % if not check that there is a bridge
-                        Board[CurPos, StartY, 2] \= 0
-                        )
-                )
-                ;
-                (XPos < 0 ->
-                    NewXPos is XPos * -1,
-                    ( for(X, 1, NewXPos), param(Board, StartX, StartY, EndX) do
-                        % If there is a bridge the value is not zero
-                        CurPos is StartX + X,
-                        % Check if we are in our destination
-                        (CurPos == EndX ->
-                            % if we are then it's ok, we have a connection
-                            true
-                            ;
-                            % if not check that there is a bridge
-                            Board[CurPos, StartY, 4] \= 0
-                            )
-
-                    )
-
-                ;(YPos > 0 ->
-                    ( for(Y, 1, YPos), param(Board, StartX, StartY, EndY) do
-                        % If there is a bridge the value is not zero
-                        CurPos is StartY - Y,
-                        % Check if we are in our destination
-                        (CurPos == EndY ->
-                            % if we are then it's ok, we have a connection
-                            true
-                            ;
-                            % if not check that there is a bridge
-                            Board[StartX, CurPos, 5] \= 0
-                            )
-                    )
-                    ;
-                (YPos < 0 ->
-                    NewYPos is YPos * -1,
-                    ( for(Y, 1, NewYPos), param(Board, StartX, StartY, EndY) do
-                        % If there is a bridge the value is not zero
-                        CurPos is StartY + Y,
-                        % Check if we are in our destination
-                        (CurPos == EndY ->
-                            % if we are then it's ok, we have a connection
-                            true
-                            ;
-                            % if not check that there is a bridge
-                            Board[StartX, CurPos, 3] \= 0
-                            )
-                    )
-                    ;
-                    false)
-                    )
-                )
-            )
-        ;
-        false
-        ).
-
-
-    % Als islands 2 links Islands1 => x = 0, YPos positief (N)
-    % Als islands 2 rechts => YPos neg (S)
-    % Als islands2 boven dan Xpos pos (N)
-    % Als islands2 onder dan XPos neg (S)
-
-
-
-
-% create a usable board from an array of Islands
+% create a usable Board from an array of Islands
 % each island takes the form (X, Y, N) where X is the row number, Y is the column
 % number and N the number of bridges that should arrive in this island.
 islands_board(Islands, Size, Board) :-
@@ -288,7 +142,7 @@ islands_board(Islands, Size, Board) :-
         )
     ).
 
-% create a usable board from a matrix that contains the islands
+% create a usable Board from a matrix that contains the islands
 matrix_board(Matrix, Board) :-
     dim(Matrix, [XMax, YMax]),
     dim(Board, [XMax, YMax, 5]),
@@ -319,8 +173,10 @@ board_islands_count(Board, Count) :-
 
 % Islands is a list of islands that are on the given Board. Done by passing over the entire board. nth1 is used to prevent permutations causing many solutions. TODO: try with 1 simple procedure using cuts instead?
 board_islands(Board, Islands) :-
-    dim(Board, [XMax, YMax, 6]),
-    board_islands(Board, 1, 0, XMax, YMax, 1, Islands).
+    dim(Board, [XMax, YMax, 5]),
+    board_islands(Board, 1, 1, XMax, YMax, 1, Islands),
+    board_islands_count(Board, Count),
+    length(Islands, Count).
 
 % Islands is a list of islands that are on the given Board. Done by passing over the entire board. nth1 is used to prevent permutations causing many solutions. TODO: try with 1 simple procedure using cuts instead?
 board_islands(Board, X, Y, X, Y, Count, Islands):-
@@ -409,8 +265,7 @@ island_neighbors(Board, X, Y, Neighbors) :-
             ;
             true
         )
-    ),
-    true.
+    ).
 
 % Neighbor is a possible neighbor in a certain direction from position (X, Y) on the Board
 find_neighbor(Board, [X, Y], Direction, Neighbor) :-
@@ -425,21 +280,8 @@ find_neighbor(Board, [X, Y], Direction, Neighbor) :-
     ( Amount > 0 ->
         Neighbor = [X, Y]
     ;
-        Visited #= 1,
-        writeln(["         visited: ", [X, Y]]),
-        Amount is Vars[1],
-        writeln(["         amount of bridges: ", Amount]),
-        ( Amount > 0 ->
-            % Add islands to set
-            nth1(SetIndex, Set, [X, Y]),
-            writeln(["         member of set: ", Set]),
-            % Then start viting next islands?
-            fill_set_visit(Board, X, Y, Set)
-        ;
-            next_pos([X, Y], Direction, Pos),
-            writeln(["         moving on to: ", Pos]),
-            fill_set(Board, Pos, Direction, Set, SetIndex)
-        )
+        next_pos([X, Y], Direction, NextPos),
+        find_neighbor(Board, NextPos, Direction, Neighbor)
     ).
 
 % TODO: was this wrong?
@@ -667,46 +509,3 @@ board(11, [](
     [](0, 3, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 2),  
     [](1, 0, 2, 0, 3, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 4, 0, 2, 0)
 )).
-    % do search on variables
-    search(naive, Board),
-
-    % Check that everything is connected
-    %writeln("connected"),
-    board_connected_set(Board),
-
-    dim(Board, [XMax, YMax, 5]), % 5 variables: Amount, N, E, S, W, visited for each position
-    ( multifor([X, Y], 1, [XMax, YMax]), param(Board, XMax, YMax) do
-        % if this position requires an amount of bridges,
-        % make the sum of all bridges equal this amount
-        ( Amount > 0 ->
-            [N, E, S, W] #:: 0..2,
-            N + E + S + W #= Amount
-        ; % else make sure bridges don't cross each other
-            N = S, E = W,
-            (N #= 0) or (E #= 0)
-        )
-    ).
-% checks whether the islands on the Board form a connected set. Done by starting on an island and visiting all of its neighbors and checking whether all islands have been visited.
-board_connected_set(Board) :-
-    board_islands(Board, Islands),
-    length(Islands, N),
-    length(Visited, N),
-    % make the island be member of current set
-    nth1(1, Islands, [X, Y]),
-    % set position to visited
-    nth1(1, Visited, 1),
-    % travel to the neighbors of the current position and fill the Islands/Visited set
-    fill_set_visit(Board, X, Y, Islands, Visited),
-    % if all free variables in Visited have been bound, then all islands form a connected set
-    count_nonvars(Visited, N).
-
-
-% create a usable Board from an array of Islands
-% create a usable Board from a matrix that contains the islands
-matrix_board(Matrix, Board) :-
-    dim(Board, [XMax, YMax, 5]),
-    board_islands(Board, 1, 1, XMax, YMax, 1, Islands),
-    board_islands_count(Board, Count),
-    length(Islands, Count).
-        next_pos([X, Y], Direction, NextPos),
-        find_neighbor(Board, NextPos, Direction, Neighbor)
