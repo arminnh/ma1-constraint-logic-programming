@@ -167,35 +167,33 @@ board_islands_count(Board, Count) :-
 
 board_islands(Board, Islands) :-
     dim(Board, [XMax, YMax, 5]),
-    board_islands(Board, 1, 0, XMax, YMax, 1, Islands),
+    board_islands(Board, 1, 1, XMax, YMax, 1, Islands),
     board_islands_count(Board, Count),
     length(Islands, Count).
 
 board_islands(_, X, Y, X, Y, _, _).
-board_islands(Board, X, Y, XMax, YMax, Count, Islands) :-
-    X =< XMax,
-    Y =< YMax,
-    length(Islands,N),
-    Count =< N,
-    ( Y = YMax ->
-        YNext is 1,
-        XNext is X + 1
+board_islands(Board, XNext, YNext, XMax, YMax, Count, Islands) :-
+    XNext =< XMax,
+    YNext =< YMax,
+    Amount is Board[XNext, YNext, 1],
+    ( YNext = YMax ->
+        YNext2 is 1,
+        XNext2 is XNext + 1
     ;
-        YNext is Y + 1,
-        XNext is X
+        YNext2 is YNext + 1,
+        XNext2 is XNext
     ),
     % TODO: PROBLEM HERE
     % Uncomment this below, to get endless loop
     % XNext =< XMax,
-    writeln(["XNext", XNext, "YNext", YNext]),
-    Amount is Board[XNext, YNext, 1],
+    %writeln(["XNext", XNext2, "YNext", YNext2]),
     ( Amount > 0 ->
         nth1(Count, Islands, [XNext, YNext]),
         CountNext is Count + 1
     ;
         CountNext is Count
     ),
-    board_islands(Board, XNext, YNext, XMax, YMax, CountNext, Islands).
+    board_islands(Board, XNext2, YNext2, XMax, YMax, CountNext, Islands).
 
 % Create list Set, set its length, fill the set by visiting the given island's neighbors
 board_connected_set(Board) :-
@@ -206,28 +204,28 @@ board_connected_set(Board) :-
     length(Islands, N),
     length(Visited, N),
 
-    writeln(["Amount of islands: ", N]),
+    %writeln(["Amount of islands: ", N]),
 
     % make the island be member of current set
     nth1(1, Islands, [X, Y]),
-    writeln(["         board_connected_set --- getting position: ", [X, Y], " --- ", Islands]),
+    %writeln(["         board_connected_set --- getting position: ", [X, Y], " --- ", Islands]),
 
     % set position to visited
     nth1(1, Visited, 1),
 
     % travel to the neighbors of the current position and fill the current set
     % DFS
-    writeln("Start"),
+    %writeln("Start"),
 
     fill_set_visit(Board, X, Y, Islands, Visited),
-    writeln("finished visiting"),
+    %writeln("finished visiting"),
     count_nonvars(Visited, Count),
     writeln(Count),
     Count = N,
     true.
 
 fill_set_visit(Board, X, Y, Islands, Visited) :-
-    writeln(["         fill_set_visit --- getting position: ", [X, Y], " --- ", Islands]),
+    %writeln(["         fill_set_visit --- getting position: ", [X, Y], " --- ", Islands]),
     island_neighbors(Board, X,Y, Neighbors),
     %writeln(Neighbors),
     length(Neighbors, N),
@@ -238,7 +236,7 @@ fill_set_visit(Board, X, Y, Islands, Visited) :-
     %writeln(["Pos: ", X, Y, " has neighbors ",Neighbors]),
 
     ( for(I,1,N), param(Board, Islands, Visited, Neighbors) do
-        writeln(["I", I]),
+        %writeln(["I", I]),
         nth1(I, Neighbors, [X1,Y1]),
 
         % invoc 2455
@@ -246,7 +244,7 @@ fill_set_visit(Board, X, Y, Islands, Visited) :-
 
         nth1(Pos, Visited, HasVisited),
         %member([X1,Y1], Neighbors),
-        writeln(["Checking neighbor: ", X1, Y1, "Which has Index: ", Pos, " in visited and has been visited: ", HasVisited ]),
+        %writeln(["Checking neighbor: ", X1, Y1, "Which has Index: ", Pos, " in visited and has been visited: ", HasVisited ]),
         %writeln(["Neighbors ",Neighbors]),
 
         % If it is still a var, we haven't visited this islands yet so let's go and visit it :D
