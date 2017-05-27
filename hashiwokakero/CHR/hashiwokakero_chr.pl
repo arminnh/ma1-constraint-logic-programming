@@ -4,7 +4,8 @@
 :- chr_constraint print_row/1, print_pos/1, enum/1, enum_board/0.
 :- chr_constraint make_domain/2, make_domains/1, domain_list/1.
 :- chr_constraint islands_board/1, matrix_board/2, create_islands/1, create_empty_board/3.
-:- chr_constraint board/7, create_board/3, output/1, size/1, print_board/2, board_facts_from_row/3.
+:- chr_constraint board/7, create_board/3, output/1, size/1, print_board/2,
+                  board_facts_from_row/3, board_facts_from_matrix/2.
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
@@ -24,9 +25,9 @@ solve(Number) <=>
     upto(DomainList, 2),
     domain_list(DomainList),
     writeln("Given board:"),
-    print_board,
+    print_board.
 
-    enum_board.
+    %enum_board.
 
     % create bridges and set constraints
     %hashiwokakero_constraints,
@@ -64,13 +65,13 @@ puzzle_board(Number) <=>
 
 % create a usable Board from a matrix that contains the islands
 board_facts_from_matrix([], _).
-board_facts_from_matrix([ Row | Rows ], X) :-
-    board_facts_from_row(Row),
+board_facts_from_matrix([ Row | Rows ], X) <=>
+    board_facts_from_row(Row, X, 1),
     XN is X + 1,
     board_facts_from_matrix(Rows, XN).
 
-board_facts_from_row([]).
-board_facts_from_row([ Number | Row ], X, Y) <=>
+board_facts_from_row([], _, _).
+domain_list(Domain)\ board_facts_from_row([ Number | Row ], X, Y) <=>
     board(X, Y, Number, N, E, S, W),
     N in Domain,
     E in Domain,
@@ -127,7 +128,7 @@ size(Size) \ print_board(X,Y) <=> X > Size|
     print_board(1,Y2)
     .
 
-size(Size), board(X,Y, Val, NS, EW, _, _) \ print_board(X,Y) <=> X =< Size |
+size(Size), board(X,Y, Val, NS, EW, _, _) \ print_board(X,Y) <=> board(X,Y, Val, NS, EW, _, _) |
     % X Y Amount, N E, S, W
     (Val > 0 ->
         write(Val)
