@@ -1,17 +1,18 @@
 :- use_module(library(chr)).
 
-:- chr_constraint solve/1, puzzle_board/1, print_board/0, hashiwokakero/1.
+:- chr_constraint solve/1, puzzle_board/1, print_board/0, hashiwokakero/0.
 :- chr_constraint print_row/1, print_pos/1, enum/1, enum_board/0.
 :- chr_constraint make_domain/2, make_domains/1, domain_list/1.
 :- chr_constraint islands_board/1, matrix_board/2, create_islands/1, create_empty_board/3.
 :- chr_constraint board/7, create_board/3, output/1, size/1, print_board/2,
-                  board_facts_from_row/3, board_facts_from_matrix/2.
+                  board_facts_from_row/3, board_facts_from_matrix/2,
+                  diff/2.
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
 :- op(700, xfx, eq).
 :- op(600, xfx, '..').
-:- chr_constraint le/2, eq/2, in/2, add/3.
+:- chr_constraint le/2, eq/2, in/2, add/3, or_eq/3.
 :- chr_option(debug,off).
 :- chr_option(optimize,full).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -28,6 +29,7 @@ solve(Number) <=>
 
     print_board(1,1),
     nl,
+    hashiwokakero,
 
     enum_board,
     print_board(1,1),
@@ -49,6 +51,25 @@ solve(Number) <=>
     %writeln("Search done:"),
     %print_board.
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% RULES USED FOR READING BOARD
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+board(X,Y, Amount, N, E, S, W) ==> Amount > 0|
+    add(N,E,Sum),
+    add(S,W,Sum2),
+    add(Sum, Sum2, Amount),
+    true.
+
+board(X,Y, Amount, N, E, S, W) ==> Amount = 0, N = S, E = W|
+    or_eq(N,E,0),
+    writeln("HERE"),
+    true.
+%
+% board(X,Y, Amount, N, E, S, W) ==> Amount = 0, N = S, E = W|
+%     eq(E,0),
+%     writeln("YES"),
+%     true.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR READING BOARD
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -145,7 +166,16 @@ symbol(_, _, "*").
 % RULES USED FOR CONSTRAINTS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% X and Y are instantiated and are different
+add(X, Y, Z) <=> nonvar(X), nonvar(Y) | Z is X + Y.
+or_eq(X, Y, Z) <=> nonvar(X), nonvar(Y), nonvar(Z) | (X == Z; Y == Z).
 
+
+% X and Y are instantiated and are different
+diff(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
+% Put improvement into report!
+diff(Y, X) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
+diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR DOMAIN SOLVING
