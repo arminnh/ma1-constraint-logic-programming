@@ -52,16 +52,33 @@ solve(Number) <=>
 puzzle_board(Number) <=>
     % Each puzzle(Id, S, Islands) fact defines the input of one problem:
     % its identifier Id, the size S (width and height), and the list of islands Islands.
-    puzzle(Number, Size, Islands),
+    puzzle(Number, Size, Islands) |
     size(Size),
     % create a board with the islands on it
     islands_board(Islands).
 
-% load the board from a matrix fact
-%puzzle_board(Number) <=>
+%load the board from a matrix fact
+puzzle_board(Number) <=>
     % create a board from a matrix that contains the islands
-%    board(Number, Matrix),
-%    matrix_board(Matrix, Board).
+    board(Number, Matrix) |
+    board_facts_from_matrix(Matrix, 1).
+
+% create a usable Board from a matrix that contains the islands
+board_facts_from_matrix([], _).
+board_facts_from_matrix([ Row | Rows ], X) :-
+    board_facts_from_row(Row),
+    XN is X + 1,
+    board_facts_from_matrix(Rows, XN).
+
+board_facts_from_row([]).
+board_facts_from_row([ Number | Row ], X, Y) <=>
+    board(X, Y, Number, N, E, S, W),
+    N in Domain,
+    E in Domain,
+    S in Domain,
+    W in Domain,
+    YN is Y + 1,
+    board_facts_from_row(Row, X, YN).
 
 % create a usable Board from an array of Islands
 % each island takes the form (X, Y, N) where X is the row number, Y is the column
@@ -101,17 +118,6 @@ size(Size) \ islands_board(Islands) <=>
     create_empty_board(1,1, Size),
     %dim(Board, [Size, Size, 5]),
     create_islands(Islands),
-    true.
-
-% create a usable Board from a matrix that contains the islands
-matrix_board(Matrix, Board) :-
-    %dim(Matrix, [XMax, YMax]),
-    %dim(Board, [XMax, YMax, 5]),
-
-    % fill in the island bridge amounts first
-    % ( multifor([X, Y], 1, [XMax, YMax]), param(Matrix, Board) do
-    %     Board[X, Y, 1] #= Matrix[X, Y]
-    % )
     true.
 
 
