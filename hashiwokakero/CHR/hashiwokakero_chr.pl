@@ -25,10 +25,14 @@ solve(Number) <=>
     upto(DomainList, 2),
     domain_list(DomainList),
     writeln("Given board:"),
-    
-    print_board(1,1).
 
-    %enum_board.
+    print_board(1,1),
+    nl,
+
+    enum_board,
+    print_board(1,1),
+    nl,
+    true.
 
     % create bridges and set constraints
     %hashiwokakero_constraints,
@@ -102,7 +106,7 @@ domain_list(Domain) \ create_empty_board(X, Y, Size) <=> X =< Size|
 
 create_islands([]) <=>
     true.
- 
+
 create_islands([ [X, Y, Amount] | Islands ]), board(X, Y, _, N, E, S, W) <=>
     board(X, Y, Amount, N, E, S, W),
     create_islands(Islands).
@@ -110,14 +114,6 @@ create_islands([ [X, Y, Amount] | Islands ]), board(X, Y, _, N, E, S, W) <=>
 size(Size) \ islands_board(Islands) <=>
     create_empty_board(1,1, Size),
     create_islands(Islands).
-
-print_board(_, Y) <=> not(board(_, Y, _, _, _, _, _)) |
-    nl, nl.
-
-print_board(X, Y) <=> not(board(X, _, _, _, _, _, _)) |
-    Y2 is Y + 1,
-    nl,
-    print_board(1, Y2).
 
 board(X,Y, Val, NS, EW, _, _) \ print_board(X,Y) <=>
     (Val > 0 ->
@@ -130,14 +126,20 @@ board(X,Y, Val, NS, EW, _, _) \ print_board(X,Y) <=>
             write(' ')
         )
     ),
+    Y2 is Y + 1,
+    print_board(X,Y2).
+
+board(X, _, _, _, _, _, _) \ print_board(X, _) <=>
     X2 is X + 1,
-    print_board(X2,Y).
+    nl,
+    print_board(X2,1).
 
 symbol(0, 0, ' ').
 symbol(0, 1, '-').
 symbol(0, 2, '=').
 symbol(1, 0, '|').
 symbol(2, 0, '"').
+symbol(_, _, "*").
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR CONSTRAINTS
