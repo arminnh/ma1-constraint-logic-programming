@@ -1,6 +1,6 @@
 :- use_module(library(chr)).
 
-:- chr_constraint solve/1, puzzle_board/1, print_board/1, hashiwokakero/1.
+:- chr_constraint solve/1, puzzle_board/1, print_board/0, hashiwokakero/1.
 :- chr_constraint print_row/1, print_pos/1, enum/1, enum_board/1.
 :- chr_constraint make_domain/2, make_domains/1, domain_list/1.
 :- chr_constraint islands_board/2, matrix_board/2, create_islands/1, create_empty_board/3.
@@ -23,7 +23,7 @@ solve(Number) <=>
     puzzle_board(Number),
 
     writeln("Given board:"),
-    print_board(Board).
+    print_board.
 
     % create bridges and set constraints
     %hashiwokakero(Board),
@@ -72,7 +72,7 @@ create_empty_board(X,Y, Size) <=> X > Size|
 
 create_empty_board(X,Y, Size) <=> X =< Size|
     % X Y Amount, N E, S, W
-    board(X,Y, 0, 0, 0, 0, 0),
+    board(X,Y, 0, _, _, _, _),
     X2 is X + 1,
     create_empty_board(X2,Y,Size)
     .
@@ -80,13 +80,8 @@ create_empty_board(X,Y, Size) <=> X =< Size|
 create_islands([]) <=>
     true.
 
-output([X,Y,Amount]) <=>
-    writeln(X),
-    writeln(Y),
-    writeln(Amount).
-
-create_islands([ H | Islands]) <=>
-    output(H),
+create_islands([ [X,Y,Amount] | Islands]), board(X,Y, _ , _ , _ , _,_) <=>
+    board(X,Y, Amount , _ , _ , _,_),
     create_islands(Islands).
     %board(X,Y, Amount, 0, 0, 0, 0),
     %create_islands(Islands).
@@ -285,7 +280,7 @@ print_row([H|T]) <=>
     print_pos(H),
     print_row(T).
 
-print_board(Board) <=>
+print_board <=>
     print_row(Board),
     true.
 
@@ -399,15 +394,15 @@ list_remove_vars([ Head | Tail1 ], [ Head | Tail2 ]) :-
 % puzzle 1, easy
 % http://en.wikipedia.org/wiki/File:Val42-Bridge1n.png
 % solution: http://en.wikipedia.org/wiki/File:Val42-Bridge1.png
-puzzle(1, 7, [](
-    [](1,1,2),  [](1,2,3), [](1,4,4), [](1,6,2),
-    [](2,7,2),
-    [](3,1,1), [](3,2,1), [](3,5,1), [](3,6,3), [](3,7,3),
-    [](4,1,2), [](4,4,8), [](4,6,5), [](4,7,2),
-    [](5,1,3), [](5,3,3), [](5,7,1),
-    [](6,3,2), [](6,6,3), [](6,7,4),
-    [](7,1,3), [](7,4,3), [](7,5,1), [](7,7,2)
-)).
+puzzle(1, 7, [
+    [1,1,2], [1,2,3], [1,4,4], [1,6,2],
+    [2,7,2],
+    [3,1,1], [3,2,1], [3,5,1], [3,6,3], [3,7,3],
+    [4,1,2], [4,4,8], [4,6,5], [4,7,2],
+    [5,1,3], [5,3,3], [5,7,1],
+    [6,3,2], [6,6,3], [6,7,4],
+    [7,1,3], [7,4,3], [7,5,1], [7,7,2]
+]).
 
 % puzzle 2, moderate
 % http://en.wikipedia.org/wiki/File:Bridges-example.png
