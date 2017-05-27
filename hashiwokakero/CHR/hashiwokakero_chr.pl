@@ -25,7 +25,8 @@ solve(Number) <=>
     upto(DomainList, 2),
     domain_list(DomainList),
     writeln("Given board:"),
-    print_board.
+    
+    print_board(1,1).
 
     %enum_board.
 
@@ -87,49 +88,38 @@ create_empty_board(_,Y, Size) <=> Y > Size|
     true.
 
 create_empty_board(X,Y, Size) <=> X > Size|
-    % X Y Amount, N E, S, W
     Y2 is Y + 1,
-    create_empty_board(1,Y2,Size)
-    .
+    create_empty_board(1,Y2,Size).
 
-domain_list(Domain) \ create_empty_board(X,Y, Size) <=> X =< Size|
-    % X Y Amount, N E, S, W
-    board(X,Y, 0, N, E, S, W),
+domain_list(Domain) \ create_empty_board(X, Y, Size) <=> X =< Size|
+    board(X, Y, 0, N, E, S, W),
     N in Domain,
     E in Domain,
     S in Domain,
     W in Domain,
     X2 is X + 1,
-    create_empty_board(X2,Y,Size)
-    .
+    create_empty_board(X2,Y,Size).
 
 create_islands([]) <=>
     true.
-
-domain_list(Domain) \ create_islands([ [X,Y,Amount] | Islands]), board(X,Y, _ , N , E , S,W) <=>
-    board(X,Y, Amount , N , E , S,W),
+ 
+create_islands([ [X, Y, Amount] | Islands ]), board(X, Y, _, N, E, S, W) <=>
+    board(X, Y, Amount, N, E, S, W),
     create_islands(Islands).
 
 size(Size) \ islands_board(Islands) <=>
     create_empty_board(1,1, Size),
-    %dim(Board, [Size, Size, 5]),
-    create_islands(Islands),
-    true.
+    create_islands(Islands).
 
+print_board(_, Y) <=> not(board(_, Y, _, _, _, _, _)) |
+    nl, nl.
 
-size(Size) \ print_board(_,Y) <=> Y > Size|
-    nl, nl,
-    true.
-
-size(Size) \ print_board(X,Y) <=> X > Size|
-    % X Y Amount, N E, S, W
+print_board(X, Y) <=> not(board(X, _, _, _, _, _, _)) |
     Y2 is Y + 1,
     nl,
-    print_board(1,Y2)
-    .
+    print_board(1, Y2).
 
-size(Size), board(X,Y, Val, NS, EW, _, _) \ print_board(X,Y) <=> board(X,Y, Val, NS, EW, _, _) |
-    % X Y Amount, N E, S, W
+board(X,Y, Val, NS, EW, _, _) \ print_board(X,Y) <=>
     (Val > 0 ->
         write(Val)
     ;
@@ -141,13 +131,7 @@ size(Size), board(X,Y, Val, NS, EW, _, _) \ print_board(X,Y) <=> board(X,Y, Val,
         )
     ),
     X2 is X + 1,
-    print_board(X2,Y)
-    .
-
-print_board <=>
-    print_board(1,1),
-    true.
-
+    print_board(X2,Y).
 
 symbol(0, 0, ' ').
 symbol(0, 1, '-').
