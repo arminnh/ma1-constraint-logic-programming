@@ -3,8 +3,8 @@
 :- chr_constraint solve/1, puzzle_board/1, print_board/0, hashiwokakero/1.
 :- chr_constraint print_row/1, print_pos/1, enum/1, enum_board/1.
 :- chr_constraint make_domain/2, make_domains/1, domain_list/1.
-:- chr_constraint islands_board/2, matrix_board/2, create_islands/1, create_empty_board/3.
-:- chr_constraint board/7, create_board/3, output/1.
+:- chr_constraint islands_board/1, matrix_board/2, create_islands/1, create_empty_board/3.
+:- chr_constraint board/7, create_board/3, output/1, size/1, print_board/2.
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
@@ -49,8 +49,9 @@ puzzle_board(Number) <=>
     % Each puzzle(Id, S, Islands) fact defines the input of one problem:
     % its identifier Id, the size S (width and height), and the list of islands Islands.
     puzzle(Number, Size, Islands),
+    size(Size),
     % create a board with the islands on it
-    islands_board(Islands, Size).
+    islands_board(Islands).
 
 % load the board from a matrix fact
 %puzzle_board(Number) <=>
@@ -86,7 +87,7 @@ create_islands([ [X,Y,Amount] | Islands]), board(X,Y, _ , _ , _ , _,_) <=>
     %board(X,Y, Amount, 0, 0, 0, 0),
     %create_islands(Islands).
 
-islands_board(Islands, Size) <=>
+size(Size) \ islands_board(Islands) <=>
     create_empty_board(1,1, Size),
     %dim(Board, [Size, Size, 5]),
     create_islands(Islands),
@@ -266,22 +267,35 @@ matrix_board(Matrix, Board) :-
 %     Count is Count2 + 1.
 %
 
-print_pos([]) <=>
+size(Size) \ print_board(_,Y) <=> Y > Size|
+    nl, nl,
     true.
 
-print_pos([H|T]) <=>
-    writeln(H).
+size(Size) \ print_board(X,Y) <=> X > Size|
+    % X Y Amount, N E, S, W
+    Y2 is Y + 1,
+    nl,
+    print_board(1,Y2)
+    .
 
-% base case
-print_row([]) <=>
-    true.
-
-print_row([H|T]) <=>
-    print_pos(H),
-    print_row(T).
+size(Size), board(X,Y, Val, NS, EW, _, _) \ print_board(X,Y) <=> X =< Size |
+    % X Y Amount, N E, S, W
+    (Val > 0 ->
+        write(Val)
+    ;
+        ( nonvar(NS), nonvar(EW) ->
+            symbol(NS, EW, Char),
+            write(Char)
+        ;
+            write(' ')
+        )
+    ),
+    X2 is X + 1,
+    print_board(X2,Y)
+    .
 
 print_board <=>
-    print_row(Board),
+    print_board(1,1),
     true.
 
 % print_board(Board) :-
