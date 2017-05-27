@@ -89,7 +89,8 @@ domain_list(Domain) \ create_empty_board(X,Y, Size) <=> X =< Size|
 create_islands([]) <=>
     true.
 
-domain_list(Domain) \ create_islands([ [X,Y,Amount] | Islands]), board(X,Y, _ , _ , _ , _,_) <=>
+domain_list(Domain) \ create_islands([ [X,Y,Amount] | Islands]),
+board(X,Y, _ , N , E , S,W), enum(N), enum(E), enum(S), enum(W) <=>
     board(X,Y, Amount , N , E , S,W),
     N in Domain,
     E in Domain,
