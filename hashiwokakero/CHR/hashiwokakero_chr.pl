@@ -4,7 +4,7 @@
 :- chr_constraint print_row/1, print_pos/1, enum/1, enum_board/0.
 :- chr_constraint make_domain/2, make_domains/1, domain_list/1.
 :- chr_constraint islands_board/1, matrix_board/2, create_islands/1, create_empty_board/3.
-:- chr_constraint board/7, create_board/3, output/1, size/1, print_board/2.
+:- chr_constraint board/7, create_board/3, output/1, size/1, print_board/2, board_facts_from_row/3.
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
@@ -23,7 +23,6 @@ solve(Number) <=>
     puzzle_board(Number),
     upto(DomainList, 2),
     domain_list(DomainList),
-
     writeln("Given board:"),
     print_board,
 
@@ -106,13 +105,8 @@ domain_list(Domain) \ create_empty_board(X,Y, Size) <=> X =< Size|
 create_islands([]) <=>
     true.
 
-domain_list(Domain) \ create_islands([ [X,Y,Amount] | Islands]),
-board(X,Y, _ , N , E , S,W), enum(N), enum(E), enum(S), enum(W) <=>
+domain_list(Domain) \ create_islands([ [X,Y,Amount] | Islands]), board(X,Y, _ , N , E , S,W) <=>
     board(X,Y, Amount , N , E , S,W),
-    N in Domain,
-    E in Domain,
-    S in Domain,
-    W in Domain,
     create_islands(Islands).
 
 size(Size) \ islands_board(Islands) <=>
