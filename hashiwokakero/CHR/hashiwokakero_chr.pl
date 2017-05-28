@@ -76,36 +76,36 @@ or_eq(_,_,Z) ==>
     enum(Z).
 
 board(X,Y, _, N, _, _, _), board(X2,Y,_,_,_,S2,_), hashiwokakero ==>  X2 is X-1,X > 1|
-        writeln("N = S2"),
+        %writeln("N = S2"),
         eq(N,S2).
 
 board(X,_, _, N, _, _, _), hashiwokakero ==> X == 1|
-        writeln("N = 0"),
+        %writeln("N = 0"),
         N = 0.
 
 
-board(X,Y, _, _, E, _, _), board(X,Y2,_,_,_,_,W2), hashiwokakero ==> Y2 is Y-1|
-        writeln("E = W2"),
+board(X,Y, _, _, E, _, _), board(X,Y2,_,_,_,_,W2), hashiwokakero ==> Y2 is Y+1|
+        %writeln("E = W2"),
         eq(E, W2).
 
 ymax(Size), board(_,Y, _, _, E, _, _), hashiwokakero ==> Y == Size|
-        writeln("E = 0"),
+        %writeln("E = 0"),
          E = 0.
 
-board(X,Y, _, _, _, S, _),board(X+1,Y,_,N2,_,_,_), hashiwokakero ==>
-        writeln("S = N2"),
+board(X,Y, _, _, _, S, _),board(X2,Y,_,N2,_,_,_), hashiwokakero ==> X2 is X+1|
+        %writeln("S = N2"),
         eq(S, N2).
 
 xmax(Size), board(X,_, _, _, _, S, _), hashiwokakero ==> X == Size|
-        writeln("S = 0"),
+        %writeln("S = 0"),
         S = 0.
 
-board(X,Y, _, _, _, _, W),board(X,Y-1,_, _,E2,_,_), hashiwokakero ==> Y > 1|
-        writeln("W = E2"),
+board(X,Y, _, _, _, _, W),board(X,Y2,_, _,E2,_,_), hashiwokakero ==> Y2 is Y-1, Y > 1|
+        %writeln("W = E2"),
         eq(W, E2).
 
 board(_,Y, _, _, _, _, W), hashiwokakero ==> Y == 1|
-        writeln("W = 0"),
+        %writeln("W = 0"),
         W = 0.
 
 
