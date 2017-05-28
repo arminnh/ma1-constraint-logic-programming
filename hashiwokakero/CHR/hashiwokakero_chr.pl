@@ -6,7 +6,7 @@
 :- chr_constraint islands_board/1, matrix_board/2, create_islands/1, create_empty_board/3.
 :- chr_constraint board/7, create_board/3, output/1, xmax/1, ymax/1, print_board/2,
                   board_facts_from_row/3, board_facts_from_matrix/2,
-                  diff/2.
+                  diff/2, clear_store/0.
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
@@ -37,6 +37,7 @@ solve(Number) <=>
     bridge_constraints,
 
     print_board(1,1),
+    clear_store,
     nl.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,46 +54,46 @@ bridge_constraints, board(_,_, Amount, N, E, S, W) ==> Amount > 0 |
 % bridges dont cross
 bridge_constraints, board(_,_, Amount, N, E, S, W) ==> Amount == 0 |
     N = S,
-    E = W,
-    or_eq(N, 0, Z),
-    or_eq(E, 0, Z2),
-    Z in [0,1],
-    Z2 in [0,1],
-    diff(Z,Z2),
-    enum(Z),
-    enum(Z2).
+    E = W.
+    % or_eq(N, 0, Z),
+    % or_eq(E, 0, Z2),
+    % Z in [0,1],
+    % Z2 in [0,1],
+    % diff(Z,Z2),
+    % enum(Z),
+    % enum(Z2).
 
 % bridges going north == bridges going south in position above
 bridge_constraints, board(X,Y, _, N, _, _, _), board(X2,Y,_,_,_,S2,_)  ==> X > 1, X2 is X-1 |
-        eq(N,S2).
+    eq(N,S2).
 
 % bridge can not go north at top of board
 bridge_constraints, board(X,_, _, N, _, _, _)                          ==> X == 1 |
-        N = 0.
+    N = 0.
 
 % bridges going east == bridges going west in position to the right
 bridge_constraints, board(X,Y, _, _, E, _, _), board(X,Y2,_,_,_,_,W2)  ==> Y2 is Y+1 |
-        eq(E, W2).
+    eq(E, W2).
 
 % bridge cannot go east at right of board
 bridge_constraints, board(_,Y, _, _, E, _, _), ymax(Size)              ==> Y == Size |
-         E = 0.
+    E = 0.
 
 % bridges going south == bridges going north in position under
 bridge_constraints, board(X,Y, _, _, _, S, _), board(X2,Y,_,N2,_,_,_)  ==> X2 is X+1 |
-        eq(S, N2).
+    eq(S, N2).
 
 % bridge cannot go south at bottom of board
 bridge_constraints, board(X,_, _, _, _, S, _), xmax(Size)              ==> X == Size |
-        S = 0.
+    S = 0.
 
 % bridges going west == bridge going east at position left
 bridge_constraints, board(X,Y, _, _, _, _, W), board(X,Y2,_, _,E2,_,_) ==> Y > 1 , Y2 is Y-1 |
-        eq(W, E2).
+    eq(W, E2).
 
 % bridge connot go west at left of board
 bridge_constraints, board(_,Y, _, _, _, _, W)                          ==> Y == 1 |
-        W = 0.
+    W = 0.
 
 % after doing all bridge constraints, make domains for remaining variables N E S W
 bridge_constraints <=> make_domains.
@@ -122,6 +123,10 @@ make_domains <=> enum_board.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HELPER RULES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+clear_store \ board(_, _, _, _, _, _, _) <=> true.
+clear_store \ xmax(_), ymax(_), domain_list(_) <=> true.
+clear_store <=> true.
 
 % load the Board from a puzzle fact
 puzzle_board(Number) <=> puzzle(Number, Size, Islands) |
@@ -194,7 +199,8 @@ board(X,Y, Val, NS, EW, _, _) \ print_board(X,Y) <=>
         )
     ),
     Y2 is Y + 1,
-    print_board(X,Y2).
+    print_board(X,Y2),
+    !.
 
 
 board(X, _, _, _, _, _, _) \ print_board(X, _) <=>
@@ -219,7 +225,9 @@ add(X, Y, Z) <=> nonvar(X), nonvar(Y) | Z is X + Y.
 or_eq(X, Y, Z) <=> nonvar(X), nonvar(Y), nonvar(Z), Z == 1 | X == Y.
 or_eq(X, Y, Z) <=> nonvar(X), nonvar(Y), nonvar(Z), Z == 0 | true.
 
-eq(X,Y) <=> nonvar(X), nonvar(Y) | X == Y.
+eq(X, Y) <=> var(X), nonvar(Y) | X = Y.
+eq(Y, X) <=> var(X), nonvar(Y) | X = Y.
+eq(X, Y) <=> nonvar(X), nonvar(Y) | X == Y.
 
 % X and Y are instantiated and are different
 diff(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
@@ -230,11 +238,15 @@ diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 enum(X)              <=> number(X) | true.
 enum(X), X in Domain <=> member(X, Domain).
 
+% eg when "0 in [0, 1, 2]", 0 should just be member of Domain
+X in Domain <=> nonvar(X), member(X, Domain) | true.
+
 enum_board, board(_, _, _, N, E, S, W) ==>
     enum(N),
     enum(E),
     enum(S),
     enum(W).
+enum_board <=> true.
 
 % upto(N, L): L = [1..N]
 upto([], -1).
