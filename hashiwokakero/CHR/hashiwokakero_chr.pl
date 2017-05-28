@@ -4,7 +4,7 @@
 :- chr_constraint print_row/1, print_pos/1, enum/1, enum_board/0.
 :- chr_constraint make_domain/2, make_domains/1, domain_list/1.
 :- chr_constraint islands_board/1, matrix_board/2, create_islands/1, create_empty_board/3.
-:- chr_constraint board/7, create_board/3, output/1, size/1, print_board/2,
+:- chr_constraint board/7, create_board/3, output/1, xmax/1, ymax/1, print_board/2,
                   board_facts_from_row/3, board_facts_from_matrix/2,
                   diff/2.
 
@@ -75,42 +75,38 @@ board(_,_, Amount, N, E, S, W), hashiwokakero ==> Amount == 0|
 or_eq(_,_,Z) ==>
     enum(Z).
 
-board(X,Y, Amount, N, E, S, W), board(X-1,Y,Amount2,N2,E2,S2,W2), hashiwokakero ==> X > 1|
+board(X,Y, _, N, _, _, _), board(X2,Y,_,_,_,S2,_), hashiwokakero ==>  X2 is X-1,X > 1|
         writeln("N = S2"),
         eq(N,S2).
 
-board(X,Y, Amount, N, E, S, W), hashiwokakero ==> X == 1|
+board(X,_, _, N, _, _, _), hashiwokakero ==> X == 1|
         writeln("N = 0"),
-        eq(N, 0).
+        N = 0.
 
 
-size(Size), board(X,Y, Amount, N, E, S, W), board(X,Y+1,Amount2,N2,E2,S2,W2), hashiwokakero ==> Y < Size|
-writeln("E = W2"),
-
+board(X,Y, _, _, E, _, _), board(X,Y2,_,_,_,_,W2), hashiwokakero ==> Y2 is Y-1|
+        writeln("E = W2"),
         eq(E, W2).
 
-size(Size), board(X,Y, Amount, N, E, S, W), hashiwokakero ==> Y == Size|
-writeln("E = 0"),
-        eq(E, 0).
+ymax(Size), board(_,Y, _, _, E, _, _), hashiwokakero ==> Y == Size|
+        writeln("E = 0"),
+         E = 0.
 
-size(Size), board(X,Y, Amount, N, E, S, W),board(X+1,Y,Amount2,N2,E2,S2,W2), hashiwokakero ==> X < Size|
+board(X,Y, _, _, _, S, _),board(X+1,Y,_,N2,_,_,_), hashiwokakero ==>
         writeln("S = N2"),
         eq(S, N2).
 
-size(Size), board(X,Y, Amount, N, E, S, W), hashiwokakero ==> X == Size|
-writeln("S = 0"),
+xmax(Size), board(X,_, _, _, _, S, _), hashiwokakero ==> X == Size|
+        writeln("S = 0"),
+        S = 0.
 
-        eq(S,0).
-
-board(X,Y, Amount, N, E, S, W),board(X,Y-1,N2,Amount2,E2,S2,W2), hashiwokakero ==> Y > 1|
-writeln("W = E2"),
-
+board(X,Y, _, _, _, _, W),board(X,Y-1,_, _,E2,_,_), hashiwokakero ==> Y > 1|
+        writeln("W = E2"),
         eq(W, E2).
 
-board(X,Y, Amount, N, E, S, W), hashiwokakero ==> Y == 1|
-writeln("W = 0"),
-
-        eq(W, 0).
+board(_,Y, _, _, _, _, W), hashiwokakero ==> Y == 1|
+        writeln("W = 0"),
+        W = 0.
 
 
 % board(X,Y, Amount, N, E, S, W) ==> Amount = 0, N = S, E = W|
@@ -126,7 +122,8 @@ puzzle_board(Number) <=>
     % Each puzzle(Id, S, Islands) fact defines the input of one problem:
     % its identifier Id, the size S (width and height), and the list of islands Islands.
     puzzle(Number, Size, Islands) |
-    size(Size),
+    ymax(Size),
+    xmax(Size),
     % create a board with the islands on it
     islands_board(Islands).
 
@@ -134,6 +131,11 @@ puzzle_board(Number) <=>
 puzzle_board(Number) <=>
     % create a board from a matrix that contains the islands
     board(Number, Matrix) |
+    length(Matrix,XMax),
+    nth1(1, Matrix, Row),
+    length(Row, YMax),
+    xmax(XMax),
+    ymax(YMax),
     board_facts_from_matrix(Matrix, 1).
 
 % create a usable Board from a matrix that contains the islands
@@ -179,7 +181,7 @@ create_islands([ [X, Y, Amount] | Islands ]), board(X, Y, _, N, E, S, W) <=>
     board(X, Y, Amount, N, E, S, W),
     create_islands(Islands).
 
-size(Size) \ islands_board(Islands) <=>
+xmax(Size) \ islands_board(Islands) <=>
     create_empty_board(1,1, Size),
     create_islands(Islands).
 
@@ -236,7 +238,7 @@ enum(X), X in Domain <=> member(X, Domain).
 % enum_board(Board): fills Board with values
 %enum_board <=> true.
 
-board(X, Y, Amount, N, E, S, W), enum_board ==>
+board(_, _, _, N, E, S, W), enum_board ==>
     enum(N),
     enum(E),
     enum(S),
