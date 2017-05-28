@@ -24,7 +24,8 @@ solve(Number) <=>
     % find the game board
     puzzle_board(Number),
     upto(DomainList, 2),
-    domain_list(DomainList),
+    reverse(DomainList, List),
+    domain_list(List),
     writeln("Given board:"),
 
     print_board(1,1),
@@ -55,13 +56,13 @@ solve(Number) <=>
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR READING BOARD
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-board(X,Y, Amount, N, E, S, W) ==> Amount > 0|
+board(_,_, Amount, N, E, S, W) ==> Amount > 0|
     add(N,E,Sum),
     add(S,W,Sum2),
     add(Sum, Sum2, Amount),
     true.
 
-board(X,Y, Amount, N, E, S, W) ==> Amount = 0|
+board(_,_, Amount, N, E, S, W) ==> Amount == 0|
     N = S,
     E = W,
     or_eq(N,0, Z),
@@ -69,12 +70,35 @@ board(X,Y, Amount, N, E, S, W) ==> Amount = 0|
     Z in [0,1],
     Z2 in [0,1],
     diff(Z,Z2),
-    %writeln("HERE"),
     true.
 
-or_eq(X,Y,Z) ==>
+or_eq(_,_,Z) ==>
     enum(Z).
-%
+
+board(X,Y, Amount, N, E, S, W), board(X-1,Y,Amount2,N2,E2,S2,W2) ==> X > 1|
+        N = S2.
+
+board(X,Y, Amount, N, E, S, W) ==> X == 1|
+        N = 0.
+
+size(Size), board(X,Y, Amount, N, E, S, W),board(X+1,Y,Amount2,N2,E2,S2,W2) ==> X < Size|
+        S = N2.
+
+size(Size), board(X,Y, Amount, N, E, S, W) ==> X == Size|
+        S = 0.
+
+board(X,Y, Amount, N, E, S, W),board(X,Y-1,N2,Amount2,E2,S2,W2) ==> Y > 1|
+        W = E2.
+
+board(X,Y, Amount, N, E, S, W) ==> Y == 1|
+        W = 0.
+
+size(Size), board(X,Y, Amount, N, E, S, W), board(X,Y+1,Amount2,N2,E2,S2,W2) ==> Y < Size|
+        E = W2.
+
+size(Size), board(X,Y, Amount, N, E, S, W) ==> Y == Size|
+        E = 0.
+
 % board(X,Y, Amount, N, E, S, W) ==> Amount = 0, N = S, E = W|
 %     eq(E,0),
 %     writeln("YES"),
@@ -219,28 +243,6 @@ make_domain([ Val | Tail ], DomainList) <=> var(Val) |
     make_domain(Tail, DomainList).
 make_domain([ _ | Tail ], DomainList) <=>
     make_domain(Tail, DomainList).
-
-% make_domains(L): L is an list of N elements, make_domains creates 'X in [1..N]' constraints
-make_domains([]) <=> true.
-domain_list(DomainList) \ make_domains([ Row | Tail ]) <=>
-    list_remove_vars(Row, NewRow),
-    % Domain list is 1..N, NewRow are the values on a specific Row
-    subtract(DomainList, NewRow, SmallerDomainList),
-    writeln([DomainList, Row, NewRow, SmallerDomainList]),
-
-    % For a specific row
-    make_domain(Row, SmallerDomainList),
-
-    % For the rest of the board
-    make_domains(Tail).
-
-list_remove_vars([], []).
-list_remove_vars([ Head | Tail1 ], FilteredList) :-
-    var(Head),
-    list_remove_vars(Tail1, FilteredList).
-list_remove_vars([ Head | Tail1 ], [ Head | Tail2 ]) :-
-    list_remove_vars(Tail1, Tail2).
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
