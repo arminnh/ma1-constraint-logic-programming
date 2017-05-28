@@ -46,8 +46,12 @@ solve(Number) <=>
 
 % amount of bridges equals island's amount
 bridge_constraints, board(_,_, Amount, N, E, S, W) ==> Amount > 0 |
+    upto(List,Amount),
+    reverse(List, Domain),
     add(N,E,Sum),
     add(S,W,Sum2),
+    Sum in Domain,
+    Sum2 in Domain,
     add(Sum, Sum2, Amount),
     true.
 
