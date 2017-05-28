@@ -54,7 +54,8 @@ bridge_constraints, board(_,_, Amount, N, E, S, W) ==> Amount > 0 |
 % bridges dont cross
 bridge_constraints, board(_,_, Amount, N, E, S, W) ==> Amount == 0 |
     N = S,
-    E = W.
+    E = W,
+    (eq(N,0); eq(E,0)).
     % or_eq(N, 0, Z),
     % or_eq(E, 0, Z2),
     % Z in [0,1],
@@ -208,6 +209,8 @@ board(X, _, _, _, _, _, _) \ print_board(X, _) <=>
     nl,
     print_board(X2,1).
 
+print_board(_,_) <=> true.
+
 symbol(0, 0, ' ').
 symbol(0, 1, '-').
 symbol(0, 2, '=').
@@ -220,6 +223,8 @@ symbol(_, _, "*").
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % X and Y are instantiated and are different
+add(X, Y, Z) <=> nonvar(Y), nonvar(Z), var(X) | X is Z - Y.
+add(X, Y, Z) <=> nonvar(X), nonvar(Z), var(Y) | Y is Z - X.
 add(X, Y, Z) <=> nonvar(X), nonvar(Y) | Z is X + Y.
 
 or_eq(X, Y, Z) <=> nonvar(X), nonvar(Y), nonvar(Z), Z == 1 | X == Y.
