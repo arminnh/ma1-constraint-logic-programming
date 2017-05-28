@@ -61,10 +61,19 @@ board(X,Y, Amount, N, E, S, W) ==> Amount > 0|
     add(Sum, Sum2, Amount),
     true.
 
-board(X,Y, Amount, N, E, S, W) ==> Amount = 0, N = S, E = W|
-    or_eq(N,E,0),
-    writeln("HERE"),
+board(X,Y, Amount, N, E, S, W) ==> Amount = 0|
+    N = S,
+    E = W,
+    or_eq(N,0, Z),
+    or_eq(E,0, Z2),
+    Z in [0,1],
+    Z2 in [0,1],
+    diff(Z,Z2),
+    %writeln("HERE"),
     true.
+
+or_eq(X,Y,Z) ==>
+    enum(Z).
 %
 % board(X,Y, Amount, N, E, S, W) ==> Amount = 0, N = S, E = W|
 %     eq(E,0),
@@ -168,7 +177,8 @@ symbol(_, _, "*").
 
 % X and Y are instantiated and are different
 add(X, Y, Z) <=> nonvar(X), nonvar(Y) | Z is X + Y.
-or_eq(X, Y, Z) <=> nonvar(X), nonvar(Y), nonvar(Z) | (X == Z; Y == Z).
+or_eq(X, Y, Z) <=> nonvar(X), nonvar(Y), nonvar(Z), Z == 1 | X == Y.
+or_eq(X, Y, Z) <=> nonvar(X), nonvar(Y), nonvar(Z), Z == 0 | true.
 
 
 % X and Y are instantiated and are different
