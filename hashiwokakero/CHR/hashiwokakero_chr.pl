@@ -1,8 +1,8 @@
 :- use_module(library(chr)).
 
-:- chr_constraint solve/1, puzzle_board/1, print_board/0, hashiwokakero/0.
+:- chr_constraint solve/1, puzzle_board/1, print_board/0, bridge_constraints/0.
 :- chr_constraint print_row/1, print_pos/1, enum/1, enum_board/0.
-:- chr_constraint make_domain/2, make_domains/1, domain_list/1.
+:- chr_constraint make_domain/2, make_domains/0, domain_list/1.
 :- chr_constraint islands_board/1, matrix_board/2, create_islands/1, create_empty_board/3.
 :- chr_constraint board/7, create_board/3, output/1, xmax/1, ymax/1, print_board/2,
                   board_facts_from_row/3, board_facts_from_matrix/2,
@@ -11,6 +11,7 @@
 :- op(700, xfx, in).
 :- op(700, xfx, le).
 :- op(700, xfx, eq).
+:- op(700, xfx, or_eq).
 :- op(600, xfx, '..').
 :- chr_constraint le/2, eq/2, in/2, add/3, or_eq/3.
 :- chr_option(debug,off).
@@ -21,98 +22,98 @@
 
 % solve a given game board
 solve(Number) <=>
-    % find the game board
+    % find the game board and load the board facts into the constraint store
     puzzle_board(Number),
+    writeln("Given board:"),
+    print_board(1,1),
+    nl,
+
     upto(DomainList, 2),
     reverse(DomainList, List),
     domain_list(List),
-    writeln("Given board:"),
 
-    print_board(1,1),
-    nl,
-    hashiwokakero,
-
-    enum_board,
-    print_board(1,1),
-    nl,
-    true.
-
-    % create bridges and set constraints
-    %hashiwokakero_constraints,
-    %writeln("kk"),
+    % create the bridge constraint rules
+    bridge_constraints,
 
     % do search on variables
-    %search(naive, Board),
+    enum_board,
 
     % Check that everything is connected
     %writeln("connected"),
     %board_connected_set(Board),
 
-    % print results
-    %writeln("Search done:"),
-    %print_board.
+    print_board(1,1),
+    nl.
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% RULES USED FOR READING BOARD
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-board(_,_, Amount, N, E, S, W), hashiwokakero ==> Amount > 0|
+% amount of bridges equals island's amount
+bridge_constraints, board(_,_, Amount, N, E, S, W) ==> Amount > 0 |
     add(N,E,Sum),
     add(S,W,Sum2),
     add(Sum, Sum2, Amount),
     true.
 
-board(_,_, Amount, N, E, S, W), hashiwokakero ==> Amount == 0|
+% bridges dont cross
+bridge_constraints, board(_,_, Amount, N, E, S, W) ==> Amount == 0 |
     N = S,
     E = W,
-    or_eq(N,0, Z),
-    or_eq(E,0, Z2),
+    or_eq(N, 0, Z),
+    or_eq(E, 0, Z2),
     Z in [0,1],
     Z2 in [0,1],
     diff(Z,Z2),
-    true.
+    enum(Z),
+    enum(Z2).
 
-or_eq(_,_,Z) ==>
-    enum(Z).
-
-board(X,Y, _, N, _, _, _), board(X2,Y,_,_,_,S2,_), hashiwokakero ==>  X2 is X-1,X > 1|
-        %writeln("N = S2"),
+% bridges going north == bridges going south in position above
+bridge_constraints, board(X,Y, _, N, _, _, _), board(X2,Y,_,_,_,S2,_)  ==> X > 1, X2 is X-1 |
         eq(N,S2).
 
-board(X,_, _, N, _, _, _), hashiwokakero ==> X == 1|
-        %writeln("N = 0"),
+% bridge can not go north at top of board
+bridge_constraints, board(X,_, _, N, _, _, _)                          ==> X == 1 |
         N = 0.
 
-
-board(X,Y, _, _, E, _, _), board(X,Y2,_,_,_,_,W2), hashiwokakero ==> Y2 is Y+1|
-        %writeln("E = W2"),
+% bridges going east == bridges going west in position to the right
+bridge_constraints, board(X,Y, _, _, E, _, _), board(X,Y2,_,_,_,_,W2)  ==> Y2 is Y+1 |
         eq(E, W2).
 
-ymax(Size), board(_,Y, _, _, E, _, _), hashiwokakero ==> Y == Size|
-        %writeln("E = 0"),
+% bridge cannot go east at right of board
+bridge_constraints, board(_,Y, _, _, E, _, _), ymax(Size)              ==> Y == Size |
          E = 0.
 
-board(X,Y, _, _, _, S, _),board(X2,Y,_,N2,_,_,_), hashiwokakero ==> X2 is X+1|
-        %writeln("S = N2"),
+% bridges going south == bridges going north in position under
+bridge_constraints, board(X,Y, _, _, _, S, _), board(X2,Y,_,N2,_,_,_)  ==> X2 is X+1 |
         eq(S, N2).
 
-xmax(Size), board(X,_, _, _, _, S, _), hashiwokakero ==> X == Size|
-        %writeln("S = 0"),
+% bridge cannot go south at bottom of board
+bridge_constraints, board(X,_, _, _, _, S, _), xmax(Size)              ==> X == Size |
         S = 0.
 
-board(X,Y, _, _, _, _, W),board(X,Y2,_, _,E2,_,_), hashiwokakero ==> Y2 is Y-1, Y > 1|
-        %writeln("W = E2"),
+% bridges going west == bridge going east at position left
+bridge_constraints, board(X,Y, _, _, _, _, W), board(X,Y2,_, _,E2,_,_) ==> Y > 1 , Y2 is Y-1 |
         eq(W, E2).
 
-board(_,Y, _, _, _, _, W), hashiwokakero ==> Y == 1|
-        %writeln("W = 0"),
+% bridge connot go west at left of board
+bridge_constraints, board(_,Y, _, _, _, _, W)                          ==> Y == 1 |
         W = 0.
 
+% after doing all bridge constraints, make domains for remaining variables N E S W
+bridge_constraints <=> make_domains.
 
-% board(X,Y, Amount, N, E, S, W) ==> Amount = 0, N = S, E = W|
-%     eq(E,0),
-%     writeln("YES"),
-%     true.
+make_domains, domain_list(Domain), board(_, _, _, N, _, _, _) ==> var(N) |
+  N in Domain.
+
+make_domains, domain_list(Domain), board(_, _, _, _, E, _, _) ==> var(E) |
+  E in Domain.
+
+make_domains, domain_list(Domain), board(_, _, _, _, _, S, _) ==> var(S) |
+  S in Domain.
+
+make_domains, domain_list(Domain), board(_, _, _, _, _, _, W) ==> var(W) |
+  W in Domain.
+
+% remove duplicate indomain constraints
+X in Domain \ X in Domain <=> true.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR READING BOARD
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -146,12 +147,8 @@ board_facts_from_matrix([ Row | Rows ], X) <=>
     board_facts_from_matrix(Rows, XN).
 
 board_facts_from_row([], _, _).
-domain_list(Domain)\ board_facts_from_row([ Number | Row ], X, Y) <=>
-    board(X, Y, Number, N, E, S, W),
-    N in Domain,
-    E in Domain,
-    S in Domain,
-    W in Domain,
+board_facts_from_row([ Number | Row ], X, Y) <=>
+    board(X, Y, Number, _, _, _, _),
     YN is Y + 1,
     board_facts_from_row(Row, X, YN).
 
@@ -165,12 +162,8 @@ create_empty_board(X,Y, Size) <=> X > Size|
     Y2 is Y + 1,
     create_empty_board(1,Y2,Size).
 
-domain_list(Domain) \ create_empty_board(X, Y, Size) <=> X =< Size|
-    board(X, Y, 0, N, E, S, W),
-    N in Domain,
-    E in Domain,
-    S in Domain,
-    W in Domain,
+create_empty_board(X, Y, Size) <=> X =< Size|
+    board(X, Y, 0, _, _, _, _),
     X2 is X + 1,
     create_empty_board(X2,Y,Size).
 
@@ -212,33 +205,27 @@ symbol(2, 0, '"').
 symbol(_, _, "*").
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% RULES USED FOR CONSTRAINTS
+% RULES USED FOR DOMAIN SOLVING
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % X and Y are instantiated and are different
 add(X, Y, Z) <=> nonvar(X), nonvar(Y) | Z is X + Y.
+
 or_eq(X, Y, Z) <=> nonvar(X), nonvar(Y), nonvar(Z), Z == 1 | X == Y.
 or_eq(X, Y, Z) <=> nonvar(X), nonvar(Y), nonvar(Z), Z == 0 | true.
+
 eq(X,Y) <=> nonvar(X), nonvar(Y) | X == Y.
 
 % X and Y are instantiated and are different
 diff(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
-% Put improvement into report!
 diff(Y, X) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% RULES USED FOR DOMAIN SOLVING
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % enum(L): assigns values to variables X in L
 enum(X)              <=> number(X) | true.
 enum(X), X in Domain <=> member(X, Domain).
 
-% enum_board(Board): fills Board with values
-%enum_board <=> true.
-
-board(_, _, _, N, E, S, W), enum_board ==>
+enum_board, board(_, _, _, N, E, S, W) ==>
     enum(N),
     enum(E),
     enum(S),
@@ -250,22 +237,6 @@ upto([ N | L ], N) :-
     N >= 0,
     N1 is N-1,
     upto(L, N1).
-
-
-% make_domain(L, D): create 'X in D' constraints for all variables X in L
-make_domain([], _) <=> true.
-make_domain([ Val | Tail ], DomainList) <=> var(Val) |
-    Val in DomainList,
-    make_domain(Tail, DomainList).
-make_domain([ _ | Tail ], DomainList) <=>
-    make_domain(Tail, DomainList).
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% HELPER RULES
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAMPLE PROBLEMS
