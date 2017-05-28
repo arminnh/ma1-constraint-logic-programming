@@ -16,6 +16,7 @@
 :- chr_constraint le/2, eq/2, in/2, add/3, or_eq/3.
 :- chr_option(debug,off).
 :- chr_option(optimize,full).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HASHIWOKAKERO SOLUTION
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -35,15 +36,12 @@ solve(Number) <=>
     % create the bridge constraint rules
     bridge_constraints,
 
-    % do search on variables
-    enum_board,
-
-    % Check that everything is connected
-    %writeln("connected"),
-    %board_connected_set(Board),
-
     print_board(1,1),
     nl.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% BRIDGE CONSTRAINT RULES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % amount of bridges equals island's amount
 bridge_constraints, board(_,_, Amount, N, E, S, W) ==> Amount > 0 |
@@ -99,6 +97,10 @@ bridge_constraints, board(_,Y, _, _, _, _, W)                          ==> Y == 
 % after doing all bridge constraints, make domains for remaining variables N E S W
 bridge_constraints <=> make_domains.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% DOMAIN GENERATION RULES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 make_domains, domain_list(Domain), board(_, _, _, N, _, _, _) ==> var(N) |
   N in Domain.
 
@@ -114,29 +116,56 @@ make_domains, domain_list(Domain), board(_, _, _, _, _, _, W) ==> var(W) |
 % remove duplicate indomain constraints
 X in Domain \ X in Domain <=> true.
 
+% after generating all necessary domains, start the search
+make_domains <=> enum_board.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% RULES USED FOR READING BOARD
+% HELPER RULES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % load the Board from a puzzle fact
-puzzle_board(Number) <=>
+puzzle_board(Number) <=> puzzle(Number, Size, Islands) |
     % Each puzzle(Id, S, Islands) fact defines the input of one problem:
     % its identifier Id, the size S (width and height), and the list of islands Islands.
-    puzzle(Number, Size, Islands) |
     ymax(Size),
     xmax(Size),
-    % create a board with the islands on it
+
+    % create the board facts from the island list
     islands_board(Islands).
 
-%load the board from a matrix fact
-puzzle_board(Number) <=>
+xmax(Size) \ islands_board(Islands) <=>
+    create_empty_board(1, 1, Size),
+    create_islands(Islands).
+
+% create a usable Board from an array of Islands
+% each island takes the form (X, Y, N) where X is the row number, Y is the column
+% number and N the number of bridges that should arrive in this island.
+create_empty_board(_, Y, Size) <=> Y > Size |
+    true.
+
+create_empty_board(X, Y, Size) <=> X > Size |
+    Y2 is Y + 1,
+    create_empty_board(1, Y2, Size).
+
+create_empty_board(X, Y, Size) <=> X =< Size |
+    board(X, Y, 0, _, _, _, _),
+    X2 is X + 1,
+    create_empty_board(X2,Y,Size).
+
+create_islands([]) <=>
+    true.
+
+create_islands([ [X, Y, Amount] | Islands ]), board(X, Y, _, N, E, S, W) <=>
+    board(X, Y, Amount, N, E, S, W),
+    create_islands(Islands).
+
+% load the board from a matrix fact
+puzzle_board(Number) <=> board(Number, Matrix), length(Matrix, XMax), nth1(1, Matrix, Row), length(Row, YMax) |
     % create a board from a matrix that contains the islands
-    board(Number, Matrix) |
-    length(Matrix,XMax),
-    nth1(1, Matrix, Row),
-    length(Row, YMax),
     xmax(XMax),
     ymax(YMax),
+
+    % create the board facts from the matrix
     board_facts_from_matrix(Matrix, 1).
 
 % create a usable Board from a matrix that contains the islands
@@ -152,31 +181,6 @@ board_facts_from_row([ Number | Row ], X, Y) <=>
     YN is Y + 1,
     board_facts_from_row(Row, X, YN).
 
-% create a usable Board from an array of Islands
-% each island takes the form (X, Y, N) where X is the row number, Y is the column
-% number and N the number of bridges that should arrive in this island.
-create_empty_board(_,Y, Size) <=> Y > Size|
-    true.
-
-create_empty_board(X,Y, Size) <=> X > Size|
-    Y2 is Y + 1,
-    create_empty_board(1,Y2,Size).
-
-create_empty_board(X, Y, Size) <=> X =< Size|
-    board(X, Y, 0, _, _, _, _),
-    X2 is X + 1,
-    create_empty_board(X2,Y,Size).
-
-create_islands([]) <=>
-    true.
-
-create_islands([ [X, Y, Amount] | Islands ]), board(X, Y, _, N, E, S, W) <=>
-    board(X, Y, Amount, N, E, S, W),
-    create_islands(Islands).
-
-xmax(Size) \ islands_board(Islands) <=>
-    create_empty_board(1,1, Size),
-    create_islands(Islands).
 
 board(X,Y, Val, NS, EW, _, _) \ print_board(X,Y) <=>
     (Val > 0 ->
@@ -191,6 +195,7 @@ board(X,Y, Val, NS, EW, _, _) \ print_board(X,Y) <=>
     ),
     Y2 is Y + 1,
     print_board(X,Y2).
+
 
 board(X, _, _, _, _, _, _) \ print_board(X, _) <=>
     X2 is X + 1,
