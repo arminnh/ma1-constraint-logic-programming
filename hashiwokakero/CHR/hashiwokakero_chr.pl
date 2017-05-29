@@ -6,7 +6,8 @@
 :- chr_constraint islands_board/1, matrix_board/2, create_islands/1, create_empty_board/3.
 :- chr_constraint board/7, create_board/3, output/1, xmax/1, ymax/1, print_board/2,
                   board_facts_from_row/3, board_facts_from_matrix/2,
-                  diff/2, clear_store/0, connected/0, connected/2, find_neighbor/3, find_neighbor/5.
+                  diff/2, clear_store/0, connected/0, connected/2, find_neighbor/3, find_neighbor/5, pick_first_island/0,
+                  reachable/2.
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
@@ -115,7 +116,7 @@ make_domains, domain_list(Domain), board(_, _, _, _, _, _, W) ==> var(W) |
 X in Domain \ X in Domain <=> true.
 
 % after generating all necessary domains, start the search
-make_domains <=> enum_board.
+make_domains <=> pick_first_island, enum_board.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HELPER RULES
@@ -269,6 +270,7 @@ enum_board, board(A, B, Am, _, E, _, _) ==> Am > 0, number(E), E > 0 | find_neig
 enum_board, board(A, B, Am, _, _, S, _) ==> Am > 0, number(S), S > 0 | find_neighbor(A, B, 'S').
 enum_board, board(A, B, Am, _, _, _, W) ==> Am > 0, number(W), W > 0 | find_neighbor(A, B, 'W').
 
+
 find_neighbor(A, B, Direction) <=>
     next_pos(A, B, Direction, C, D),
     find_neighbor(A, B, Direction, C, D).
@@ -280,30 +282,24 @@ board(X, Y, Amount, _, _, _, _) \ find_neighbor(OriginalX, OriginalY, Direction,
     next_pos(X, Y, Direction, XN, YN),
     find_neighbor(OriginalX, OriginalY, Direction, XN, YN).
 
-enum_board \ connected([A, B], [C, D]) <=> C < A         | connected([C, D], [A, B]).
-enum_board \ connected([A, B], [C, D]) <=> C == A, D < B | connected([C, D], [A, B]).
 
 enum_board, connected(A, B) \ connected(A, B) <=> true.
 enum_board \ connected(A, A) <=> true.
-enum_board, connected(A, B), connected(B, C) ==> connected(A, C).
-enum_board, connected(A, B), connected(A, C) ==> B \== C | connected(B, C).
 
-% % find first island to put in reachable set
-% board(X, Y, Am1, _, _, _, _), board(X2, Y2, Am2, _, _, _, _) ==> Am1 > 0, Am2 > 0, X < X2 | reachable(X, Y).
-% board(X, Y, Am1, _, _, _, _), board(X2, Y2, Am2, _, _, _, _) ==> Am1 > 0, Am2 > 0, X == X2, Y < Y2 | reachable(X, Y).
-%
-% % build reachable set
-% connected, reachable(X, Y), connected([X, Y], [X2, Y2]) ==>
-%     reachable(X2, Y2).
-%
+% put first island in reachable set
+board(X, Y, Am, _, _, _, _) \ pick_first_island <=> Am > 0 |
+    reachable(X, Y).
+
+% build up reachable set
+enum_board, reachable(X, Y), connected([X, Y], [A, B]) ==>
+    reachable(A, B).
+
 
 enum_board <=> connected.
-% % all islands need to be connected
-connected, board(A, B, Am1, _, _, _, _), board(C, D, Am2, _, _, _, _) \ connected([A, B], [C, D]) <=> Am1 > 0, Am2 > 0, A < C |
+% all islands need to be connected
+connected, board(X, Y, Am, _, _, _, _) \ reachable(X, Y) <=> Am > 0 |
     true.
-connected, board(A, B, Am1, _, _, _, _), board(C, D, Am2, _, _, _, _) \ connected([A, B], [C, D]) <=> Am1 > 0, Am2 > 0, A == C, B < D |
-    true.
-connected, board(_, _, Am1, _, _, _, _), board(_, _, Am2, _, _, _, _) ==> Am1 > 0, Am2 > 0 |
+connected, board(_, _, Am, _, _, _, _) <=> Am > 0 |
     false.
 
 % upto(N, L): L = [1..N]
