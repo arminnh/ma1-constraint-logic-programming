@@ -305,7 +305,6 @@ enum_board, reachable(X, Y) \ connected([A, B], [X, Y]) <=>
 
 % remove duplicate reachable facts
 enum_board, reachable(A, B) \ reachable(A, B) <=> true.
-enum_board, reachable(A, B) \ reachable(B, A) <=> true.
 
 % all islands need to be in the reachable set
 enum_board <=> connected.
@@ -313,6 +312,27 @@ connected \ island(X, Y, _), reachable(X, Y) <=>
     true.
 connected, island(_, _, _) <=>
     false.
+
+% * 4=*
+% | "*=*
+% *=*-1|
+% | "*=*
+% | *-*"
+% *==3-*
+%
+% reachable(1,1)
+% reachable(5,5)
+% reachable(5,3)
+% reachable(1,5)
+% reachable(3,3)
+% reachable(3,1)
+% reachable(6,1)
+% reachable(4,4)
+% reachable(2,4)
+% reachable(2,6)
+% reachable(4,6)
+% reachable(6,6)
+
 
 % upto(N, L): L = [1..N]
 upto([], -1).
