@@ -4,10 +4,10 @@
 :- chr_constraint print_row/1, print_pos/1, enum/1, enum_board/0.
 :- chr_constraint make_domain/2, make_domains/0, domain_list/1.
 :- chr_constraint islands_board/1, matrix_board/2, create_islands/1, create_empty_board/3.
-:- chr_constraint board/7, create_board/3, output/1, xmax/1, ymax/1, print_board/2,
-                  board_facts_from_row/3, board_facts_from_matrix/2,
-                  diff/2, clear_store/0, connected/0, connected/2, find_neighbor/3, find_neighbor/5, pick_first_island/0,
-                  reachable/2.
+:- chr_constraint board/7, island/3, create_board/3, output/1, xmax/1, ymax/1, print_board/2.
+:- chr_constraint board_facts_from_row/3, board_facts_from_matrix/2.
+:- chr_constraint diff/2, clear_store/0, connected/0, connected/2.
+:- chr_constraint create_connection/3, create_connection/5, pick_first_island/0, reachable/2.
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
@@ -160,6 +160,7 @@ create_islands([]) <=>
 
 create_islands([ [X, Y, Amount] | Islands ]), board(X, Y, _, N, E, S, W) <=>
     board(X, Y, Amount, N, E, S, W),
+    island(X, Y, Amount),
     create_islands(Islands).
 
 % load the board from a matrix fact
@@ -182,6 +183,11 @@ board_facts_from_matrix([ Row | Rows ], X) <=>
 board_facts_from_row([], _, _).
 board_facts_from_row([ Number | Row ], X, Y) <=>
     board(X, Y, Number, _, _, _, _),
+    ( Number > 0 ->
+        island(X, Y, Number)
+    ;
+        true
+    ),
     YN is Y + 1,
     board_facts_from_row(Row, X, YN).
 
@@ -263,43 +269,49 @@ enum_board, board(_, _, _, N, E, S, W) ==>
     enum(S),
     enum(W).
 
+% when an island's bridge is found, add a new connected fact
+enum_board, board(A, B, Am, N, _, _, _) ==> Am > 0, number(N), N > 0 | create_connection(A, B, 'N').
+enum_board, board(A, B, Am, _, E, _, _) ==> Am > 0, number(E), E > 0 | create_connection(A, B, 'E').
+enum_board, board(A, B, Am, _, _, S, _) ==> Am > 0, number(S), S > 0 | create_connection(A, B, 'S').
+enum_board, board(A, B, Am, _, _, _, W) ==> Am > 0, number(W), W > 0 | create_connection(A, B, 'W').
 
-% when an island is found, add to connected set????????????????????????
-enum_board, board(A, B, Am, N, _, _, _) ==> Am > 0, number(N), N > 0 | find_neighbor(A, B, 'N').
-enum_board, board(A, B, Am, _, E, _, _) ==> Am > 0, number(E), E > 0 | find_neighbor(A, B, 'E').
-enum_board, board(A, B, Am, _, _, S, _) ==> Am > 0, number(S), S > 0 | find_neighbor(A, B, 'S').
-enum_board, board(A, B, Am, _, _, _, W) ==> Am > 0, number(W), W > 0 | find_neighbor(A, B, 'W').
-
-
-find_neighbor(A, B, Direction) <=>
+% adds a new connected fact for an island going to direction Direction from position (A, B)
+create_connection(A, B, Direction) <=>
     next_pos(A, B, Direction, C, D),
-    find_neighbor(A, B, Direction, C, D).
+    create_connection(A, B, Direction, C, D).
 
-board(X, Y, Amount, _, _, _, _) \ find_neighbor(OriginalX, OriginalY, _, X, Y) <=> Amount > 0 |
+% adds a new connected fact for an island going to direction Direction from position (A, B)
+board(X, Y, Amount, _, _, _, _) \ create_connection(OriginalX, OriginalY, _, X, Y) <=> Amount > 0 |
     connected([OriginalX, OriginalY], [X, Y]).
 
-board(X, Y, Amount, _, _, _, _) \ find_neighbor(OriginalX, OriginalY, Direction, X, Y) <=> Amount == 0 |
+% adds a new connected fact for an island going to direction Direction from position (A, B)
+board(X, Y, Amount, _, _, _, _) \ create_connection(OriginalX, OriginalY, Direction, X, Y) <=> Amount == 0 |
     next_pos(X, Y, Direction, XN, YN),
-    find_neighbor(OriginalX, OriginalY, Direction, XN, YN).
+    create_connection(OriginalX, OriginalY, Direction, XN, YN).
 
-
+% remove duplicate connected facts
 enum_board, connected(A, B) \ connected(A, B) <=> true.
-enum_board \ connected(A, A) <=> true.
+enum_board, connected(A, B) \ connected(B, A) <=> true.
 
 % put first island in reachable set
-board(X, Y, Am, _, _, _, _) \ pick_first_island <=> Am > 0 |
+island(X, Y, _) \ pick_first_island <=>
     reachable(X, Y).
 
 % build up reachable set
-enum_board, reachable(X, Y), connected([X, Y], [A, B]) ==>
+enum_board, reachable(X, Y) \ connected([X, Y], [A, B]) <=>
+    reachable(A, B).
+enum_board, reachable(X, Y) \ connected([A, B], [X, Y]) <=>
     reachable(A, B).
 
+% remove duplicate reachable facts
+enum_board, reachable(A, B) \ reachable(A, B) <=> true.
+enum_board, reachable(A, B) \ reachable(B, A) <=> true.
 
+% all islands need to be in the reachable set
 enum_board <=> connected.
-% all islands need to be connected
-connected, board(X, Y, Am, _, _, _, _) \ reachable(X, Y) <=> Am > 0 |
+connected \ island(X, Y, _), reachable(X, Y) <=>
     true.
-connected, board(_, _, Am, _, _, _, _) <=> Am > 0 |
+connected, island(_, _, _) <=>
     false.
 
 % upto(N, L): L = [1..N]
