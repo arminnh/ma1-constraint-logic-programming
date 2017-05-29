@@ -37,7 +37,7 @@ solve(Number) <=>
     bridge_constraints,
 
     print_board(1,1),
-    %clear_store,
+    clear_store,
     nl.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -46,52 +46,22 @@ solve(Number) <=>
 
 % amount of bridges equals island's amount
 bridge_constraints, board(_,_, Amount, N, E, S, W) ==> Amount > 0 |
-    add(N,E,Sum),
-    add(S,W,Sum2),
+    add(N, E, Sum),
+    add(S, W, Sum2),
     add(Sum, Sum2, Amount),
     true.
 
-% % bridges dont cross
-% bridge_constraints, board(_,_, Amount, 0, E, S, W) ==> Amount == 0 |
-%     S = 0,
-%     E = W.
-%     %eq(E, 0).
-%
-% bridge_constraints, board(_,_, Amount, N, 0, S, W) ==> Amount == 0 |
-%     N = S,
-%     E = W.
-%     %eq(N, 0).
-
-board(_,_, 0, N, E, S, W) ==>
+% bridges going one way == bridges going the opposite way
+bridge_constraints, board(_, _, 0, N, E, S, W) ==>
     N = S,
     E = W.
 
-% board(_,_, Amount, N, E, S, W), N in L ==> Amount == 0, number(E),
-%     delete(L,E,L1) | N in L1.
-%
-% board(_,_, Amount, N, E, S, W), E in L ==> Amount == 0, number(N),
-%     delete(L,N,L1) | E in L1.
-
-% board(_,_,Am,N,E,_,_) ==> Am == 0, number(N), N > 0 | E = 0.
-% board(_,_,Am,N,E,_,_) ==> Am == 0, number(E), E > 0 | N = 0.
-
-% board(_,_, Amount, N, E, S, W) ==> Amount == 0, N \== 0, E \== 0 |
-%     false.
-%
-% bridge_constraints, board(_,_, Amount, N, E, S, W) ==> Amount == 0 |
-%     N = S,
-%     E = W.
-%     %or(eq(N,0), eq(E,0)).
-%     or_eq(N, 0, Z),
-%     or_eq(E, 0, Z2),
-%     Z in [0,1],
-%     Z2 in [0,1],
-%     diff(Z,Z2),
-%     enum(Z),
-%     enum(Z2).
+% bridges dont cross
+board(_, _, 0, N, E, _, _) ==> number(N), N > 0 | E = 0.
+board(_, _, 0, N, E, _, _) ==> number(E), E > 0 | N = 0.
 
 % bridges going north == bridges going south in position above
-bridge_constraints, board(X,Y, _, N, _, _, _), board(X2,Y,_,_,_,S2,_)  ==> X > 1, X2 is X-1 |
+bridge_constraints, board(X, Y, _, N, _, _, _), board(X2, Y, _, _, _, S2, _)  ==> X > 1, X2 is X-1 |
     eq(N,S2).
 
 % bridge can not go north at top of board
@@ -145,7 +115,7 @@ make_domains, domain_list(Domain), board(_, _, _, _, _, _, W) ==> var(W) |
 X in Domain \ X in Domain <=> true.
 
 % after generating all necessary domains, start the search
-make_domains <=> true.%enum_board.
+make_domains <=> enum_board.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HELPER RULES
@@ -205,7 +175,8 @@ board_facts_from_matrix([], _).
 board_facts_from_matrix([ Row | Rows ], X) <=>
     board_facts_from_row(Row, X, 1),
     XN is X + 1,
-    board_facts_from_matrix(Rows, XN).
+    board_facts_from_matrix(Rows, XN),
+    !.
 
 board_facts_from_row([], _, _).
 board_facts_from_row([ Number | Row ], X, Y) <=>
@@ -218,7 +189,7 @@ board(X,Y, Val, NS, EW, _, _) \ print_board(X,Y) <=>
     (Val > 0 ->
         write(Val)
     ;
-        ( nonvar(NS), nonvar(EW) ->
+        ( number(NS), number(EW) ->
             symbol(NS, EW, Char),
             write(Char)
         ;
@@ -248,34 +219,32 @@ symbol(_, _, "*").
 % RULES USED FOR DOMAIN SOLVING
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%or(X,Y) <=> (call(X) -> true; call(Y)).
+% X and Y are instantiated and are different
+add(X, 0, Z) <=> Z = X.
+add(0, Y, Z) <=> Z = Y.
+
+add(X, Y, Z) <=> number(Y), number(Z), var(X) | X is Z - Y.
+add(X, Y, Z) <=> number(X), number(Z), var(Y) | Y is Z - X.
+add(X, Y, Z) <=> number(X), number(Y) | Z is X + Y.
+
+or_eq(X, Y, Z) <=> number(X), number(Y), number(Z), Z == 1 | X == Y.
+or_eq(X, Y, Z) <=> number(X), number(Y), number(Z), Z == 0 | true.
+
+eq(X, Y) <=> var(X), number(Y) | X = Y.
+eq(Y, X) <=> var(X), number(Y) | X = Y.
+eq(X, Y) <=> number(X), number(Y) | X == Y.
 
 % X and Y are instantiated and are different
-%add(X, 0, Z) <=> Z = X.
-%add(0, Y, Z) <=> Z = Y.
-
-%add(X, Y, Z) <=> nonvar(Y), nonvar(Z), var(X) | X is Z - Y.
-%add(X, Y, Z) <=> nonvar(X), nonvar(Z), var(Y) | Y is Z - X.
-add(X, Y, Z) <=> nonvar(X), nonvar(Y) | Z is X + Y.
-
-or_eq(X, Y, Z) <=> nonvar(X), nonvar(Y), nonvar(Z), Z == 1 | X == Y.
-or_eq(X, Y, Z) <=> nonvar(X), nonvar(Y), nonvar(Z), Z == 0 | true.
-
-eq(X, Y) <=> var(X), nonvar(Y) | X = Y.
-eq(Y, X) <=> var(X), nonvar(Y) | X = Y.
-eq(X, Y) <=> nonvar(X), nonvar(Y) | X == Y.
-
-% X and Y are instantiated and are different
-diff(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
-diff(Y, X) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
-diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
+diff(X, Y) <=> number(X), number(Y) | X \== Y.
+diff(Y, X) \ X in L <=> number(Y), select(Y, L, NL) | X in NL.
+diff(X, Y) \ X in L <=> number(Y), select(Y, L, NL) | X in NL.
 
 % enum(L): assigns values to variables X in L
 enum(X)              <=> number(X) | true.
 enum(X), X in Domain <=> member(X, Domain).
 
 % eg when "0 in [0, 1, 2]", 0 should just be member of Domain
-X in Domain <=> nonvar(X), member(X, Domain) | true.
+X in Domain <=> number(X) | member(X, Domain).
 
 enum_board, board(_, _, _, N, E, S, W) ==>
     enum(N),
