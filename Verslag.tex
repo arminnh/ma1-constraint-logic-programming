@@ -1,10 +1,22 @@
 \documentclass{report}
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage[tmargin=2.0cm, lmargin=4.5cm, rmargin=5cm]{geometry}
+
+%\titlespacing*{\chapter}{0pt}{-19pt}{18pt}
 
 %\title{APLAI}
 %\author{thierryderuyttere }
 %\date{May 2017}
+\newcommand{\mychapter}[2]{
+    \setcounter{chapter}{#1}
+    \setcounter{section}{0}
+    \chapter*{#2}
+    \addcontentsline{toc}{chapter}{#2}
+}
+% \topskip 50pt
+%\titlespacing*{\mychapter}{0cm}{-50pt}{0pt}[0pt]
 
 \begin{document}
 
@@ -39,7 +51,7 @@
 	\vfill
 	\hfill\makebox[8.5cm][l]{%
 		\vbox to 7cm{\vfill\noindent
-				{\rm \textbf{Armin Halilovic (r?)}}\\
+				{\rm \textbf{Armin Halilovic (r0679689)}}\\
 				{\rm \textbf{Thierry Deruyttere (r0660485)}}\\[2mm]
 				{\rm Academic year 2016-2017}
 			
@@ -50,21 +62,29 @@
 \newpage
 \tableofcontents
 \newpage
-\chapter*{Introduction}
-In this report we will discuss the different approaches we tried to eventually come to the solutions we have now for Sudoku and Hashiwokakero. The solutions we got are the result of a lot of work and a lot of back tracking on our previously done work. We often came in situations where we got stuck because of the limitations of the Eclipse and CHR systems but we also often had to back track on our work since we were often feeling that we were doing things in a non declarative way. We often tried to do things in a procedural way when we first started with Sudoku which means we lost quite some time here since we often had to rethink how we could write things in a more declarative way. For the Hashiwokakero part of the project things went a bit better but we lost quite some time here with the fact that ECLiPSe doesn't support constraints in conditionals. We will discuss this further in chapter \ref{sec:Hashiwokakero}. The fact that we often had to backtrack on our work was according to us due to the fact that we are still novices with prolog since this is the first time we used this programming language.
+
+\mychapter{0}{Introduction}
+In this report we will discuss the different approaches we tried to eventually come to the solutions we have now for Sudoku and Hashiwokakero. The solutions we got are the result of a lot of work and a lot of back tracking on our previously done work. We often came in situations where we got stuck because of the limitations of the ECLiPSe and CHR systems but we also often had to back track on our work since we were often feeling that we were doing things in a non declarative way. We often tried to do things in a procedural way when we first started with Sudoku which means we lost quite some time here since we often had to rethink how we could write things in a more declarative way. For the Hashiwokakero part of the project things went a bit better but we lost quite some time here with the fact that ECLiPSe doesn't support constraints in conditionals. We will discuss this further in chapter \ref{sec:Hashiwokakero}. The fact that we often had to backtrack on our work was according to us due to the fact that we are still novices with prolog since this is the first time we used this programming language.
 	\newline
 	\newline
-	In our solutions we decided to only use ECLiPSe and CHR. This was partially due to the fact that when we started this assignment we still hadn't seen Jess in class. Once we did have the class about Jess we found that since we were still novices at declarative programming languages, it would be a good exercise to continue using the more declarative systems to gain more experience with them.
+	In our solutions we decided to only use ECLiPSe and CHR. This was partially due to the fact that when we started this assignment we still hadn't seen Jess in class. Once we did have the class about Jess we found that since we were still novices at declarative programming languages, it would be a good exercise to continue using the more declarative systems to gain more experience with them since Jess can also be used to program in a more procedural way. Another reason for not using Jess was that the Jess syntax looked less appealing than the syntax CHR was offering us by all the parenthesizes used in its syntax.
 	
 %In this report we will discuss the solutions we created for Sudoku and Hashiwokakero and the different approaches that we tried. During the creation of our solution we often had to re-track our work since we often found that we were not trying to do things in a prolog-like way. This is was due to the fact that we are still novice's when using prolog. 
-\chapter{Part 1: Sudoku}
+\mychapter{1}{Part 1: Sudoku}
 \section{ECLiPSe}
 \section{CHR}
-\chapter{Part 2: Hashiwokakero}
+\mychapter{2}{Part 2: Hashiwokakero}
 \label{sec:Hashiwokakero}
 \section{ECLiPSe}
-\section{CHR}
-\chapter{Conclusion}
-\chapter{Appendix}
+\subsection{Optimization}
 
+\section{CHR}
+\subsection{Optimization}
+\mychapter{3}{Conclusion}
+\section{Weak points}
+\section{Strong points}
+\section{Lessons learned}
+Never use this system ever again.
+\mychapter{4}{Appendix}
+We started working on this project before the easter holiday. During our start we often lost quite some time since we didn't really know how the systems worked. During the second week of the easter holiday we continued to work on the project each evening and we finished the Sudoku part at the end of the holiday. We then had to pause our work since we had an enormous deadline for an other course so sadly enough we could only continue working on the project after this deadline (10th may). As the semester was coming to an end other deadlines also started to come closer and closer so we had to manage these first, so it is only at the start of the study period that we could continue our work. From the start of the study period we tried to spend around 6 hours of work each day for this project. The work was not really divided since we were doing pair programming most of the time. Sometimes someone made some individual changes when they had time but most of our work has been made in group over hangouts by using screensharing. We could argue that by doing pair programming we lost quite some time, which is true, but by doing this we worked very closely together and we learned quite a lot. 
 \end{document}
