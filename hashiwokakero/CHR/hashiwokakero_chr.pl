@@ -288,14 +288,15 @@ enum_board \ connected(A, A) <=> true.
 
 % put first island in reachable set
 board(X, Y, Am, _, _, _, _) \ pick_first_island <=> Am > 0 |
+    writeln("OK"),
     reachable(X, Y).
 
 % build up reachable set
 enum_board, reachable(X, Y), connected([X, Y], [A, B]) ==>
     reachable(A, B).
 
+enum_board <=> true.%connected.
 
-enum_board <=> connected.
 % all islands need to be connected
 connected, board(X, Y, Am, _, _, _, _) \ reachable(X, Y) <=> Am > 0 |
     true.
