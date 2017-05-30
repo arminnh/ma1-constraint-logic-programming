@@ -37,8 +37,7 @@ solve(Number) <=>
 
     writeln("Board before search:"),
     print_board,
-    clear_store,
-    chr_show_store(user),
+    % chr_show_store(user),
 
     % after generating all necessary domains, start the search
     enum_board,
@@ -123,29 +122,29 @@ X in Domain \ X in Domain <=> true.
 % "1. Islands with a single neighbor:" is already handled by the bridge_constraints
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% % islands with 4 in a corner of the board have 2 connections in all remaining directions
-% board(1, 1, 4, N, E, S, W)                               \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
-%     N = 0, E = 2, S = 2, W = 0.
-% board(1, YMax, 4, N, E, S, W), ymax(YMax)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
-%     N = 0, E = 0, S = 2, W = 2.
-% board(XMax, 1, 4, N, E, S, W), xmax(XMax)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
-%     N = 2, E = 2, S = 0, W = 0.
-% board(XMax, YMax, 4, N, E, S, W), xmax(XMax), ymax(YMax) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
-%     N = 2, E = 0, S = 0, W = 2.
-%
-% % islands with 6 on a side of the board have 2 connections in all remaining directions
-% board(1, _, 6, N, E, S, W)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
-%     N = 0, E = 2, S = 2, W = 2.
-% board(_, YMax, 6, N, E, S, W), ymax(YMax) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
-%     N = 2, E = 0, S = 2, W = 2.
-% board(XMax, _, 6, N, E, S, W), xmax(XMax) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
-%     N = 2, E = 2, S = 0, W = 2.
-% board(_, 1, 6, N, E, S, W)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
-%     N = 2, E = 2, S = 2, W = 0.
+% islands with 4 in a corner of the board have 2 connections in all remaining directions
+board(1, 1, 4, N, E, S, W)                               \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
+    N = 0, E = 2, S = 2, W = 0.
+board(1, YMax, 4, N, E, S, W), ymax(YMax)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
+    N = 0, E = 0, S = 2, W = 2.
+board(XMax, 1, 4, N, E, S, W), xmax(XMax)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
+    N = 2, E = 2, S = 0, W = 0.
+board(XMax, YMax, 4, N, E, S, W), xmax(XMax), ymax(YMax) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
+    N = 2, E = 0, S = 0, W = 2.
 
-% % islands with 8 have 2 connections in all directions
-% board(_, _, 8, N, E, S, W) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 8) <=>
-%     N = 2, E = 2, S = 2, W = 2.
+% islands with 6 on a side of the board have 2 connections in all remaining directions
+board(1, _, 6, N, E, S, W)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
+    N = 0, E = 2, S = 2, W = 2.
+board(_, YMax, 6, N, E, S, W), ymax(YMax) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
+    N = 2, E = 0, S = 2, W = 2.
+board(XMax, _, 6, N, E, S, W), xmax(XMax) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
+    N = 2, E = 2, S = 0, W = 2.
+board(_, 1, 6, N, E, S, W)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
+    N = 2, E = 2, S = 2, W = 0.
+
+% islands with 8 have 2 connections in all directions
+board(_, _, 8, N, E, S, W) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 8) <=>
+    N = 2, E = 2, S = 2, W = 2.
 
 % % Neighbors = [ [Direction, Amount] ]
 % board(X, Y, 7, N, E, S, W), neighbors(X, Y, Neighbors) ==> member(['N', 1], Neighbors) |
@@ -166,24 +165,30 @@ X in Domain \ X in Domain <=> true.
 % board(XMax, YMax, 3, N, E, S, W), xmax(XMax), ymax(YMax) ==> member(['N', 1], Neighbors) |
 %     N = 2, E = 0, S = 0, W = 2.
 
-% % islands with 3 in a corner of the board have at least 1 connection in all remaining directions, so remove 0 from the domains
-% board(1, 1, 3, _, E, S, _)                               \ E in D, S in D <=> D = [0, 1, 2] | ND = [1, 2], E in ND, S in ND.
-% board(1, YMax, 3, _, _, S, W), ymax(YMax)                \ S in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], S in ND, W in ND.
-% board(XMax, 1, 3, N, E, _, _), xmax(XMax)                \ N in D, E in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND.
-% board(XMax, YMax, 3, N, _, _, W), xmax(XMax), ymax(YMax) \ N in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, W in ND.
+% islands with 3 in a corner of the board have at least 1 connection in all remaining directions, so remove 0 from the domains
+board(1, 1, 3, _, E, S, _)                               \ E in D, S in D <=> D = [0, 1, 2] | ND = [1, 2], E in ND, S in ND.
+board(1, YMax, 3, _, _, S, W), ymax(YMax)                \ S in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], S in ND, W in ND.
+board(XMax, 1, 3, N, E, _, _), xmax(XMax)                \ N in D, E in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND.
+board(XMax, YMax, 3, N, _, _, W), xmax(XMax), ymax(YMax) \ N in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, W in ND.
 
-% % islands with 5 on a side of the board have at least 1 connection in all remaining directions, so remove 0 from the domains
-% board(1, _, 5, _, E, S, W)                 \ E in D, S in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], E in ND, S in ND, W in ND.
-% board(_, YMax, 5, N, _, S, W), ymax(YMax)  \ N in D, S in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, S in ND, W in ND.
-% board(XMax, _, 5, N, E, _, W), xmax(XMax)  \ N in D, E in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND, W in ND.
-% board(_, 1, 5, N, E, S, _)                 \ N in D, E in D, S in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND, S in ND.
-%
-% % islands with 7 have at least 1 connection in all directions, so remove 0 from the domains
-% board(_, _, 7, N, E, S, W) \ N in D, E in D, S in D, W in D  <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND, S in ND, W in ND.
+% islands with 5 on a side of the board have at least 1 connection in all remaining directions, so remove 0 from the domains
+board(1, _, 5, _, E, S, W)                 \ E in D, S in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], E in ND, S in ND, W in ND.
+board(_, YMax, 5, N, _, S, W), ymax(YMax)  \ N in D, S in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, S in ND, W in ND.
+board(XMax, _, 5, N, E, _, W), xmax(XMax)  \ N in D, E in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND, W in ND.
+board(_, 1, 5, N, E, S, _)                 \ N in D, E in D, S in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND, S in ND.
+
+% islands with 7 have at least 1 connection in all directions, so remove 0 from the domains
+board(_, _, 7, N, E, S, W) \ N in D, E in D, S in D, W in D  <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND, S in ND, W in ND.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR DOMAIN SOLVING
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% add(X,Y,Z) \ X in A..B, Y in C..D, Z in E..F <=>
+%     not( ( A >= E-D, B =< F -C, C >= E-B, D =< F-A, E >= A+C, F =< B+D ) ) |
+%         Lx is max(A,E-D), Ux is min(B,F-C), X in Lx..Ux,
+%         Ly is max(C,E-B), Uy is min(D,F-A), Y in Ly..Uy,
+%         Lz is max(E,A+C), Uz is min(F,B+D), Z in Lz..Uz.
 
 % X and Y are instantiated and are different
 add(X, 0, Z) <=> Z = X.
