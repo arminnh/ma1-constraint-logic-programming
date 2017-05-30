@@ -31,7 +31,8 @@ solve(Number) :-
     % create bridges and set constraints
     hashiwokakero(Board),
     %writeln("kk"),
-
+    %optimize(Board),
+    print_board(Board),
     % do search on variables
     search(naive, Board),
 
@@ -73,8 +74,16 @@ hashiwokakero(Board) :-
         % if this position requires an amount of bridges,
         % make the sum of all bridges equal this amount
         ( Amount > 0 ->
-            [N, E, S, W] #:: 0..2,
-            N + E + S + W #= Amount
+            (Amount == 8 ->
+                % If the amount is 8 make bridges in all directionss
+                N #= 2,
+                E #= 2,
+                S #= 2,
+                W #= 2
+                ;
+                [N, E, S, W] #:: 0..2,
+                N + E + S + W #= Amount
+            )
         ; % else make sure bridges don't cross each other
             N = S, E = W,
             (N #= 0) or (E #= 0)
@@ -235,29 +244,28 @@ fill_set_visit(Board, X, Y, Islands, Visited) :-
     ),
     !.
 
-% TODO pls fill in
-neighbors_count([], 0):-
-    true.
+% counts the nonzero nonvars
+count_nonzero_nonvars([], 0).
 
-% TODO pls fill in
-neighbors_count([H | T], Count):-
+count_nonzero_nonvars([H | T], Count):-
+    nonvar(H),
     H > 0,
-    neighbors_count(T, C2),
+    count_nonzero_nonvars(T, C2),
     Count is C2 + 1.
 
-% TODO pls fill in
-neighbors_count([_ | T], Count):-
-    neighbors_count(T, C2),
+count_nonzero_nonvars([_ | T], Count):-
+    count_nonzero_nonvars(T, C2),
     Count is C2.
 
 % Neighbors is a list of neighboring islands (not just positions) of position (X, Y) on the Board
 island_neighbors(Board, X, Y, Neighbors) :-
     List is Board[X, Y, 2..5],
-    neighbors_count(List, Count),
+    count_nonzero_nonvars(List, Count),
     length(Neighbors, Count),
 
     ( foreachelem(Direction, [](2, 3, 4, 5)), param(Board, X,Y, Neighbors) do
         Val is Board[X,Y,Direction],
+
         (Val > 0 ->
             next_pos([X,Y], Direction, NextPos),
             find_neighbor(Board, NextPos, Direction, Neighbor),
@@ -286,6 +294,114 @@ find_neighbor(Board, [X, Y], Direction, Neighbor) :-
 
 % TODO: was this wrong?
 % find_neighbor(_, _, _, _).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Optimize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+assign4(Board,X, Y, Zero1, Zero2, NotZero1, NotZero2):-
+    Z1 is Board[X, Y, Zero1],
+    Z2 is Board[X, Y, Zero2],
+    NZ1 is Board[X, Y, NotZero1],
+    NZ2 is Board[X, Y, NotZero2],
+    Z1 #= 0,
+    Z2 #= 0,
+    NZ1 #= 2,
+    NZ2 #= 2.
+
+optimize_corner_4(Board):-
+    dim(Board, [XMax, YMax, 5]),
+    Am1 is Board[1, 1, 1],
+    Am2 is Board[XMax, 1, 1],
+    Am3 is Board[1, YMax, 1],
+    Am4 is Board[XMax, YMax, 1],
+    (Am1 =:= 4 ->
+        % 2 = N
+        % 3 = E
+        % 4 = S
+        % 5 = W
+        assign4(Board, 1, 1, 2, 5, 3, 4)
+        ;
+        true
+    ),
+    (Am2 =:= 4 ->
+        % Bottom left corner
+        % So no south (4) and west (5)
+        assign4(Board, XMax, 1, 4, 5, 2, 3)
+        ;
+        true
+    ),
+    (Am3 =:= 4 ->
+        % top right corner
+        % So no north (2) and east (3)
+        assign4(Board, 1, YMax, 2, 3, 4, 5)
+        ;
+        true
+    ),
+    (Am4 =:= 4 ->
+        % Bottom right corner
+        % So no south (4) and east (3)
+        assign4(Board, XMax, YMax, 4, 3, 2, 5)
+        ;
+        true
+    ),
+    true
+    .
+
+assign6(Board,X, Y, Zero1, NotZero1, NotZero2, NotZero3):-
+    Z1 is Board[X, Y, Zero1],
+    NZ1 is Board[X, Y, NotZero1],
+    NZ2 is Board[X, Y, NotZero2],
+    NZ3 is Board[X, Y, NotZero3],
+    Z1 #= 0,
+    NZ1 #= 2,
+    NZ2 #= 2,
+    NZ3 #= 2.
+
+optimize_border_6(Board):-
+    dim(Board, [XMax, YMax, 5]),
+    ( for(X, 1, XMax), param(Board, XMax, YMax) do
+        Am1 is Board[X, 1, 1],
+        Am2 is Board[X, YMax, 1],
+        (Am1 =:= 6 ->
+            % 6 on the left side of the board
+            % No bridges in the W(5) direciton!
+            assign6(Board, X, 1, 5, 2, 3 ,4)
+            ;
+            true
+        ),
+        (Am2 =:= 6 ->
+            % 6 on the right side of the board
+            % No bridges in the E(3) direction!
+            assign6(Board, X, YMax, 3, 2, 5 ,4)
+            ;
+            true
+        )
+    ),
+    ( for(Y, 1, YMax), param(Board, XMax, YMax) do
+        Am1 is Board[1, Y, 1],
+        Am2 is Board[XMax, Y, 1],
+        (Am1 =:= 6 ->
+            % 6 on the top row of the board
+            % No bridges in the N(2) direciton!
+            assign6(Board, 1, Y, 2, 5, 3 ,4)
+            ;
+            true
+        ),
+        (Am2 =:= 6 ->
+            % 6 on the bottom row of the board
+            % No bridges in the S (4) direction!
+            assign6(Board, XMax, Y, 4, 2, 5 ,3)
+            ;
+            true
+        )
+    ),
+    true
+    .
+
+optimize(Board) :-
+    optimize_corner_4(Board),
+    optimize_border_6(Board).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HELPER PROCEDURES
@@ -508,4 +624,25 @@ board(11, [](
     [](0, 0, 0, 1, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0),
     [](0, 3, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 2),
     [](1, 0, 2, 0, 3, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 4, 0, 2, 0)
+)).
+board(12, [](
+    [](0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 2, 0, 1, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0),
+    [](1, 0, 4, 0, 6, 0, 2, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 4, 0, 5, 0, 2, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0),
+    [](2, 0, 6, 0, 2, 0, 1, 0)
+)).
+
+board(13, [](
+    [](4, 0, 3, 0, 4, 3, 0, 4),
+    [](0, 0, 0, 0, 0, 0, 0, 0),
+    [](2, 0, 0, 0, 0, 0, 0, 2),
+    [](0, 0, 2, 0, 8, 0, 2, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 4, 0, 5, 0, 1, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0),
+    [](2, 0, 6, 0, 2, 0, 0, 0)
 )).
