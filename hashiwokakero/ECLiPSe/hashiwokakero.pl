@@ -71,19 +71,36 @@ hashiwokakero(Board) :-
         ( X < XMax -> S #= Board[X+1,   Y, 2] ; S = 0 ),
         ( Y > 1    -> W #= Board[  X, Y-1, 3] ; W = 0 ),
 
+        (Amount =:= 1->
+            possible_island_neighbors(Board, [X,Y], Neighbors),
+            writeln("ookk"),
+            length(Neighbors, Count),
+            writeln(Count),
+            (Count > 1 ->
+                ( foreacharg(Neigbor, Neighbors), param(Board, X, Y) do
+                    nth1(3,Neigbor,Am2),
+                    writeln(Am2),
+                    (nonvar(Am2), Am2 =:= 1 ->
+                        nth1(4,Neigbor,Dir),
+                        D is Board[X,Y, Dir],
+                        D = 0
+                    )
+                )
+            ;
+                true
+            )
+        ;
+            true
+        )
+        ,
         % if this position requires an amount of bridges,
         % make the sum of all bridges equal this amount
         ( Amount > 0 ->
-            (Amount == 8 ->
-                % If the amount is 8 make bridges in all directionss
-                N #= 2,
-                E #= 2,
-                S #= 2,
-                W #= 2
-                ;
-                [N, E, S, W] #:: 0..2,
-                N + E + S + W #= Amount
-            )
+            % (Amount == 8 ->
+            % Not needed since if the amount is 8
+            % Eclipse knows that everything needs to be 2
+            [N, E, S, W] #:: 0..2,
+            N + E + S + W #= Amount
         ; % else make sure bridges don't cross each other
             N = S, E = W,
             (N #= 0) or (E #= 0)
@@ -226,7 +243,7 @@ fill_set_visit(Board, X, Y, Islands, Visited) :-
 
     ( for(I,1,N), param(Board, Islands, Visited, Neighbors) do
         %writeln(["I", I]),
-        nth1(I, Neighbors, [X1,Y1]),
+        nth1(I, Neighbors, [X1,Y1, _, _]),
 
         nth1(Pos, Islands, [X1,Y1]),
         nth1(Pos, Visited, HasVisited),
@@ -275,6 +292,15 @@ island_neighbors(Board, X, Y, Neighbors) :-
         )
     ).
 
+possible_island_neighbors(Board, Pos, Neighbors) :-
+    ( foreachelem(Direction, [](2, 3, 4, 5)), param(Board, Pos, Neighbors) do
+        next_pos(Pos, Direction, NextPos),
+        find_neighbor(Board, NextPos, Direction, Neighbor),
+        member(Neighbor, Neighbors)
+    ),
+    length(Neighbors, _),
+    !.
+
 % Neighbor is a possible neighbor in a certain direction from position (X, Y) on the Board
 find_neighbor(Board, [X, Y], Direction, Neighbor) :-
     dim(Board, [XMax, YMax, _]),
@@ -286,121 +312,25 @@ find_neighbor(Board, [X, Y], Direction, Neighbor) :-
 
     Amount is Board[X, Y, 1],
     ( Amount > 0 ->
-        Neighbor = [X, Y]
+        Neighbor = [X, Y, Amount, Direction]
     ;
         next_pos([X, Y], Direction, NextPos),
         find_neighbor(Board, NextPos, Direction, Neighbor)
     ).
 
-% TODO: was this wrong?
-% find_neighbor(_, _, _, _).
+find_neighbor(_, _, _, _).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Optimize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-assign4(Board,X, Y, Zero1, Zero2, NotZero1, NotZero2):-
-    Z1 is Board[X, Y, Zero1],
-    Z2 is Board[X, Y, Zero2],
-    NZ1 is Board[X, Y, NotZero1],
-    NZ2 is Board[X, Y, NotZero2],
-    Z1 #= 0,
-    Z2 #= 0,
-    NZ1 #= 2,
-    NZ2 #= 2.
-
-optimize_corner_4(Board):-
-    dim(Board, [XMax, YMax, 5]),
-    Am1 is Board[1, 1, 1],
-    Am2 is Board[XMax, 1, 1],
-    Am3 is Board[1, YMax, 1],
-    Am4 is Board[XMax, YMax, 1],
-    (Am1 =:= 4 ->
-        % 2 = N
-        % 3 = E
-        % 4 = S
-        % 5 = W
-        assign4(Board, 1, 1, 2, 5, 3, 4)
-        ;
-        true
-    ),
-    (Am2 =:= 4 ->
-        % Bottom left corner
-        % So no south (4) and west (5)
-        assign4(Board, XMax, 1, 4, 5, 2, 3)
-        ;
-        true
-    ),
-    (Am3 =:= 4 ->
-        % top right corner
-        % So no north (2) and east (3)
-        assign4(Board, 1, YMax, 2, 3, 4, 5)
-        ;
-        true
-    ),
-    (Am4 =:= 4 ->
-        % Bottom right corner
-        % So no south (4) and east (3)
-        assign4(Board, XMax, YMax, 4, 3, 2, 5)
-        ;
-        true
-    ),
-    true
-    .
-
-assign6(Board,X, Y, Zero1, NotZero1, NotZero2, NotZero3):-
-    Z1 is Board[X, Y, Zero1],
-    NZ1 is Board[X, Y, NotZero1],
-    NZ2 is Board[X, Y, NotZero2],
-    NZ3 is Board[X, Y, NotZero3],
-    Z1 #= 0,
-    NZ1 #= 2,
-    NZ2 #= 2,
-    NZ3 #= 2.
-
-optimize_border_6(Board):-
-    dim(Board, [XMax, YMax, 5]),
-    ( for(X, 1, XMax), param(Board, XMax, YMax) do
-        Am1 is Board[X, 1, 1],
-        Am2 is Board[X, YMax, 1],
-        (Am1 =:= 6 ->
-            % 6 on the left side of the board
-            % No bridges in the W(5) direciton!
-            assign6(Board, X, 1, 5, 2, 3 ,4)
-            ;
-            true
-        ),
-        (Am2 =:= 6 ->
-            % 6 on the right side of the board
-            % No bridges in the E(3) direction!
-            assign6(Board, X, YMax, 3, 2, 5 ,4)
-            ;
-            true
-        )
-    ),
-    ( for(Y, 1, YMax), param(Board, XMax, YMax) do
-        Am1 is Board[1, Y, 1],
-        Am2 is Board[XMax, Y, 1],
-        (Am1 =:= 6 ->
-            % 6 on the top row of the board
-            % No bridges in the N(2) direciton!
-            assign6(Board, 1, Y, 2, 5, 3 ,4)
-            ;
-            true
-        ),
-        (Am2 =:= 6 ->
-            % 6 on the bottom row of the board
-            % No bridges in the S (4) direction!
-            assign6(Board, XMax, Y, 4, 2, 5 ,3)
-            ;
-            true
-        )
-    ),
-    true
-    .
 
 optimize(Board) :-
-    optimize_corner_4(Board),
-    optimize_border_6(Board).
+    %board_islands(Board, Islands),
+    % Not even needed
+    %optimize_corner_4(Board),
+    %optimize_border_6(Board),
+    %single_neighbor(Board).
+    true.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -645,4 +575,18 @@ board(13, [](
     [](0, 0, 4, 0, 5, 0, 1, 0),
     [](0, 0, 0, 0, 0, 0, 0, 0),
     [](2, 0, 6, 0, 2, 0, 0, 0)
+)).
+
+board(14, [](
+    [](0, 0, 2, 0, 0,1 ),
+    [](0, 0, 0, 0, 0,0 ),
+    [](0, 0, 2, 0, 0,0 ),
+    [](0, 0, 0, 0, 0,0 ),
+    [](1, 0, 3, 0, 1,0 )
+)).
+
+
+
+board(15, [](
+    [](1, 0, 1)
 )).
