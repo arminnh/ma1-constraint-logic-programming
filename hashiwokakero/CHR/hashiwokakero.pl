@@ -2,7 +2,7 @@
 :- consult("boards").
 
 :- chr_constraint solve/1, puzzle_board/1, bridge_constraints/0.
-:- chr_constraint enum/1, search/0.
+:- chr_constraint enum/1, search/0, write_variable/2.
 :- chr_constraint make_domains/0.
 :- chr_constraint create_islands/1, create_empty_board/2.
 :- chr_constraint board/7, island/3,  xmax/1, ymax/1, print_board/0, print_board/2.
@@ -114,46 +114,19 @@ make_domains, board(_, _, _, _, E, _, _) ==> var(E) | E in 0..2.
 make_domains, board(_, _, _, _, _, S, _) ==> var(S) | S in 0..2.
 make_domains, board(_, _, _, _, _, _, W) ==> var(W) | W in 0..2.
 
-% the domain of an island with 1 is [0, 1] and not [0, 1, 2]
-make_domains, board(_, _, 1, N, _, _, _) \ N in 0..2 <=>  N in 0..1.
-make_domains, board(_, _, 1, _, E, _, _) \ E in 0..2 <=>  E in 0..1.
-make_domains, board(_, _, 1, _, _, S, _) \ S in 0..2 <=>  S in 0..1.
-make_domains, board(_, _, 1, _, _, _, W) \ W in 0..2 <=>  W in 0..1.
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CONSTRAINT IMPROVEMENT RULES
 % inspired by http://www.conceptispuzzles.com/index.aspx?uri=puzzle/hashi/techniques
-% improvements used:
+% improvements already done by the new domain solving:
 %     "1. Islands with 4 in the corner, 6 on the side and 8 in the middle:"
 %     "2. Islands with 3 in the corner, 5 on the side and 7 in the middle:"
 %     "3. Special cases of 3 in the corner, 5 on the side and 7 in the middle:"
-%
-% "1. Islands with a single neighbor:" is already handled by the bridge_constraints
+%     "1. Islands with a single neighbor:" is already handled by the bridge_constraints
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% % islands with 4 in a corner of the board have 2 connections in all remaining directions
-% board(1, 1, 4, N, E, S, W)                               \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
-%     N = 0, E = 2, S = 2, W = 0.
-% board(1, YMax, 4, N, E, S, W), ymax(YMax)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
-%     N = 0, E = 0, S = 2, W = 2.
-% board(XMax, 1, 4, N, E, S, W), xmax(XMax)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
-%     N = 2, E = 2, S = 0, W = 0.
-% board(XMax, YMax, 4, N, E, S, W), xmax(XMax), ymax(YMax) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
-%     N = 2, E = 0, S = 0, W = 2.
-%
-% % islands with 6 on a side of the board have 2 connections in all remaining directions
-% board(1, _, 6, N, E, S, W)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
-%     N = 0, E = 2, S = 2, W = 2.
-% board(_, YMax, 6, N, E, S, W), ymax(YMax) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
-%     N = 2, E = 0, S = 2, W = 2.
-% board(XMax, _, 6, N, E, S, W), xmax(XMax) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
-%     N = 2, E = 2, S = 0, W = 2.
-% board(_, 1, 6, N, E, S, W)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
-%     N = 2, E = 2, S = 2, W = 0.
-%
-% % islands with 8 have 2 connections in all directions
-% board(_, _, 8, N, E, S, W) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 8) <=>
-%     N = 2, E = 2, S = 2, W = 2.
+% improvement: 1 can not be connected to 1 by 1 bridge, so make domain 0..0
+% improvement: 2 can not be connected to 2 by 2 bridges, so make domain 0..1
+
 
 % % Neighbors = [ [Direction, Amount] ]
 % board(X, Y, 7, N, E, S, W), neighbors(X, Y, Neighbors) ==> member(['N', 1], Neighbors) |
@@ -173,21 +146,6 @@ make_domains, board(_, _, 1, _, _, _, W) \ W in 0..2 <=>  W in 0..1.
 %     N = 2, E = 2, S = 0, W = 0.
 % board(XMax, YMax, 3, N, E, S, W), xmax(XMax), ymax(YMax) ==> member(['N', 1], Neighbors) |
 %     N = 2, E = 0, S = 0, W = 2.
-
-% % islands with 3 in a corner of the board have at least 1 connection in all remaining directions, so remove 0 from the domains
-% board(1, 1, 3, _, E, S, _)                               \ E in D, S in D <=> D = [0, 1, 2] | ND = [1, 2], E in ND, S in ND.
-% board(1, YMax, 3, _, _, S, W), ymax(YMax)                \ S in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], S in ND, W in ND.
-% board(XMax, 1, 3, N, E, _, _), xmax(XMax)                \ N in D, E in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND.
-% board(XMax, YMax, 3, N, _, _, W), xmax(XMax), ymax(YMax) \ N in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, W in ND.
-%
-% % islands with 5 on a side of the board have at least 1 connection in all remaining directions, so remove 0 from the domains
-% board(1, _, 5, _, E, S, W)                 \ E in D, S in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], E in ND, S in ND, W in ND.
-% board(_, YMax, 5, N, _, S, W), ymax(YMax)  \ N in D, S in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, S in ND, W in ND.
-% board(XMax, _, 5, N, E, _, W), xmax(XMax)  \ N in D, E in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND, W in ND.
-% board(_, 1, 5, N, E, S, _)                 \ N in D, E in D, S in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND, S in ND.
-%
-% % islands with 7 have at least 1 connection in all directions, so remove 0 from the domains
-% board(_, _, 7, N, E, S, W) \ N in D, E in D, S in D, W in D  <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND, S in ND, W in ND.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR DOMAIN SOLVING
@@ -343,15 +301,15 @@ board_facts_from_row([ Number | Row ], X, Y) <=>
 
 % prints the board
 print_board <=> print_board(1, 1).
-board(X,Y, Val, NS, EW, _, _) \ print_board(X, Y) <=>
+board(X,Y, Val, N, E, _, _) \ print_board(X, Y) <=>
     (Val > 0 ->
         write(Val)
     ;
-        ( (var(NS) ; var(EW)) ->
-            write('_')
+        ( (var(N) ; var(E)) ->
+            write_variable(N, E)
         ;
-            ( number(NS), number(EW) ->
-                symbol(NS, EW, Char),
+            ( number(N), number(E) ->
+                symbol(N, E, Char),
                 write(Char)
             ;
                 write(' ')
@@ -367,6 +325,15 @@ board(X, _, _, _, _, _, _) \ print_board(X, _) <=>
     print_board(X2, 1).
 print_board(_, _) <=> nl.
 
+N in 0..1 \ write_variable(N, _) <=> write('.').
+N in 0..2 \ write_variable(N, _) <=> write(',').
+N in 1..2 \ write_variable(N, _) <=> write(';').
+E in 0..1 \ write_variable(_, E) <=> write('~').
+E in 0..2 \ write_variable(_, E) <=> write('/').
+E in 1..2 \ write_variable(_, E) <=> write('\\').
+write_variable(_, _)             <=> write('_').
+
+% symbol(N, E, char): char is the character to print depending on the values of N and E
 symbol(0, 0, ' ').
 symbol(0, 1, '-').
 symbol(0, 2, '=').
