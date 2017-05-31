@@ -328,14 +328,70 @@ no_one_to_one(Board, X, Y, Amount):-
         true
     ).
 
+no_two_bridges_from_two_to_two(Board, X, Y, Amount):-
+    (Amount =:= 2 ->
+        possible_island_neighbors(Board, [X,Y], Neighbors),
+        length(Neighbors, Count),
+        (Count > 1 ->
+            ( for(I, 1, Count), param(Board, X, Y, Neighbors) do
+                % 3 is value of neighbor
+                nth1(I, Neighbors, Neigbor),
+                nth1(3, Neigbor,Am2),
+                (Am2 =:= 2 ->
+                    nth1(4,Neigbor,Dir),
+                    D is Board[X,Y, Dir],
+                    D \== 2
+                ;
+                    true
+                )
+            )
+        ;
+            true
+        )
+    ;
+        true
+    ).
+
+
+% Checks if a Pos [X,Y] is in one of the corners of the board
+is_in_corner(Board, X,Y, Answer):-
+    dim(Board, [XMax, YMax, 5]),
+    ( (X =:= 1 ; X =:= XMax), (Y =:= 1 ; Y =:= YMax) ->
+        Answer is 1
+        ;
+        Answer is 0
+    ).
+
+three_in_corner(Board, X, Y, Amount):-
+    is_in_corner(Board,X,Y, Answer),
+    (Amount =:= 3, Answer =:= 1 ->
+        possible_island_neighbors(Board, [X,Y], Neighbors),
+        length(Neighbors, Count),
+        (Count > 1 ->
+            ( for(I, 1, Count), param(Board, X, Y, Neighbors) do
+                nth1(I, Neighbors, Neigbor),
+                nth1(3, Neigbor,Am2),
+                (Am2 =:= 1 ->
+                    nth1(4,Neigbor,Dir),
+                    D is Board[X,Y, Dir],
+                    D = 1
+                    ;
+                    true
+                )
+
+            )
+            ;
+            true
+        )
+        ;
+        true
+    ).
 
 optimize(Board, X, Y, Amount) :-
     no_one_to_one(Board, X, Y, Amount),
-    %board_islands(Board, Islands),
-    % Not even needed
-    %optimize_corner_4(Board),
-    %optimize_border_6(Board),
-    %single_neighbor(Board).
+    no_two_bridges_from_two_to_two(Board, X, Y, Amount),
+    three_in_corner(Board, X, Y, Amount),
+
     true.
 
 
@@ -594,5 +650,9 @@ board(14, [](
 
 
 board(15, [](
-    [](1, 0, 1)
+    [](0, 0, 1),
+    [](0, 0, 0),
+    [](1, 0, 2),
+    [](0, 0, 0),
+    [](2, 0, 2)
 )).
