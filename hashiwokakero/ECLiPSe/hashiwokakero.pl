@@ -71,28 +71,6 @@ hashiwokakero(Board) :-
         ( X < XMax -> S #= Board[X+1,   Y, 2] ; S = 0 ),
         ( Y > 1    -> W #= Board[  X, Y-1, 3] ; W = 0 ),
 
-        (Amount =:= 1->
-            possible_island_neighbors(Board, [X,Y], Neighbors),
-            writeln("ookk"),
-            length(Neighbors, Count),
-            writeln(Count),
-            (Count > 1 ->
-                ( foreacharg(Neigbor, Neighbors), param(Board, X, Y) do
-                    nth1(3,Neigbor,Am2),
-                    writeln(Am2),
-                    (nonvar(Am2), Am2 =:= 1 ->
-                        nth1(4,Neigbor,Dir),
-                        D is Board[X,Y, Dir],
-                        D = 0
-                    )
-                )
-            ;
-                true
-            )
-        ;
-            true
-        )
-        ,
         % if this position requires an amount of bridges,
         % make the sum of all bridges equal this amount
         ( Amount > 0 ->
@@ -104,7 +82,10 @@ hashiwokakero(Board) :-
         ; % else make sure bridges don't cross each other
             N = S, E = W,
             (N #= 0) or (E #= 0)
-        )
+        ),
+
+        optimize(Board, X,Y, Amount),
+        true
     ).
 
 % checks whether the islands on the Board form a connected set. Done by starting on an island and visiting all of its neighbors and checking whether all islands have been visited.
@@ -323,8 +304,33 @@ find_neighbor(_, _, _, _).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Optimize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+no_one_to_one(Board, X, Y, Amount):-
+    (Amount =:= 1->
+        possible_island_neighbors(Board, [X,Y], Neighbors),
+        length(Neighbors, Count),
+        (Count > 1 ->
+            ( for(I, 1, Count), param(Board, X, Y, Neighbors) do
+                % 3 is value of neighbor
+                nth1(I, Neighbors, Neigbor),
+                nth1(3, Neigbor,Am2),
+                (Am2 =:= 1 ->
+                    nth1(4,Neigbor,Dir),
+                    D is Board[X,Y, Dir],
+                    D = 0
+                ;
+                    true
+                )
+            )
+        ;
+            true
+        )
+    ;
+        true
+    ).
 
-optimize(Board) :-
+
+optimize(Board, X, Y, Amount) :-
+    no_one_to_one(Board, X, Y, Amount),
     %board_islands(Board, Islands),
     % Not even needed
     %optimize_corner_4(Board),
