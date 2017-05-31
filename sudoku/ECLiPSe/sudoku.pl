@@ -66,6 +66,42 @@ sudoku(Board) :-
 %       so dimensions can become [N, N] again and only the Y coords need to be kept explicitly
 
 % findall(_, solve2(13), Sols), length(Sols, N), writeln(["amount of solutions: ", N]).
+channel(NumbersPositions, Board):-
+	dim(Board, [N, N]),
+	dim(NumbersPositions, [N, N, 2]),
+	( multifor([Number, Position, Y], 1, N), param(NumbersPositions, Board, N) do
+		#=(Board[Position, Y], Number, B),
+		#=(NumbersPositions[Number, Position, 2], Y, B)
+    )
+	.
+
+solve3(ProblemName):-
+	problem(ProblemName, Board),
+
+    writeln("Given board:"),
+	print_board(Board),
+
+    writeln('Sudoku2:'),
+    % set up variables and their constraints
+    sudoku2(Board, NumbersPositions),
+	sudoku(Board),
+	channel(NumbersPositions, Board),
+
+    % do search on variables
+	search(naive, NumbersPositions),
+	writeln("Channeling"),
+	print_board(Board),
+
+    % print results
+    writeln("Sudoku2 done:"),
+    print_positions(NumbersPositions),
+
+    writeln("Converted back to sudoku board:"),
+    numbers_positions_to_board(NumbersPositions, Board2),
+    print_board(Board2),
+
+    writeln("Given board again for checking:"),
+	print_board(Board).
 
 solve2(ProblemName) :-
     problem(ProblemName, Board),
@@ -171,7 +207,7 @@ print_positions(NumbersPositions) :-
     ),
     nl.
 
-% construct NumbersPositions in a way such that the X coordinates
+% construct NumbersPositions in such a way that the X coordinates
 % are sorted for each list of positions for each number
 % this reduces the position search space dramatically
 board_to_numbers_positions(Board, NumbersPositions) :-
