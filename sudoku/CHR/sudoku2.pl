@@ -81,7 +81,7 @@ generate_board_value_facts(_, 0) <=>
     true.
 
 % if fact already exists on this X value for the Value, don't generate another one
-generate_board_value_facts(Value, Index) <=> board(Value, Index, _, _) |
+board(Value, Index, _, _) \ generate_board_value_facts(Value, Index)<=>
     Index2 is Index - 1,
     generate_board_value_facts(Value, Index2).
 
@@ -96,6 +96,7 @@ generate_remaining_board_facts(0) <=>
     true.
 
 n(N) \ generate_remaining_board_facts(Value) <=>
+
     generate_board_value_facts(Value, N),
     Value2 is Value - 1,
     generate_remaining_board_facts(Value2).
@@ -160,24 +161,29 @@ do_diffs, board(Value1, X, Y1, _), board(Value2, X, Y2, _) ==> Value1 < Value2 |
 
 % X and Y are instantiated and are different
 diff(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
-% diff(Y, X) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
-% diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
+diff(Y, X) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
+diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 
 % enum(L): assigns values to variables X in L
 enum(X)              <=> number(X) | true .
 enum(X), X in Domain <=> member(X, Domain).
 
-sn(SN), board(_, X, Y, BlockIndex), enum_board ==>
-    enum(Y),
+board(_, _, Y, _), enum_board ==>
+    enum(Y).
     % enum(BlockIndex),
 
+sn(SN), board(_, X, Y, BlockIndex), enum_board ==> number(Y), var(BlockIndex) |
     XX is X-1,
-    XXX is XX // SN,
-    BlockRow is XXX + 1,
 
+    XXX is XX // SN,
+
+    BlockRow is XXX + 1,
     YY is Y-1,
+
     YYY is YY // SN,
+
     BlockCol is YYY + 1,
+
     BlockIndex is (BlockRow-1) * SN + BlockCol.
 
 % upto(N, L): L = [1..N]
