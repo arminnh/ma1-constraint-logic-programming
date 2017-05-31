@@ -1,20 +1,21 @@
 :- use_module(library(chr)).
+:- consult(boards).
 
 :- chr_constraint solve/1, puzzle_board/1, bridge_constraints/0.
-:- chr_constraint enum/1, enum_board/0.
+:- chr_constraint enum/1, search/0.
 :- chr_constraint make_domains/0.
 :- chr_constraint create_islands/1, create_empty_board/2.
 :- chr_constraint board/7, island/3,  xmax/1, ymax/1, print_board/0, print_board/2.
 :- chr_constraint board_facts_from_row/3, board_facts_from_matrix/2.
-:- chr_constraint diff/2, clear_store/0, connected/0, connected/2.
+:- chr_constraint clear_store/0, connected/0, connected/2.
 :- chr_constraint create_connection/3, create_connection/5, pick_first_island/0, reachable/2.
+:- chr_constraint le/2, eq/2, in/2, add/3, or/2, check/0.
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
 :- op(700, xfx, eq).
-:- op(700, xfx, or_eq).
 :- op(600, xfx, '..').
-:- chr_constraint le/2, eq/2, in/2, add/3, or_eq/3, or/2.
+
 :- chr_option(debug, off).
 :- chr_option(optimize, full).
 
@@ -40,7 +41,8 @@ solve(Number) <=>
     % chr_show_store(user),
 
     % after generating all necessary domains, start the search
-    enum_board,
+    check,
+    search,
 
     % all islands need to be in the reachable set
     pick_first_island,
@@ -58,7 +60,9 @@ solve(Number) <=>
 % amount of bridges equals island's amount
 bridge_constraints, board(_, _, Amount, N, E, S, W) ==> Amount > 0 |
     add(N, E, Sum),
+    Sum in 0..4,
     add(S, W, Sum2),
+    Sum2 in 0..4,
     add(Sum, Sum2, Amount).
 
 % bridges going one way == bridges going the opposite way
@@ -97,19 +101,24 @@ bridge_constraints, board(_, Y, _, _, _, _, W)                              ==> 
 % DOMAIN GENERATION RULES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-make_domains, board(_, _, _, N, _, _, _) ==> var(N) | N in [0, 1, 2].
-make_domains, board(_, _, _, _, E, _, _) ==> var(E) | E in [0, 1, 2].
-make_domains, board(_, _, _, _, _, S, _) ==> var(S) | S in [0, 1, 2].
-make_domains, board(_, _, _, _, _, _, W) ==> var(W) | W in [0, 1, 2].
+% extra indomain constraints are generated for literals, this is done so that domain
+% solving with add(A, B, C) becomes easier. e.g. add(A, 1, 2) => domain of A can be constrained to 1..1
+make_domains ==>
+    0 in 0..0, 1 in 1..1, 2 in 2..2, 3 in 3..3, 4 in 4..4,
+    5 in 5..5, 6 in 6..6, 7 in 7..7, 8 in 8..8,
+    0 in 0..0, 1 in 1..1, 2 in 2..2, 3 in 3..3, 4 in 4..4,
+    5 in 5..5, 6 in 6..6, 7 in 7..7, 8 in 8..8.
+
+make_domains, board(_, _, _, N, _, _, _) ==> var(N) | N in 0..2.
+make_domains, board(_, _, _, _, E, _, _) ==> var(E) | E in 0..2.
+make_domains, board(_, _, _, _, _, S, _) ==> var(S) | S in 0..2.
+make_domains, board(_, _, _, _, _, _, W) ==> var(W) | W in 0..2.
 
 % the domain of an island with 1 is [0, 1] and not [0, 1, 2]
-make_domains, board(_, _, 1, N, _, _, _) \ N in [0, 1, 2] <=>  N in [0, 1].
-make_domains, board(_, _, 1, _, E, _, _) \ E in [0, 1, 2] <=>  E in [0, 1].
-make_domains, board(_, _, 1, _, _, S, _) \ S in [0, 1, 2] <=>  S in [0, 1].
-make_domains, board(_, _, 1, _, _, _, W) \ W in [0, 1, 2] <=>  W in [0, 1].
-
-% remove duplicate indomain constraints
-X in Domain \ X in Domain <=> true.
+make_domains, board(_, _, 1, N, _, _, _) \ N in 0..2 <=>  N in 0..1.
+make_domains, board(_, _, 1, _, E, _, _) \ E in 0..2 <=>  E in 0..1.
+make_domains, board(_, _, 1, _, _, S, _) \ S in 0..2 <=>  S in 0..1.
+make_domains, board(_, _, 1, _, _, _, W) \ W in 0..2 <=>  W in 0..1.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CONSTRAINT IMPROVEMENT RULES
@@ -122,29 +131,29 @@ X in Domain \ X in Domain <=> true.
 % "1. Islands with a single neighbor:" is already handled by the bridge_constraints
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% islands with 4 in a corner of the board have 2 connections in all remaining directions
-board(1, 1, 4, N, E, S, W)                               \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
-    N = 0, E = 2, S = 2, W = 0.
-board(1, YMax, 4, N, E, S, W), ymax(YMax)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
-    N = 0, E = 0, S = 2, W = 2.
-board(XMax, 1, 4, N, E, S, W), xmax(XMax)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
-    N = 2, E = 2, S = 0, W = 0.
-board(XMax, YMax, 4, N, E, S, W), xmax(XMax), ymax(YMax) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
-    N = 2, E = 0, S = 0, W = 2.
-
-% islands with 6 on a side of the board have 2 connections in all remaining directions
-board(1, _, 6, N, E, S, W)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
-    N = 0, E = 2, S = 2, W = 2.
-board(_, YMax, 6, N, E, S, W), ymax(YMax) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
-    N = 2, E = 0, S = 2, W = 2.
-board(XMax, _, 6, N, E, S, W), xmax(XMax) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
-    N = 2, E = 2, S = 0, W = 2.
-board(_, 1, 6, N, E, S, W)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
-    N = 2, E = 2, S = 2, W = 0.
-
-% islands with 8 have 2 connections in all directions
-board(_, _, 8, N, E, S, W) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 8) <=>
-    N = 2, E = 2, S = 2, W = 2.
+% % islands with 4 in a corner of the board have 2 connections in all remaining directions
+% board(1, 1, 4, N, E, S, W)                               \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
+%     N = 0, E = 2, S = 2, W = 0.
+% board(1, YMax, 4, N, E, S, W), ymax(YMax)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
+%     N = 0, E = 0, S = 2, W = 2.
+% board(XMax, 1, 4, N, E, S, W), xmax(XMax)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
+%     N = 2, E = 2, S = 0, W = 0.
+% board(XMax, YMax, 4, N, E, S, W), xmax(XMax), ymax(YMax) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 4) <=>
+%     N = 2, E = 0, S = 0, W = 2.
+%
+% % islands with 6 on a side of the board have 2 connections in all remaining directions
+% board(1, _, 6, N, E, S, W)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
+%     N = 0, E = 2, S = 2, W = 2.
+% board(_, YMax, 6, N, E, S, W), ymax(YMax) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
+%     N = 2, E = 0, S = 2, W = 2.
+% board(XMax, _, 6, N, E, S, W), xmax(XMax) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
+%     N = 2, E = 2, S = 0, W = 2.
+% board(_, 1, 6, N, E, S, W)                \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 6) <=>
+%     N = 2, E = 2, S = 2, W = 0.
+%
+% % islands with 8 have 2 connections in all directions
+% board(_, _, 8, N, E, S, W) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 8) <=>
+%     N = 2, E = 2, S = 2, W = 2.
 
 % % Neighbors = [ [Direction, Amount] ]
 % board(X, Y, 7, N, E, S, W), neighbors(X, Y, Neighbors) ==> member(['N', 1], Neighbors) |
@@ -165,62 +174,61 @@ board(_, _, 8, N, E, S, W) \ add(N, E, Sum), add(S, W, Sum2), add(Sum, Sum2, 8) 
 % board(XMax, YMax, 3, N, E, S, W), xmax(XMax), ymax(YMax) ==> member(['N', 1], Neighbors) |
 %     N = 2, E = 0, S = 0, W = 2.
 
-% islands with 3 in a corner of the board have at least 1 connection in all remaining directions, so remove 0 from the domains
-board(1, 1, 3, _, E, S, _)                               \ E in D, S in D <=> D = [0, 1, 2] | ND = [1, 2], E in ND, S in ND.
-board(1, YMax, 3, _, _, S, W), ymax(YMax)                \ S in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], S in ND, W in ND.
-board(XMax, 1, 3, N, E, _, _), xmax(XMax)                \ N in D, E in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND.
-board(XMax, YMax, 3, N, _, _, W), xmax(XMax), ymax(YMax) \ N in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, W in ND.
-
-% islands with 5 on a side of the board have at least 1 connection in all remaining directions, so remove 0 from the domains
-board(1, _, 5, _, E, S, W)                 \ E in D, S in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], E in ND, S in ND, W in ND.
-board(_, YMax, 5, N, _, S, W), ymax(YMax)  \ N in D, S in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, S in ND, W in ND.
-board(XMax, _, 5, N, E, _, W), xmax(XMax)  \ N in D, E in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND, W in ND.
-board(_, 1, 5, N, E, S, _)                 \ N in D, E in D, S in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND, S in ND.
-
-% islands with 7 have at least 1 connection in all directions, so remove 0 from the domains
-board(_, _, 7, N, E, S, W) \ N in D, E in D, S in D, W in D  <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND, S in ND, W in ND.
+% % islands with 3 in a corner of the board have at least 1 connection in all remaining directions, so remove 0 from the domains
+% board(1, 1, 3, _, E, S, _)                               \ E in D, S in D <=> D = [0, 1, 2] | ND = [1, 2], E in ND, S in ND.
+% board(1, YMax, 3, _, _, S, W), ymax(YMax)                \ S in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], S in ND, W in ND.
+% board(XMax, 1, 3, N, E, _, _), xmax(XMax)                \ N in D, E in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND.
+% board(XMax, YMax, 3, N, _, _, W), xmax(XMax), ymax(YMax) \ N in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, W in ND.
+%
+% % islands with 5 on a side of the board have at least 1 connection in all remaining directions, so remove 0 from the domains
+% board(1, _, 5, _, E, S, W)                 \ E in D, S in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], E in ND, S in ND, W in ND.
+% board(_, YMax, 5, N, _, S, W), ymax(YMax)  \ N in D, S in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, S in ND, W in ND.
+% board(XMax, _, 5, N, E, _, W), xmax(XMax)  \ N in D, E in D, W in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND, W in ND.
+% board(_, 1, 5, N, E, S, _)                 \ N in D, E in D, S in D <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND, S in ND.
+%
+% % islands with 7 have at least 1 connection in all directions, so remove 0 from the domains
+% board(_, _, 7, N, E, S, W) \ N in D, E in D, S in D, W in D  <=> D = [0, 1, 2] | ND = [1, 2], N in ND, E in ND, S in ND, W in ND.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR DOMAIN SOLVING
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% add(X,Y,Z) \ X in A..B, Y in C..D, Z in E..F <=>
-%     not( ( A >= E-D, B =< F -C, C >= E-B, D =< F-A, E >= A+C, F =< B+D ) ) |
-%         Lx is max(A,E-D), Ux is min(B,F-C), X in Lx..Ux,
-%         Ly is max(C,E-B), Uy is min(D,F-A), Y in Ly..Uy,
-%         Lz is max(E,A+C), Uz is min(F,B+D), Z in Lz..Uz.
+% remove duplicate indomain constraints
+X in A..B \ X in A..B <=> var(X) | true.
 
-% X and Y are instantiated and are different
-add(X, 0, Z) <=> Z = X.
-add(0, Y, Z) <=> Z = Y.
+% when there are two indomain constraints for a variable, fail
+check, X in A..B, X in C..D ==> var(X) | chr_show_store(user), writeln(["X in 2 domains", X, [A, B], [C, D]]), false.
 
-add(X, Y, Z) <=> number(Y), number(Z), var(X) | X is Z - Y.
-add(X, Y, Z) <=> number(X), number(Z), var(Y) | Y is Z - X.
-add(X, Y, Z) <=> number(X), number(Y) | Z is X + Y.
+% when a variable's domain gets reduced to 1 number, set the value of the variable
+X in A..A <=> var(X) | X = A.
 
-or_eq(X, Y, Z) <=> number(X), number(Y), number(Z), Z == 1 | X == Y.
-or_eq(X, Y, Z) <=> number(X), number(Y), number(Z), Z == 0 | true.
-
+% remove duplicate equality constraints
 eq(X, Y) \ eq(Y, X) <=> true.
-eq(X, Y) <=> var(X), number(Y) | X = Y.
-eq(Y, X) <=> var(X), number(Y) | X = Y.
+% equality constraint
 eq(X, Y) <=> number(X), number(Y) | X == Y.
+% equality domain constraint solving
+eq(X, Y) \ X in A..B, Y in C..D <=> A \== C | L is max(A, C), X in L..B, Y in L..D.
+eq(X, Y) \ X in A..B, Y in C..D <=> B \== D | U is min(B, D), X in A..U, Y in C..U.
 
-% X and Y are instantiated and are different
-diff(X, Y) <=> number(X), number(Y) | X \== Y.
-diff(Y, X) \ X in L <=> number(Y), select(Y, L, NL) | X in NL.
-diff(X, Y) \ X in L <=> number(Y), select(Y, L, NL) | X in NL.
+% addition constraint
+add(X, Y, Z) <=> number(X), number(Y), number(Z) | Z is X + Y.
+% addition domain constraint solving
+add(X, Y, Z) \ X in A..B, Y in C..D, Z in E..F <=>
+    not( ( A >= E-D, B =< F-C, C >= E-B, D =< F-A, E >= A+C, F =< B+D ) ) |
+        NewA is max(A, E-D), NewB is min(B, F-C), X in NewA..NewB,
+        NewC is max(C, E-B), NewD is min(D, F-A), Y in NewC..NewD,
+        NewE is max(E, A+C), NewF is min(F, B+D), Z in NewE..NewF.
 
-% enum(L): assigns values to variables X in L
-enum(X)              <=> number(X) | true.
-enum(X), X in Domain <=> member(X, Domain).
+% assign values to variables X. They get values in the domain A..B
+enum(X)            <=> number(X) | true.
+enum(X), X in A..B <=> numlist(A, B, Domain), member(X, Domain).
 
-% eg when "0 in [0, 1, 2]", 0 should just be member of Domain
-X in Domain <=> number(X) | member(X, Domain).
+% eg when "0 in 0..2", 0 should just be member of Domain, TODO remove this? is it necessary?
+% search \ X in A..B <=> number(X) | numlist(A, B, Domain), member(X, Domain).
 
 % search for constraint variables
-enum_board, board(_, _, _, N, E, S, W) ==>
-    enum(N), enum(E), enum(S), enum(W).
+search, X in _.._ ==> var(X) |
+    enum(X).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CONNECTIVITY CONSTRAINT RULES
@@ -267,7 +275,15 @@ connected, island(_, _, _)                    <=> false.
 % clear the chr store after solving the puzzle
 clear_store \ board(_, _, _, _, _, _, _) <=> true.
 clear_store \ xmax(_), ymax(_) <=> true.
-clear_store, bridge_constraints, enum_board, make_domains, connected <=> true.
+clear_store \ bridge_constraints <=> true.
+clear_store \ search <=> true.
+clear_store \ make_domains <=> true.
+clear_store \ connected <=> true.
+clear_store \ 0 in 0..0, 1 in 1..1, 2 in 2..2 <=> true.
+clear_store \ 3 in 3..3, 4 in 4..4 <=> true.
+clear_store \ 5 in 5..5, 6 in 6..6 <=> true.
+clear_store \ 7 in 7..7, 8 in 8..8 <=> true.
+clear_store <=> true.
 
 % create board facts from a puzzle fact
 %   Each puzzle(Id, S, Islands) fact defines the input of one problem:
@@ -362,194 +378,3 @@ next_pos(X, Y, 'N', X2, Y) :- X2 is X-1.
 next_pos(X, Y, 'S', X2, Y) :- X2 is X+1.
 next_pos(X, Y, 'E', X, Y2) :- Y2 is Y+1.
 next_pos(X, Y, 'W', X, Y2) :- Y2 is Y-1.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% SAMPLE PROBLEMS
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% slow boards: 1, 2, 6, 10, 11, 14
-% fast boards: 3, 4, 5, 8, 9, 13
-
-% puzzle 1, easy
-% http://en.wikipedia.org/wiki/File:Val42-Bridge1n.png
-% solution: http://en.wikipedia.org/wiki/File:Val42-Bridge1.png
-puzzle(1, 7, [
-    [1,1,2], [1,2,3], [1,4,4], [1,6,2],
-    [2,7,2],
-    [3,1,1], [3,2,1], [3,5,1], [3,6,3], [3,7,3],
-    [4,1,2], [4,4,8], [4,6,5], [4,7,2],
-    [5,1,3], [5,3,3], [5,7,1],
-    [6,3,2], [6,6,3], [6,7,4],
-    [7,1,3], [7,4,3], [7,5,1], [7,7,2]
-]).
-
-% puzzle 2, moderate
-% http://en.wikipedia.org/wiki/File:Bridges-example.png
-% solution: http://upload.wikimedia.org/wikipedia/en/1/10/Bridges-answer.PNG
-
-puzzle(2, 13, [
-    [1,1,2],  [1,3,4],  [1,5,3],   [1,7,1],   [1,9,2],   [1,12,1],
-    [2,10,3], [2,13,1],
-    [3,5,2],  [3,7,3],  [3,9,2],
-    [4,1,2],  [4,3,3],  [4,6,2],   [4,10,3],  [4,12,1],
-    [5,5,2],  [5,7,5],  [5,9,3],   [5,11,4],
-    [6,1,1],  [6,3,5],  [6,6,2],   [6,8,1],   [6,12,2],
-    [7,7,2],  [7,9,2],  [7,11,4],  [7,13,2],
-    [8,3,4],  [8,5,4],  [8,8,3],   [8,12,3],
-    [10,1,2], [10,3,2], [10,5,3],  [10,9,3],  [10,11,2], [10,13,3],
-    [11,6,2], [11,8,4], [11,10,4], [11,12,3],
-    [12,3,1], [12,5,2],
-    [13,1,3], [13,6,3], [13,8,1],  [13,10,2], [13,13,2]
-]).
-
-% puzzle 3
-% http://www.conceptispuzzles.com/index.aspx?uri=puzzle/hashi/techniques
-puzzle(3, 6, [
-    [1,1,1], [1,3,4], [1,5,2],
-    [2,4,2], [2,6,3],
-    [3,1,4], [3,3,7], [3,5,1],
-    [4,4,2], [4,6,5],
-    [5,3,3], [5,5,1],
-    [6,1,3], [6,4,3], [6,6,3]
-]).
-
-% puzzle 4
-% http://www.conceptispuzzles.com/index.aspx?uri=puzzle/euid/010000008973f050f28ceb4b11c74e73d34e1c47d885e0d8449ab61297e5da2ec85ea0804f0c5a024fbf51b5a0bd8f573565bc1b/play
-puzzle(4, 8, [
-    [1,1,2], [1,3,2], [1,5,5], [1,7,2],
-    [2,6,1], [2,8,3],
-    [3,1,6], [3,3,3],
-    [4,2,2], [4,5,6], [4,7,1],
-    [5,1,3], [5,3,1], [5,6,2], [5,8,6],
-    [6,2,2],
-    [7,1,1], [7,3,3], [7,5,5], [7,8,3],
-    [8,2,2], [8,4,3], [8,7,2]
-]).
-
-% http://stackoverflow.com/questions/20337029/hashi-puzzle-representation-to-solve-all-solutions-with-prolog-restrictions/20364306#20364306
-board(5, [
-    [3, 0, 6, 0, 0, 0, 6, 0, 3],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 1, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [2, 0, 0, 0, 0, 1, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 0, 3, 0, 0, 2, 0, 0, 0],
-    [0, 3, 0, 0, 0, 0, 4, 0, 1]
-]).
-
-% same as puzzle 2
-% https://en.wikipedia.org/wiki/Hashiwokakero#/media/File:Bridges-example.png
-board(6, [
-    [2, 0, 4, 0, 3, 0, 1, 0, 2, 0, 0, 1, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 1],
-    [0, 0, 0, 0, 2, 0, 3, 0, 2, 0, 0, 0, 0],
-    [2, 0, 3, 0, 0, 2, 0, 0, 0, 3, 0, 1, 0],
-    [0, 0, 0, 0, 2, 0, 5, 0, 3, 0, 4, 0, 0],
-    [1, 0, 5, 0, 0, 2, 0, 1, 0, 0, 0, 2, 0],
-    [0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 4, 0, 2],
-    [0, 0, 4, 0, 4, 0, 0, 3, 0, 0, 0, 3, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [2, 0, 2, 0, 3, 0, 0, 0, 3, 0, 2, 0, 3],
-    [0, 0, 0, 0, 0, 2, 0, 4, 0, 4, 0, 3, 0],
-    [0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0],
-    [3, 0, 0, 0, 0, 3, 0, 1, 0, 2, 0, 0, 2]
-]).
-
-% board that cannot be solved
-board(7, [
-    [1, 0, 1, 0, 2],
-    [0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 2]
-]).
-
-
-board(8, [
-    [1, 0, 2, 0, 3],
-    [0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 2]
-]).
-
-board(9, [
-    [2, 0, 0, 0, 2],
-    [0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0],
-    [2, 0, 0, 0, 2]
-]).
-
-board(10, [
-    [2, 0, 3, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 3, 0, 3],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [2, 0, 0, 0, 0, 0, 8, 0, 0, 0, 5, 0, 2],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [3, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 1],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 3, 0, 4],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [3, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 2]
-]).
-
-board(11, [
-    [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 3, 0, 2, 0],
-    [4, 0, 0, 0, 4, 0, 0, 3, 0, 0, 0, 4, 0, 4, 0, 0, 2, 0, 0, 0, 1],
-    [0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 4, 0],
-    [4, 0, 0, 0, 0, 0, 0, 0, 2, 0, 3, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0],
-    [0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-    [0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 3, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-    [0, 4, 0, 0, 0, 0, 0, 0, 2, 0, 0, 3, 0, 0, 0, 0, 0, 4, 0, 1, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 3, 0, 1, 0, 0, 0, 0, 0],
-    [0, 0, 3, 0, 6, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 2, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 4, 0, 6, 0, 0, 0, 0, 0, 0, 5],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 2, 0, 4, 0, 1, 0, 2, 0, 0, 3, 0, 4, 0, 0, 0, 0, 2, 0, 0],
-    [0, 5, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 4, 0, 0, 0, 0, 0, 0, 1, 0],
-    [3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 3, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 5],
-    [0, 0, 0, 1, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 3, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 2],
-    [1, 0, 2, 0, 3, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 4, 0, 2, 0]
-]).
-
-board(12, [
-    [0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0]
-]).
-
-board(13, [
-    [4, 0, 3, 0, 4, 0, 3, 0, 4],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [2, 0, 0, 0, 0, 0, 0, 0, 2],
-    [0, 0, 2, 0, 8, 0, 0, 2, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 4, 0, 5, 0, 0, 1, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [2, 0, 6, 0, 2, 0, 0, 0, 0]
-]).
-
-% same as 1, but more split up for visibility
-board(14, [
-    [2, 0, 3, 0, 4, 0, 0, 0, 2, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 0, 1, 0, 0, 0, 1, 0, 3, 0, 3],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [2, 0, 0, 0, 8, 0, 0, 0, 5, 0, 2],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [3, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 2, 0, 0, 0, 0, 3, 0, 4],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [3, 0, 0, 0, 3, 0, 1, 0, 0, 0, 2]
-]).
