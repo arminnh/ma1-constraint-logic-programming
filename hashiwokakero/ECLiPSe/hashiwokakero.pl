@@ -32,7 +32,8 @@ solve(Number) :-
     hashiwokakero(Board),
     %writeln("kk"),
     %optimize(Board),
-    print_board(Board),
+
+    %print_board(Board),
     % do search on variables
     search(naive, Board),
 
@@ -41,8 +42,9 @@ solve(Number) :-
     board_connected_set(Board),
 
     % print results
-    writeln("Search done:"),
-    print_board(Board).
+    %writeln("Search done:"),
+    %print_board(Board),
+    true.
 
 % find all solutions
 findall(Number) :-
@@ -63,7 +65,6 @@ hashiwokakero(Board) :-
         E is Board[X, Y, 3],
         S is Board[X, Y, 4],
         W is Board[X, Y, 5],
-
         % if this position is not on the edges of the board, then the amount of bridges
         % going in one direction needs to equals the amount in the other direction
         ( X > 1    -> N #= Board[X-1,   Y, 4] ; N = 0 ),
@@ -354,44 +355,120 @@ no_two_bridges_from_two_to_two(Board, X, Y, Amount):-
 
 
 % Checks if a Pos [X,Y] is in one of the corners of the board
-is_in_corner(Board, X,Y, Answer):-
+is_in_corner(Board, X,Y):-
     dim(Board, [XMax, YMax, 5]),
     ( (X =:= 1 ; X =:= XMax), (Y =:= 1 ; Y =:= YMax) ->
-        Answer is 1
+        true
         ;
-        Answer is 0
+        false
+    ).
+
+% Checks if a Pos [X,Y] is at one of sides of the board
+is_on_side_of_board(Board,X,Y):-
+    dim(Board, [XMax, YMax, 5]),
+    ( X =:= 1 ; X =:= XMax ; Y =:= 1 ; Y =:= YMax ->
+        true
+        ;
+        false
     ).
 
 three_in_corner(Board, X, Y, Amount):-
-    is_in_corner(Board,X,Y, Answer),
-    (Amount =:= 3, Answer =:= 1 ->
-        possible_island_neighbors(Board, [X,Y], Neighbors),
-        length(Neighbors, Count),
-        (Count > 1 ->
-            ( for(I, 1, Count), param(Board, X, Y, Neighbors) do
-                nth1(I, Neighbors, Neigbor),
-                nth1(3, Neigbor,Am2),
-                (Am2 =:= 1 ->
-                    nth1(4,Neigbor,Dir),
-                    D is Board[X,Y, Dir],
-                    D = 1
-                    ;
-                    true
-                )
-
-            )
-            ;
-            true
-        )
+    (Amount =:= 3, is_in_corner(Board,X,Y) ->
+        bridge_with_one(Board,X,Y)
         ;
         true
     ).
 
+bridge_with_one(Board, X, Y):-
+    possible_island_neighbors(Board, [X,Y], Neighbors),
+    length(Neighbors, Count),
+    (Count > 1 ->
+        ( for(I, 1, Count), param(Board, X, Y, Neighbors) do
+            nth1(I, Neighbors, Neigbor),
+            nth1(3, Neigbor,Am2),
+            %writeln(Am2),
+            (Am2 =:= 1 ->
+                nth1(4,Neigbor,Dir),
+                D is Board[X,Y, Dir],
+                %writeln(Dir),
+                D = 1
+                ;
+                true
+            )
+        )
+    ;
+        true
+    ).
+
+
+five_on_side(Board, X, Y, Amount):-
+    (Amount =:= 5, is_on_side_of_board(Board,X,Y) ->
+        bridge_with_one(Board, X, Y)
+    ;
+        true
+    )
+    .
+
+seven_in_the_middle(Board,X,Y,Amount):-
+    (Amount =:= 7, not(is_on_side_of_board(Board,X,Y)) ->
+        bridge_with_one(Board, X, Y)
+    ;
+        true
+    )
+    .
+
+% Check if a neighbor has an amount of one
+%neighbor_has_one([]):-
+%    fail.
+
+neighbor_has_one([ [X,Y, Amount, _] | Tail]):-
+    (Amount =:= 1 ->
+        true
+    ;
+        neighbor_has_one(Tail)
+    )
+    .
+
+six_in_the_middle(Board,X,Y,Amount):-
+    (Amount =:= 6, not(is_on_side_of_board(Board,X,Y)) ->
+        possible_island_neighbors(Board, [X,Y], Neighbors),
+        length(Neighbors, Count),
+        (Count =:= 4,
+        neighbor_has_one(Neighbors) ->
+
+            ( for(I, 1, Count), param(Board, X, Y, Neighbors) do
+                nth1(I, Neighbors, Neigbor),
+                nth1(3, Neigbor,Am2),
+                %writeln(Am2),
+                (Am2 > 1 ->
+                    nth1(4,Neigbor,Dir),
+                    D is Board[X,Y, Dir],
+                    %writeln(Dir),
+                    D \== 0
+                    ;
+                    true
+                )
+            )
+        ;
+            true
+        )
+    ;
+        true
+    )
+    .
+
 optimize(Board, X, Y, Amount) :-
+    % first optimilisation
     no_one_to_one(Board, X, Y, Amount),
     no_two_bridges_from_two_to_two(Board, X, Y, Amount),
-    three_in_corner(Board, X, Y, Amount),
 
+    % second optimilisation
+    three_in_corner(Board, X, Y, Amount),
+    five_on_side(Board, X, Y, Amount),
+    seven_in_the_middle(Board,X,Y,Amount),
+
+    % Third optimilisation
+    six_in_the_middle(Board,X,Y,Amount),
     true.
 
 
@@ -647,12 +724,76 @@ board(14, [](
     [](1, 0, 3, 0, 1,0 )
 )).
 
-
-
 board(15, [](
-    [](0, 0, 1),
-    [](0, 0, 0),
-    [](1, 0, 2),
-    [](0, 0, 0),
-    [](2, 0, 2)
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 )).
+
+
+board(16, [](
+[](0, 2, 0, 2, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1, 0),
+[](0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 3, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0),
+[](0, 0, 4, 0, 4, 0, 8, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 3, 0, 0, 2),
+[](0, 0, 0, 1, 0, 2, 0, 4, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0),
+[](0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 2, 0, 0),
+[](0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+[](0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0),
+[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 3, 0, 0, 0, 0, 0, 3, 0, 1),
+[](0, 0, 6, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+[](0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 6, 0, 4, 0, 1, 0, 0, 0, 3, 0, 4),
+[](0, 0, 3, 0, 0, 3, 0, 0, 0, 0, 0, 2, 0, 4, 0, 0, 2, 0, 0, 0, 0),
+[](0, 0, 0, 0, 2, 0, 0, 4, 0, 0, 4, 0, 0, 0, 0, 0, 0, 6, 0, 0, 3),
+[](0, 0, 0, 0, 0, 3, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0),
+[](0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 3, 0, 0, 1),
+[](0, 0, 3, 0, 0, 3, 0, 4, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0),
+[](0, 3, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3),
+[](0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 5, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0),
+[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+[](0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 5, 0, 0, 0, 0, 0, 6, 0, 0, 0, 3),
+[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+[](0, 4, 0, 0, 0, 0, 2, 0, 1, 0, 4, 0, 4, 0, 2, 0, 2, 0, 1, 0, 2)
+)).
+
+board(17, [](
+[](1, 0, 5, 0, 3, 0, 0, 0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0, 6, 0, 4),
+[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+[](1, 0, 4, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0),
+[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0),
+[](3, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 3, 0, 5, 0, 0, 2, 0, 0, 0),
+[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+[](3, 0, 6, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0),
+[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 2, 0, 0),
+[](0, 0, 3, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3),
+[](3, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2),
+[](0, 3, 0, 4, 0, 0, 8, 0, 0, 3, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 0),
+[](0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 2, 0, 0, 0, 0, 0),
+[](0, 0, 0, 0, 0, 0, 0, 3, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+[](0, 0, 0, 0, 2, 0, 6, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+[](0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
+[](4, 0, 0, 5, 0, 0, 0, 0, 0, 0, 7, 0, 0, 4, 0, 0, 3, 0, 0, 2, 0),
+[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3),
+[](2, 0, 0, 1, 0, 2, 0, 0, 0, 0, 6, 0, 0, 0, 0, 4, 0, 0, 0, 2, 0)
+))
