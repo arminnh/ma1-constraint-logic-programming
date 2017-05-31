@@ -1,5 +1,5 @@
 :- use_module(library(chr)).
-:- consult(boards).
+:- consult("boards").
 
 :- chr_constraint solve/1, puzzle_board/1, bridge_constraints/0.
 :- chr_constraint enum/1, search/0.
