@@ -71,8 +71,24 @@ In this report we will discuss the different approaches we tried to eventually c
 	
 %In this report we will discuss the solutions we created for Sudoku and Hashiwokakero and the different approaches that we tried. During the creation of our solution we often had to re-track our work since we often found that we were not trying to do things in a prolog-like way. This is was due to the fact that we are still novice's when using prolog. 
 \mychapter{1}{Part 1: Sudoku}
-\section{ECLiPSe}
-\section{CHR}
+\section{Other Viewpoint}
+For our other viewpoint for Sudoku we decided that each number has N positions (with N the size of a row of a sudoku board). Each of these (X,Y) positions must be different as well as each X must be different from the other positions as well as the Y. This representation has as a benefit that you know that each value from 1 to N must be in X, so we can already fill this in. The only thing left is to find the right Y.
+\newline
+\newline
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.5\textwidth]{blockRow}
+\caption{Illustration of the definition of a block row}
+\end{figure}
+
+The block constraints can be expressed with a bit of maths thank to this representation. We know each X of all the different positions of a number so we can check in which block row (see illustration) the number is. For example if you take a 9 x 9 board, you know that the rows 1,2,3 belong to block row 1, the rows 4,5,6 belongs to block row 2 and 7,8,9 belongs to block row 3. To express the block constraints we do the following
+\begin{enumerate}
+	\item Take all the positions of a number
+	\item Check which positions are in the same block row (there are exactly $\sqrt{N}$ positions of a number in the same block row).
+	\item Express that each position in the same block row should be in a different block in that block row.
+\end{enumerate}
+
 \mychapter{2}{Part 2: Hashiwokakero}
 \label{sec:Hashiwokakero}
 \section{ECLiPSe}

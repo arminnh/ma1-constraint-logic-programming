@@ -51,8 +51,8 @@ sudoku(Board) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % OUR SUDOKU SOLUTION AND TESTING WITH ANOTHER VIEWPOINT
 % Viewpoint(X, D)
-% Variables X: sets of positions
-% Domain D: set of values 1..N*N
+% Variables X: sets of tupple positions
+% Domain D: set of values 1..N
 %
 % Values:
 %     array of N arrays of N values
