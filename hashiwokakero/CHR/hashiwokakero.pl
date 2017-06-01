@@ -1,15 +1,15 @@
 :- use_module(library(chr)).
 :- consult("boards").
 
-:- chr_constraint solve/1, puzzle_board/1, bridge_constraints/0.
+:- chr_constraint time/1, timeall/0, solve/1, load_board/1, bridge_constraints/0.
 :- chr_constraint enum/1, search/0, write_variable/2.
 :- chr_constraint make_domains/0.
 :- chr_constraint create_islands/1, create_empty_board/2.
-:- chr_constraint board/7, island/3,  xmax/1, ymax/1, print_board/0, print_board/2.
+:- chr_constraint board/7, neighbors/5, island/3,  xmax/1, ymax/1, print_board/0, print_board/2.
 :- chr_constraint board_facts_from_row/3, board_facts_from_matrix/2.
 :- chr_constraint clear_store/0, connected/0, connected/2.
 :- chr_constraint create_connection/3, create_connection/5, pick_first_island/0, reachable/2.
-:- chr_constraint le/2, eq/2, in/2, add/3, or/2, check/0.
+:- chr_constraint le/2, eq/2, in/2, add/3, or/2, check/0, create_neighbors/0.
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
@@ -19,14 +19,11 @@
 :- chr_option(debug, off).
 :- chr_option(optimize, full).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% HASHIWOKAKERO SOLUTION
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 % solve a given game board
 solve(Number) <=>
     % find the game board and load the board facts into the constraint store
-    puzzle_board(Number),
+    load_board(Number),
+    create_neighbors,
     writeln("Given board:"),
     print_board,
 
@@ -41,7 +38,6 @@ solve(Number) <=>
     % chr_show_store(user),
 
     % after generating all necessary domains, start the search
-    check,
     search,
 
     % all islands need to be in the reachable set
@@ -51,6 +47,22 @@ solve(Number) <=>
     writeln("Board after search:"),
     print_board,
     clear_store,
+    true.
+
+timeall <=>
+    time(1), time(3), time(4), time(5), time(6), time(8), time(9), time(10),
+    time(11), time(12), time(13), time(14), time(15), time(16), time(17), time(18).
+
+time(Number) <=>
+    % statistics(walltime, [TimeSinceStart | [TimeSinceLastCall]]),
+    statistics(walltime, [_ | [_]]),
+
+    load_board(Number), create_neighbors, bridge_constraints, make_domains, search, pick_first_island, connected, clear_store,
+
+    % statistics(walltime, [NewTimeSinceStart | [ExecutionTime]]),
+    statistics(walltime, [_ | [ExecutionTimeMS]]),
+    ExTimeS is ExecutionTimeMS / 1000,
+    write(Number), write(': '), write(ExTimeS), write('s'), nl,
     true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -97,6 +109,8 @@ bridge_constraints, board(X, Y, _, _, _, _, W), board(X, Y, _, _, E, _, _)  ==> 
 % bridge connot go west at left of board
 bridge_constraints, board(_, Y, _, _, _, _, W)                              ==> Y == 1            | W = 0.
 
+bridge_constraints <=> true.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DOMAIN GENERATION RULES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -117,35 +131,43 @@ make_domains, board(_, _, _, _, _, _, W) ==> var(W) | W in 0..2.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CONSTRAINT IMPROVEMENT RULES
 % inspired by http://www.conceptispuzzles.com/index.aspx?uri=puzzle/hashi/techniques
-% improvements already done by the new domain solving:
-%     "1. Islands with 4 in the corner, 6 on the side and 8 in the middle:"
-%     "2. Islands with 3 in the corner, 5 on the side and 7 in the middle:"
-%     "3. Special cases of 3 in the corner, 5 on the side and 7 in the middle:"
-%     "1. Islands with a single neighbor:" is already handled by the bridge_constraints
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% improvement: 1 can not be connected to 1 by 1 bridge, so make domain 0..0
-% improvement: 2 can not be connected to 2 by 2 bridges, so make domain 0..1
+% improvement A: island with 1 can not be connected to other island with 1, so make domain 0..0 (just set variable to 0)
+make_domains, board(X1, Y1, 1, N, _, _, _), neighbors(X1, Y1, 'N', X2, Y2), island(X2, Y2, 1) \ N in _.._ <=> var(N) | N = 0.
+make_domains, board(X1, Y1, 1, _, E, _, _), neighbors(X1, Y1, 'E', X2, Y2), island(X2, Y2, 1) \ E in _.._ <=> var(E) | E = 0.
+make_domains, board(X1, Y1, 1, _, _, S, _), neighbors(X1, Y1, 'S', X2, Y2), island(X2, Y2, 1) \ S in _.._ <=> var(S) | S = 0.
+make_domains, board(X1, Y1, 1, _, _, _, W), neighbors(X1, Y1, 'W', X2, Y2), island(X2, Y2, 1) \ W in _.._ <=> var(W) | W = 0.
 
+% improvement B: 2 can not be connected to 2 by 2 bridges, so make domain A..1
+make_domains, board(X1, Y1, 2, N, _, _, _), neighbors(X1, Y1, 'N', X2, Y2), island(X2, Y2, 2) \ N in A..2 <=> var(N) | N in A..1.
+make_domains, board(X1, Y1, 2, _, E, _, _), neighbors(X1, Y1, 'E', X2, Y2), island(X2, Y2, 2) \ E in A..2 <=> var(E) | E in A..1.
+make_domains, board(X1, Y1, 2, _, _, S, _), neighbors(X1, Y1, 'S', X2, Y2), island(X2, Y2, 2) \ S in A..2 <=> var(S) | S in A..1.
+make_domains, board(X1, Y1, 2, _, _, _, W), neighbors(X1, Y1, 'W', X2, Y2), island(X2, Y2, 2) \ W in A..2 <=> var(W) | W in A..1.
 
-% % Neighbors = [ [Direction, Amount] ]
-% board(X, Y, 7, N, E, S, W), neighbors(X, Y, Neighbors) ==> member(['N', 1], Neighbors) |
-%     N = 1, E = 2, S = 2, W = 2.
-% board(X, Y, 7, N, E, S, W), neighbors(X, Y, Neighbors) ==> member(['E', 1], Neighbors) |
-%     N = 2, E = 1, S = 2, W = 2.
-% board(X, Y, 7, N, E, S, W), neighbors(X, Y, Neighbors) ==> member(['S', 1], Neighbors) |
-%     N = 2, E = 2, S = 1, W = 2.
-% board(X, Y, 7, N, E, S, W), neighbors(X, Y, Neighbors) ==> member(['W', 1], Neighbors) |
-%     N = 2, E = 2, S = 2, W = 1.
-%
-% board(1, 1, 3, N, E, S, W)                               ==> member(['N', 1], Neighbors) |
-%     N = 0, E = 2, S = 2, W = 0.
-% board(1, YMax, 3, N, E, S, W), ymax(YMax)                ==> member(['N', 1], Neighbors) |
-%     N = 0, E = 0, S = 2, W = 2.
-% board(XMax, 1, 3, N, E, S, W), xmax(XMax)                ==> member(['N', 1], Neighbors) |
-%     N = 2, E = 2, S = 0, W = 0.
-% board(XMax, YMax, 3, N, E, S, W), xmax(XMax), ymax(YMax) ==> member(['N', 1], Neighbors) |
-%     N = 2, E = 0, S = 0, W = 2.
+% improvement C: Isolation of a three-island segment
+
+make_domains <=> true.
+
+% IMPACT OF THESE IMPROVEMENTS ON PREVIOUSLY SLOW BOARDS:
+%   board number | time without improvements | time with improvement A | time with improvement B | time with improvements A and B
+%   1   | 0.078s  | 0.071s | 0.077s | 0.078s
+%   3   | 0.041s  | 0.045s | 0.044s | 0.042s
+%   4   | 0.093s  | 0.111s | 0.102s | 0.099s
+%   5   | 0.111s  | 0.112s | 0.111s | 0.119s
+%   6   | 0.272s  | 0.27s  | 0.288s | 0.258s
+%   8   | 0.015s  | 0.016s | 0.009s | 0.009s
+%   9   | 0.015s  | 0.024s | 0.014s | 0.012s
+%   10  | 0.403s  | 0.4s   | 0.446s | 0.395s
+%   11  | 35.927s | 2.967s | 93.877s | 3.017s
+%   12  | 0.148s  | 0.128s | 0.151s | 0.131s
+%   13  | 0.12s   | 0.137s | 0.143s | 0.127s
+%   14  | 0.243s  | 0.198s | 0.223s | 0.18s
+%   15  | 0.19s   | 0.223s | 0.21s | 0.216s
+%   16  | 3.938s  | 3.594s | 4.046s | 3.706s
+%   17  | 4.546s  | 4.054s | 4.611s | 4.002s
+%   18  | 54.622s | 1.054s | 53.611s | 1.023s
+%   2   | aborted after 6405s | still takes way too long, wtf you doin matey
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR DOMAIN SOLVING
@@ -154,11 +176,9 @@ make_domains, board(_, _, _, _, _, _, W) ==> var(W) | W in 0..2.
 % remove duplicate indomain constraints
 X in A..B \ X in A..B <=> var(X) | true.
 
-% when there are two indomain constraints for a variable, fail
-check, X in A..B, X in C..D ==> var(X) | chr_show_store(user), writeln(["X in 2 domains", X, [A, B], [C, D]]), false.
-
 % when a variable's domain gets reduced to 1 number, set the value of the variable
 X in A..A <=> var(X) | X = A.
+% X in A..A <=> var(X) | print_board, X = A.
 
 % remove duplicate equality constraints
 eq(X, Y) \ eq(Y, X) <=> true.
@@ -180,6 +200,10 @@ add(X, Y, Z) \ X in A..B, Y in C..D, Z in E..F <=>
 % assign values to variables X. They get values in the domain A..B
 enum(X)            <=> number(X) | true.
 enum(X), X in A..B <=> numlist(A, B, Domain), member(X, Domain).
+% % choose values for numbers in smaller intervals before those in larger intervals
+% enum(X), X in 0..2 <=> member(X, [0, 2]).
+% enum(X), X in 1..2 <=> member(X, [1, 2]).
+% enum(X), X in 0..1 <=> member(X, [0, 1]).
 
 % eg when "0 in 0..2", 0 should just be member of Domain, TODO remove this? is it necessary?
 % search \ X in A..B <=> number(X) | numlist(A, B, Domain), member(X, Domain).
@@ -187,6 +211,7 @@ enum(X), X in A..B <=> numlist(A, B, Domain), member(X, Domain).
 % search for constraint variables
 search, X in _.._ ==> var(X) |
     enum(X).
+search <=> true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CONNECTIVITY CONSTRAINT RULES
@@ -225,6 +250,7 @@ reachable(A, B) \ reachable(A, B) <=> true.
 % connectivity constraint: each island fact needs to have an accompanying reachable fact
 connected \ island(X, Y, _), reachable(X, Y)  <=> true.
 connected, island(_, _, _)                    <=> false.
+connected <=> true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HELPER RULES
@@ -232,11 +258,8 @@ connected, island(_, _, _)                    <=> false.
 
 % clear the chr store after solving the puzzle
 clear_store \ board(_, _, _, _, _, _, _) <=> true.
+clear_store \ neighbors(_, _, _, _, _) <=> true.
 clear_store \ xmax(_), ymax(_) <=> true.
-clear_store \ bridge_constraints <=> true.
-clear_store \ search <=> true.
-clear_store \ make_domains <=> true.
-clear_store \ connected <=> true.
 clear_store \ 0 in 0..0, 1 in 1..1, 2 in 2..2 <=> true.
 clear_store \ 3 in 3..3, 4 in 4..4 <=> true.
 clear_store \ 5 in 5..5, 6 in 6..6 <=> true.
@@ -246,7 +269,7 @@ clear_store <=> true.
 % create board facts from a puzzle fact
 %   Each puzzle(Id, S, Islands) fact defines the input of one problem:
 %   its identifier Id, the size S (width and height), and the list of islands Islands.
-puzzle_board(Number) <=> puzzle(Number, Size, Islands) |
+load_board(Number) <=> puzzle(Number, Size, Islands) |
     ymax(Size),
     xmax(Size),
     create_empty_board(1, 1),
@@ -274,7 +297,7 @@ create_islands([ [X, Y, Amount] | Islands ]), board(X, Y, _, N, E, S, W) <=>
 create_islands([]) <=> true.
 
 % load the board from a matrix fact
-puzzle_board(Number) <=> board(Number, Matrix), length(Matrix, XMax), nth1(1, Matrix, Row), length(Row, YMax) |
+load_board(Number) <=> board(Number, Matrix), length(Matrix, XMax), nth1(1, Matrix, Row), length(Row, YMax) |
     xmax(XMax),
     ymax(YMax),
     board_facts_from_matrix(Matrix, 1).
@@ -298,6 +321,20 @@ board_facts_from_row([ Number | Row ], X, Y) <=>
     ),
     YN is Y + 1,
     board_facts_from_row(Row, X, YN).
+
+% create neighbor facts. two islands are neighbors when they can be connected by a bridge
+create_neighbors, island(X1, Y, _), island(X2, Y, _) ==> X1 > X2 | neighbors(X1, Y, 'N', X2, Y).
+create_neighbors, island(X, Y1, _), island(X, Y2, _) ==> Y1 < Y2 | neighbors(X, Y1, 'E', X, Y2).
+create_neighbors, island(X1, Y, _), island(X2, Y, _) ==> X1 < X2 | neighbors(X1, Y, 'S', X2, Y).
+create_neighbors, island(X, Y1, _), island(X, Y2, _) ==> Y1 > Y2 | neighbors(X, Y1, 'W', X, Y2).
+
+% remove neighbor facts when there is another island in between to islands
+create_neighbors, neighbors(X1, Y, 'N', X, Y) \ neighbors(X2, Y, 'N', X, Y) <=> X1 < X2 | true.
+create_neighbors, neighbors(X, Y1, 'E', X, Y) \ neighbors(X, Y2, 'E', X, Y) <=> Y1 > Y2 | true.
+create_neighbors, neighbors(X1, Y, 'S', X, Y) \ neighbors(X2, Y, 'S', X, Y) <=> X1 > X2 | true.
+create_neighbors, neighbors(X, Y1, 'W', X, Y) \ neighbors(X, Y2, 'W', X, Y) <=> Y1 < Y2 | true.
+
+create_neighbors <=> true.
 
 % prints the board
 print_board <=> print_board(1, 1).
