@@ -1,9 +1,8 @@
 # generates hashiwokakero boards from https://gamegix.com/hashi-o-kakero/game
 # the board needs to be copies into input_board.txt
+dim = 13
 f = open('input_board.txt', 'r')
 board = f.readlines()
-
-dim = 9
 
 board_list = []
 for i in range(dim):
