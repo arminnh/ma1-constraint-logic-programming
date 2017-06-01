@@ -38,7 +38,8 @@ translate(ProblemName, NewBoard):-
     (multifor([I,J], 1, N), param(Board, NewBoard) do
         nth1(I,Board, Row),
         nth1(J, Row, Val),
-        NewBoard[I,J] #= Val
+        Val2 is NewBoard[I,J],
+        Val2 is Val
     ),
 
     true.

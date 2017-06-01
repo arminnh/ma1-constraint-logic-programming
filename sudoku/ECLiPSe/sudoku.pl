@@ -27,8 +27,10 @@ solve(ProblemName) :-
 	(problem(ProblemName, Board); translate(ProblemName, Board)),
 	print_board(Board),
 	sudoku(Board),
+	search(naive, Board, Back),
 	labeling(Board),
-	print_board(Board).
+	print_board(Board),
+	writeln(["Backtracks: ", Back]).
 
 
 sudoku(Board) :-
@@ -90,7 +92,7 @@ solve3(ProblemName):-
 	channel(NumbersPositions, Board),
 
     % do search on variables
-	search(naive, NumbersPositions),
+	search(naive, NumbersPositions, Back),
 	writeln("Channeling"),
 	print_board(Board),
 
@@ -101,6 +103,7 @@ solve3(ProblemName):-
     writeln("Converted back to sudoku board:"),
     numbers_positions_to_board(NumbersPositions, Board2),
     print_board(Board2),
+	writeln(["Backtracks: ", Back]),
 
     writeln("Given board again for checking:"),
 	print_board(Board).
@@ -114,14 +117,14 @@ solve2(ProblemName) :-
     writeln('Sudoku2:'),
     % set up variables and their constraints
     sudoku2(Board, NumbersPositions),
-
+	writeln("Back"),
     % do search on variables
-	search(naive, NumbersPositions),
+	search(naive, NumbersPositions, Back),
 
     % print results
     writeln("Sudoku2 done:"),
     print_positions(NumbersPositions),
-
+	writeln(["Backtracks: ", Back]),
     writeln("Converted back to sudoku board:"),
     numbers_positions_to_board(NumbersPositions, Board2),
     print_board(Board2),
@@ -310,23 +313,23 @@ sudoku_constraints(NumbersPositions, N) :-
 % SOME SEARCH STRATEGIES TAKEN FROM SLIDES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-search(naive,List) :-
-    search(List,0,input_order,indomain,complete, []).
+search(naive,List, Back) :-
+    search(List,0,input_order,indomain,complete, [backtrack(Back)]).
 
-search(middle_out,List) :-
+search(middle_out,List, Back) :-
     middle_out(List,MOList),
-    search(MOList,0,input_order,indomain,complete, []).
+    search(MOList,0,input_order,indomain,complete, [backtrack(Back)]).
 
-search(first_fail,List) :-
-    search(List,0,first_fail,indomain,complete, []).
+search(first_fail,List, Back) :-
+    search(List,0,first_fail,indomain,complete, [backtrack(Back)]).
 
-search(moff,List) :-
+search(moff,List, Back) :-
     middle_out(List,MOList),
-    search(MOList,0,first_fail,indomain,complete, []).
+    search(MOList,0,first_fail,indomain,complete, [backtrack(Back)]).
 
-search(moffmo,List) :-
+search(moffmo,List, Back) :-
     middle_out(List,MOList),
-    search(MOList,0,first_fail, indomain_middle,complete, []).
+    search(MOList,0,first_fail, indomain_middle,complete, [backtrack(Back)]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAMPLE PROBLEMS

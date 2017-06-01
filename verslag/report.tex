@@ -9,6 +9,10 @@
 %\usepackage{minted}      % (requires -shell-escape)
 \usepackage{xcolor}
 \usepackage{filecontents}
+\usepackage{array}
+\usepackage{multirow}
+
+\newcolumntype{L}{>{\centering\arraybackslash}m{3cm}}
 
 % --- ugly internals for language definition ---
 %
@@ -288,6 +292,78 @@ For the channeling constraints in CHR we decided to use an extra predicate \text
 For the second constraint we need to know that both Y and BlockIndex are numbers and V2 is still a var. Since we know both X, Y and BlockIndex then it is very easy to just fill in the Value of that position in board. We use 'is' for the same reason as mentioned before. If V2 finally get's a value then this means that there might be other propagations that can fire.
 \newpage
 \section{Experiments}
+\subsection{ECLiPSe}
+\subsubsection{input order as value heuristic}
+
+\begin{table}[h!]
+  \begin{tabular}{|c|c|c|c|c|c|c|}
+    \hline
+    \multirow{2}{*}{Puzzle} &
+      \multicolumn{2}{L|}{Classical Viewpoint (input order)} &
+      \multicolumn{2}{L|}{Our Viewpoint (input order)} &
+      \multicolumn{2}{L|}{ Channeling (input order)} \\
+    & ms & backracks & ms & backracks & ms & backracks \\
+    \hline
+ lambda & 0.03s & 3 & 74.53s & 78859 & 0.08s & 2 \\  
+ eastermonster & 0.24s & 51 & 3.59s & 3278 & 0.22s
+ & 24  \\  
+ tarek\_052 & 0.39s & 59 & 0.23s & 166 & 0.06s & 0 \\ 
+ goldennugget & 0.73s & 104 & 13.80s & 11171 & 0.80s & 70  \\ 
+ coloin & 0.26s & 88 & 7.49s & 4717 & 1.14s & 178  \\ 
+ extra2 & ms1 & backracks1 & ms2 & backracks2 & ms3 & backracks3 \\ 
+ extra3 & ms1 & backracks1 & ms2 & backracks2 & ms3 & backracks3  \\ 
+ lambda & ms1 & backracks1 & ms2 & backracks2 & ms3 & backracks3  \\ 
+ extra4 & ms1 & backracks1 & ms2 & backracks2 & ms3 & backracks3  \\   
+ inkara2012 & ms1 & backracks1 & ms2 & backracks2 & ms3 & backracks3  \\ 
+ clue18 & ms1 & backracks1 & ms2 & backracks2 & ms3 & backracks3  \\ 
+ clue17 & ms1 & backracks1 & ms2 & backracks2 & ms3 & backracks3  \\ 
+ sudowiki\_nb28 & ms1 & backracks1 & ms2 & backracks2 & ms3 & backracks3  \\ 
+ sudowiki\_nb49 & ms1 & backracks1 & ms2 & backracks2 & ms3 & backracks3 \\
+ \hline 
+  \end{tabular}
+\end{table}
+
+
+\begin{tabular}{ c | L | L | L }
+ Puzzle & Classical Viewpoint (input order)& Our Viewpoint (input order) & Channeling (input order) \\ 
+ \hline
+ lambda & cell5 & cell6 & \\  
+ eastermonster & cell5 & cell6& \\  
+ tarek\_052 & cell5 & cell6& \\ 
+ goldennugget & cell5 & cell6& \\ 
+ coloin & cell5 & cell6& \\ 
+ extra2 & cell5 & cell6& \\ 
+ extra3 & cell5 & cell6& \\ 
+ lambda & cell5 & cell6& \\ 
+ extra4 & cell8 & cell9& \\   
+ inkara2012 & cell5 & cell6& \\ 
+ clue18 & cell5 & cell6& \\ 
+ clue17 & cell5 & cell6& \\ 
+ sudowiki\_nb28 & cell5 & cell6& \\ 
+ sudowiki\_nb49 & cell5 & cell6&  
+\end{tabular}
+\newline
+\newline
+\newline
+
+\begin{tabular}{ c | L | L | L }
+ Puzzle & Classical Viewpoint (first fail) & Our Viewpoint (first fail) & Channeling (first fail) \\ 
+ \hline
+ lambda & cell5 & cell6 & \\  
+ eastermonster & cell5 & cell6& \\  
+ tarek\_052 & cell5 & cell6& \\ 
+ goldennugget & cell5 & cell6& \\ 
+ coloin & cell5 & cell6& \\ 
+ extra2 & cell5 & cell6& \\ 
+ extra3 & cell5 & cell6& \\ 
+ lambda & cell5 & cell6& \\ 
+ extra4 & cell8 & cell9& \\   
+ inkara2012 & cell5 & cell6& \\ 
+ clue18 & cell5 & cell6& \\ 
+ clue17 & cell5 & cell6& \\ 
+ sudowiki\_nb28 & cell5 & cell6& \\ 
+ sudowiki\_nb49 & cell5 & cell6&  
+\end{tabular}
 
 \mychapter{2}{Part 2: Hashiwokakero}
 \label{sec:Hashiwokakero}
