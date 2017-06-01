@@ -3,6 +3,176 @@
 \usepackage{graphicx}
 \usepackage{titlesec}
 \usepackage[tmargin=2.0cm, lmargin=4.5cm, rmargin=5cm]{geometry}
+\usepackage{listings}             % Include the listings-package
+\usepackage{textcomp}
+\usepackage{listings}
+%\usepackage{minted}      % (requires -shell-escape)
+\usepackage{xcolor}
+\usepackage{filecontents}
+
+% --- ugly internals for language definition ---
+%
+\makeatletter
+
+% initialisation of user macros
+\newcommand\PrologPredicateStyle{}
+\newcommand\PrologVarStyle{}
+\newcommand\PrologAnonymVarStyle{}
+\newcommand\PrologAtomStyle{}
+\newcommand\PrologOtherStyle{}
+\newcommand\PrologCommentStyle{}
+
+% useful switches (to keep track of context)
+\newif\ifpredicate@prolog@
+\newif\ifwithinparens@prolog@
+
+% save definition of underscore for test
+\lst@SaveOutputDef{`_}\underscore@prolog
+
+% local variables
+\newcount\currentchar@prolog
+
+\newcommand\@testChar@prolog%
+{%
+  % if we're in processing mode...
+  \ifnum\lst@mode=\lst@Pmode%
+    \detectTypeAndHighlight@prolog%
+  \else
+    % ... or within parentheses
+    \ifwithinparens@prolog@%
+      \detectTypeAndHighlight@prolog%
+    \fi
+  \fi
+  % Some housekeeping...
+  \global\predicate@prolog@false%
+}
+
+% helper macros
+\newcommand\detectTypeAndHighlight@prolog
+{%
+  % First, assume that we have an atom.
+  \def\lst@thestyle{\PrologAtomStyle}%
+  % Test whether we have a predicate and modify the style accordingly.
+  \ifpredicate@prolog@%
+    \def\lst@thestyle{\PrologPredicateStyle}%
+  \else
+    % Test whether we have a predicate and modify the style accordingly.
+    \expandafter\splitfirstchar@prolog\expandafter{\the\lst@token}%
+    % Check whether the identifier starts by an underscore.
+    \expandafter\ifx\@testChar@prolog\underscore@prolog%
+      % Check whether the identifier is '_' (anonymous variable)
+      \ifnum\lst@length=1%
+        \let\lst@thestyle\PrologAnonymVarStyle%
+      \else
+        \let\lst@thestyle\PrologVarStyle%
+      \fi
+    \else
+      % Check whether the identifier starts by a capital letter.
+      \currentchar@prolog=65
+      \loop
+        \expandafter\ifnum\expandafter`\@testChar@prolog=\currentchar@prolog%
+          \let\lst@thestyle\PrologVarStyle%
+          \let\iterate\relax
+        \fi
+        \advance \currentchar@prolog by 1
+        \unless\ifnum\currentchar@prolog>90
+      \repeat
+    \fi
+  \fi
+}
+\newcommand\splitfirstchar@prolog{}
+\def\splitfirstchar@prolog#1{\@splitfirstchar@prolog#1\relax}
+\newcommand\@splitfirstchar@prolog{}
+\def\@splitfirstchar@prolog#1#2\relax{\def\@testChar@prolog{#1}}
+
+% helper macro for () delimiters
+\def\beginlstdelim#1#2%
+{%
+  \def\endlstdelim{\PrologOtherStyle #2\egroup}%
+  {\PrologOtherStyle #1}%
+  \global\predicate@prolog@false%
+  \withinparens@prolog@true%
+  \bgroup\aftergroup\endlstdelim%
+}
+
+% language name
+\newcommand\lang@prolog{Prolog-pretty}
+% ``normalised'' language name
+\expandafter\lst@NormedDef\expandafter\normlang@prolog%
+  \expandafter{\lang@prolog}
+
+% language definition
+\expandafter\expandafter\expandafter\lstdefinelanguage\expandafter%
+{\lang@prolog}
+{%
+  language            = Prolog,
+  keywords            = {},      % reset all preset keywords
+  showstringspaces    = false,
+  linewidth			  = 16cm,
+  numbers			   =left, 
+  alsoletter          = (,
+  alsoother           = @\$,
+  moredelim           = **[is][\beginlstdelim{(}{)}]{(}{)},
+  MoreSelectCharTable =
+    \lst@DefSaveDef{`(}\opparen@prolog{\global\predicate@prolog@true\opparen@prolog},
+}
+
+% Hooking into listings to test each ``identifier''
+\newcommand\@ddedToOutput@prolog\relax
+\lst@AddToHook{Output}{\@ddedToOutput@prolog}
+
+\lst@AddToHook{PreInit}
+{%
+  \ifx\lst@language\normlang@prolog%
+    \let\@ddedToOutput@prolog\@testChar@prolog%
+  \fi
+}
+
+\lst@AddToHook{DeInit}{\renewcommand\@ddedToOutput@prolog{}}
+
+\makeatother
+%
+% --- end of ugly internals ---
+
+
+% --- definition of a custom style similar to that of Pygments ---
+% custom colors
+\definecolor{PrologPredicate}{RGB}{000,031,255}
+\definecolor{PrologVar}      {RGB}{024,021,125}
+\definecolor{PrologAnonymVar}{RGB}{000,127,000}
+\definecolor{PrologAtom}     {RGB}{186,032,032}
+\definecolor{PrologComment}  {RGB}{063,128,127}
+\definecolor{PrologOther}    {RGB}{000,000,000}
+
+% redefinition of user macros for Prolog style
+\renewcommand\PrologPredicateStyle{\color{PrologPredicate}}
+\renewcommand\PrologVarStyle{\color{PrologVar}}
+\renewcommand\PrologAnonymVarStyle{\color{PrologAnonymVar}}
+\renewcommand\PrologAtomStyle{\color{PrologAtom}}
+\renewcommand\PrologCommentStyle{\itshape\color{PrologComment}}
+\renewcommand\PrologOtherStyle{\color{PrologOther}}
+
+% custom style definition 
+\lstdefinestyle{Prolog-pygsty}
+{
+  language     = Prolog-pretty,
+  upquote      = true,
+  stringstyle  = \PrologAtomStyle,
+  commentstyle = \PrologCommentStyle,
+  literate     =
+    {:-}{{\PrologOtherStyle :-}}2
+    {,}{{\PrologOtherStyle ,}}1
+    {.}{{\PrologOtherStyle .}}1
+}
+
+% global settings
+\lstset
+{
+  captionpos = below,
+  frame      = single,
+  columns    = fullflexible,
+  basicstyle = \ttfamily,
+}
 
 %\titlespacing*{\chapter}{0pt}{-19pt}{18pt}
 
@@ -19,6 +189,7 @@
 %\titlespacing*{\mychapter}{0cm}{-50pt}{0pt}[0pt]
 
 \begin{document}
+\lstset{language=Prolog}          % Set your language (you can change the language for each code-block optionally)
 
 \begin{titlepage}
 	\newpage
@@ -72,7 +243,8 @@ In this report we will discuss the different approaches we tried to eventually c
 %In this report we will discuss the solutions we created for Sudoku and Hashiwokakero and the different approaches that we tried. During the creation of our solution we often had to re-track our work since we often found that we were not trying to do things in a prolog-like way. This is was due to the fact that we are still novice's when using prolog. 
 \mychapter{1}{Part 1: Sudoku}
 \section{Other Viewpoint}
-For our other viewpoint for Sudoku we decided that each number has N positions (with N the size of a row of a sudoku board). Each of these (X,Y) positions must be different as well as each X must be different from the other positions as well as the Y. This representation has as a benefit that you know that each value from 1 to N must be in X, so we can already fill this in. The only thing left is to find the right Y.
+\label{sec:other_viewpoint}
+For our other viewpoint for Sudoku we decided that each number has N positions (with N the size from one side of the sudoku board). Each of these (X,Y) positions must be different as well as each X must be different from the other positions as well as the Y. This representation has as a benefit that you know that each value from 1 to N must be in X, so we can already fill this in. The only thing left is to find the right Y.
 \newline
 \newline
 
@@ -82,12 +254,40 @@ For our other viewpoint for Sudoku we decided that each number has N positions (
 \caption{Illustration of the definition of a block row}
 \end{figure}
 
-The block constraints can be expressed with a bit of maths thank to this representation. We know each X of all the different positions of a number so we can check in which block row (see illustration) the number is. For example if you take a 9 x 9 board, you know that the rows 1,2,3 belong to block row 1, the rows 4,5,6 belongs to block row 2 and 7,8,9 belongs to block row 3. To express the block constraints we do the following
+The block constraints can be expressed with a bit of maths thank to this representation. We know each X of all the different positions of a number so we can check in which block row (see illustration) the position is. For example if you take a 9 x 9 board like in the illustration, you know that the rows 1,2,3 belong to block row 1, the rows 4,5,6 belongs to block row 2 and 7,8,9 belongs to block row 3. To express the block constraints we do the following:
 \begin{enumerate}
 	\item Take all the positions of a number
 	\item Check which positions are in the same block row (there are exactly $\sqrt{N}$ positions of a number in the same block row).
 	\item Express that each position in the same block row should be in a different block in that block row.
 \end{enumerate}
+
+\section{Criteria to judge if a viewpoint is good or not}
+This is really difficult in our opinion since we had some problems at first to find a good other viewpoint. We think that a good criteria to judge if a viewpoint is good or not is how easy is it to express what you need with this viewpoint, obviously if you lose a lot of time with implementing an other viewpoint then it may be worth it to look for an other viewpoint. Another criteria is how easy is it to use this different viewpoint? In other words, is it a logical representation for the problem? Our final criteria for a good viewpoint is to think about the amount of constraints you need with this viewpoint. Is it really the lowest amount possible? 
+
+\section{Channeling}
+The channeling constraint for the two viewpoints we are using, the classical one and the one explained above, are in fact not that hard to express. If for the classical viewpoint you know which value there has to be in a certain cell, you also immediately know it's (X,Y) values. For the other viewpoint, if you know the (X,Y) values of a number then obviously you can enter the number at that position. 
+
+\subsubsection{ECLiPSe channeling constraints}
+\lstinputlisting[
+  language = Prolog-pretty,
+  caption  = {Channel constraints in ECLiPSe},
+]{eclipse_channel.pl}
+%The first two lines of code are just to get the size of the Board and NumberPositions. Note that both of them are $N x N$, only NumberPositions has an extra dimension to store the (X,Y) pairs. 
+	%After this we create the loop variables Number, Positions and Y, these will be used for the channeling constraint and they start from 1 to N.
+	The crucial bit of code for the channeling constraints can be found inside the multifor. There you can find two different constraints that links the two viewpoints together. The first one is the channeling constraint for the classical viewpoint. It lays a constraint on the value of Board[Position,Y]. The second constraint is the channeling constraint for our viewpoint. There you can see that we index with \texttt{Number}, \texttt{Position} and 2. The reason we're only interested in the second value is because the first value is already filled in as stated in section \ref{sec:other_viewpoint}. Together these constraints expresses that if Y is know in our viewpoint then we can fill in the board with \texttt{Number} or if we know which number is at [Position,Y] in the classic viewpoint then we can fill in the Y of our viewpoint. (Or just refer to intro of 1.3 instead of repeat?) This is done with the B at the end of both of the constraints. This B is crucial in the channeling constraints as it expresses that if one of the constraints is correct, then the other should be correct as well!
+	
+\newpage
+\subsubsection{CHR channeling constraints}
+\lstinputlisting[
+  language = Prolog-pretty,
+  caption  = {Channel constraints in CHR},
+]{chr_channel.pl}
+For the channeling constraints in CHR we decided to use an extra predicate \texttt{channel}. This is used just so that the system waits for the right moment to start setting up the channel constraints. Expressing the channeling constraints in CHR was a bit easier than doing it in ECLiPSe. Let's start with the first constraint. This expresses that if Value of board and board\_other\_viewpoint are the same and a are a number and Y2 and B2 are still variables then we can say that Y2 is Y and B2 is BlockIndex. We can say that Value has to be a number for board\_other\_viewpoint since this is trivial since we insert a number here at construction. The important part was that Y2 and B2 are still variables since this means that we still don't know their values. Why do we use 'is' instead of just removing the old board\_other\_viewpoint from the constraint store? If we would just remove the constraint then this would mean that other constraints would never be fired! That's why we use is! If Y2 and B2 gets their values this means that maybe other constraints can be solved too. If you remove this constraint from the store you lose this link.
+\newline
+\newline
+For the second constraint we need to know that both Y and BlockIndex are numbers and V2 is still a var. Since we know both X, Y and BlockIndex then it is very easy to just fill in the Value of that position in board. We use 'is' for the same reason as mentioned before. If V2 finally get's a value then this means that there might be other propagations that can fire.
+\newpage
+\section{Experiments}
 
 \mychapter{2}{Part 2: Hashiwokakero}
 \label{sec:Hashiwokakero}

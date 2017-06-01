@@ -21,13 +21,15 @@
 :- coroutine.
 % :- lib(lists).
 :- import nth1/3 from listut.
+:- [sudex_toledo].
 
 solve(ProblemName) :-
-	problem(ProblemName, Board),
+	(problem(ProblemName, Board); translate(ProblemName, Board)),
 	print_board(Board),
 	sudoku(Board),
 	labeling(Board),
 	print_board(Board).
+
 
 sudoku(Board) :-
 	dim(Board, [N2,N2]),
@@ -76,7 +78,7 @@ channel(NumbersPositions, Board):-
 	.
 
 solve3(ProblemName):-
-	problem(ProblemName, Board),
+	(problem(ProblemName, Board); translate(ProblemName, Board)),
 
     writeln("Given board:"),
 	print_board(Board),
@@ -104,7 +106,7 @@ solve3(ProblemName):-
 	print_board(Board).
 
 solve2(ProblemName) :-
-    problem(ProblemName, Board),
+    (problem(ProblemName, Board); translate(ProblemName, Board)),
 
     writeln("Given board:"),
 	print_board(Board),

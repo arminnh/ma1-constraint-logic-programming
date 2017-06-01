@@ -1,13 +1,18 @@
 \contentsline {chapter}{Introduction}{2}
 \contentsline {chapter}{Part 1: Sudoku}{3}
 \contentsline {section}{\numberline {1.1}Other Viewpoint}{3}
-\contentsline {chapter}{Part 2: Hashiwokakero}{4}
-\contentsline {section}{\numberline {2.1}ECLiPSe}{4}
-\contentsline {subsection}{\numberline {2.1.1}Optimization}{4}
-\contentsline {section}{\numberline {2.2}CHR}{4}
-\contentsline {subsection}{\numberline {2.2.1}Optimization}{4}
-\contentsline {chapter}{Conclusion}{5}
-\contentsline {section}{\numberline {3.1}Weak points}{5}
-\contentsline {section}{\numberline {3.2}Strong points}{5}
-\contentsline {section}{\numberline {3.3}Lessons learned}{5}
-\contentsline {chapter}{Appendix}{6}
+\contentsline {section}{\numberline {1.2}Criteria to judge if a viewpoint is good or not}{4}
+\contentsline {section}{\numberline {1.3}Channeling}{4}
+\contentsline {subsubsection}{ECLiPSe channeling constraints}{4}
+\contentsline {subsubsection}{CHR channeling constraints}{5}
+\contentsline {section}{\numberline {1.4}Experiments}{6}
+\contentsline {chapter}{Part 2: Hashiwokakero}{7}
+\contentsline {section}{\numberline {2.1}ECLiPSe}{7}
+\contentsline {subsection}{\numberline {2.1.1}Optimization}{7}
+\contentsline {section}{\numberline {2.2}CHR}{7}
+\contentsline {subsection}{\numberline {2.2.1}Optimization}{7}
+\contentsline {chapter}{Conclusion}{8}
+\contentsline {section}{\numberline {3.1}Weak points}{8}
+\contentsline {section}{\numberline {3.2}Strong points}{8}
+\contentsline {section}{\numberline {3.3}Lessons learned}{8}
+\contentsline {chapter}{Appendix}{9}
