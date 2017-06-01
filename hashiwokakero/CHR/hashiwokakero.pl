@@ -88,7 +88,7 @@ board(_, _, 0, N, E, _, _) ==> number(E), E > 0 | N = 0.
 % bridges going north == bridges going south in position above
 bridge_constraints, board(X, Y, _, N, _, _, _), board(X2, Y, _, _, _, S, _) ==> X > 1, X2 is X-1  | eq(N, S).
 
-% bridge can not go north at top of board
+% bridge cannot go north at top of board
 bridge_constraints, board(X, _, _, N, _, _, _)                              ==> X == 1            | N = 0.
 
 % bridges going east == bridges going west in position to the right
@@ -133,19 +133,27 @@ make_domains, board(_, _, _, _, _, _, W) ==> var(W) | W in 0..2.
 % inspired by http://www.conceptispuzzles.com/index.aspx?uri=puzzle/hashi/techniques
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% improvement A: island with 1 can not be connected to other island with 1, so make domain 0..0 (just set variable to 0)
+% Improvement 1 (A and B): Isolation of a two-island segment
+% improvement A: island with 1 cannot be connected to other island with 1, so make domain 0..0 (just set variable to 0)
 make_domains, board(X1, Y1, 1, N, _, _, _), neighbors(X1, Y1, 'N', X2, Y2), island(X2, Y2, 1) \ N in _.._ <=> var(N) | N = 0.
 make_domains, board(X1, Y1, 1, _, E, _, _), neighbors(X1, Y1, 'E', X2, Y2), island(X2, Y2, 1) \ E in _.._ <=> var(E) | E = 0.
 make_domains, board(X1, Y1, 1, _, _, S, _), neighbors(X1, Y1, 'S', X2, Y2), island(X2, Y2, 1) \ S in _.._ <=> var(S) | S = 0.
 make_domains, board(X1, Y1, 1, _, _, _, W), neighbors(X1, Y1, 'W', X2, Y2), island(X2, Y2, 1) \ W in _.._ <=> var(W) | W = 0.
 
-% improvement B: 2 can not be connected to 2 by 2 bridges, so make domain A..1
+% improvement B: 2 cannot be connected to 2 by 2 bridges, so make domain A..1
 make_domains, board(X1, Y1, 2, N, _, _, _), neighbors(X1, Y1, 'N', X2, Y2), island(X2, Y2, 2) \ N in A..2 <=> var(N) | N in A..1.
 make_domains, board(X1, Y1, 2, _, E, _, _), neighbors(X1, Y1, 'E', X2, Y2), island(X2, Y2, 2) \ E in A..2 <=> var(E) | E in A..1.
 make_domains, board(X1, Y1, 2, _, _, S, _), neighbors(X1, Y1, 'S', X2, Y2), island(X2, Y2, 2) \ S in A..2 <=> var(S) | S in A..1.
 make_domains, board(X1, Y1, 2, _, _, _, W), neighbors(X1, Y1, 'W', X2, Y2), island(X2, Y2, 2) \ W in A..2 <=> var(W) | W in A..1.
 
-% improvement C: Isolation of a three-island segment
+% Improvement 2 (C and D): Isolation of a three-island segment
+% improvement C: island with 2 cannot be connected to two islands with 1
+% This never happens in any of our boards
+% make_domains, island(X, Y, 2), neighbors(X, Y, Dir, X2, Y2), neighbors(X, Y, Dir, X3, Y3), island(X2, Y2, 1), island(X3, Y3, 1) ==> writeln(['2 on ', X, Y]).
+
+% improvement D: island with 3 cannot be connected to an island 1 by 1 bridge and an island 2 by 2 bridges
+% This never happens in any of our boards
+% make_domains, island(X, Y, 3), neighbors(X, Y, Dir, X2, Y2), neighbors(X, Y, Dir, X3, Y3), island(X2, Y2, 2), island(X3, Y3, 1) ==> writeln(['3 on ', X, Y]).
 
 make_domains <=> true.
 
