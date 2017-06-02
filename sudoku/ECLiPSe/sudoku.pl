@@ -17,7 +17,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :- lib(ic).
-:- import sorted/2 from ic_global.
+:- import alldifferent/1, sorted/2 from ic_global.
 :- coroutine.
 % :- lib(lists).
 :- import nth1/3 from listut.
