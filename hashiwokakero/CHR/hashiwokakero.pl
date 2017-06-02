@@ -10,6 +10,7 @@
 :- chr_constraint clear_store/0, connected/0, connected/2.
 :- chr_constraint create_connection/3, create_connection/5, pick_first_island/0, reachable/2.
 :- chr_constraint le/2, eq/2, in/2, add/3, or/2, check/0, create_neighbors/0.
+:- chr_constraint connected_sets_counter/1, connected_set/3, connected_sets_union/2, connected_set_counter/2.
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
@@ -41,7 +42,6 @@ solve(Number) <=>
     search,
 
     % all islands need to be in the reachable set
-    pick_first_island,
     connected,
 
     writeln("Board after search:"),
@@ -98,13 +98,13 @@ bridge_constraints, board(X, Y, _, _, E, _, _), board(X, Y2, _, _, _, _, W) ==> 
 bridge_constraints, board(_, Y, _, _, E, _, _), ymax(Size)                  ==> Y == Size         | E = 0.
 
 % bridges going south == bridges going north in position under
-bridge_constraints, board(X, Y, _, _, _, S, _), board(X2, Y, _, N, _, _, _) ==> X2 is X+1         | eq(S, N).
+% bridge_constraints, board(X, Y, _, _, _, S, _), board(X2, Y, _, N, _, _, _) ==> X2 is X+1         | eq(S, N).
 
 % bridge cannot go south at bottom of board
 bridge_constraints, board(X, _, _, _, _, S, _), xmax(Size)                  ==> X == Size         | S = 0.
 
 % bridges going west == bridge going east at position left
-bridge_constraints, board(X, Y, _, _, _, _, W), board(X, Y, _, _, E, _, _)  ==> Y > 1 , Y is Y-1  | eq(W, E).
+% bridge_constraints, board(X, Y, _, _, _, _, W), board(X, Y, _, _, E, _, _)  ==> Y > 1 , Y is Y-1  | eq(W, E).
 
 % bridge connot go west at left of board
 bridge_constraints, board(_, Y, _, _, _, _, W)                              ==> Y == 1            | W = 0.
@@ -133,18 +133,18 @@ make_domains, board(_, _, _, _, _, _, W) ==> var(W) | W in 0..2.
 % inspired by http://www.conceptispuzzles.com/index.aspx?uri=puzzle/hashi/techniques
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Improvement 1 (A and B): Isolation of a two-island segment
-% improvement A: island with 1 cannot be connected to other island with 1, so make domain 0..0 (just set variable to 0)
-make_domains, board(X1, Y1, 1, N, _, _, _), neighbors(X1, Y1, 'N', X2, Y2), island(X2, Y2, 1) \ N in _.._ <=> var(N) | N = 0.
-make_domains, board(X1, Y1, 1, _, E, _, _), neighbors(X1, Y1, 'E', X2, Y2), island(X2, Y2, 1) \ E in _.._ <=> var(E) | E = 0.
-make_domains, board(X1, Y1, 1, _, _, S, _), neighbors(X1, Y1, 'S', X2, Y2), island(X2, Y2, 1) \ S in _.._ <=> var(S) | S = 0.
-make_domains, board(X1, Y1, 1, _, _, _, W), neighbors(X1, Y1, 'W', X2, Y2), island(X2, Y2, 1) \ W in _.._ <=> var(W) | W = 0.
+% % Improvement 1 (A and B): Isolation of a two-island segment
+% % improvement A: island with 1 cannot be connected to other island with 1, so make domain 0..0 (just set variable to 0)
+% make_domains, board(X1, Y1, 1, N, _, _, _), neighbors(X1, Y1, 'N', X2, Y2), island(X2, Y2, 1) \ N in _.._ <=> var(N) | N = 0.
+% make_domains, board(X1, Y1, 1, _, E, _, _), neighbors(X1, Y1, 'E', X2, Y2), island(X2, Y2, 1) \ E in _.._ <=> var(E) | E = 0.
+% % make_domains, board(X1, Y1, 1, _, _, S, _), neighbors(X1, Y1, 'S', X2, Y2), island(X2, Y2, 1) \ S in _.._ <=> var(S) | S = 0.
+% % make_domains, board(X1, Y1, 1, _, _, _, W), neighbors(X1, Y1, 'W', X2, Y2), island(X2, Y2, 1) \ W in _.._ <=> var(W) | W = 0.
 
-% improvement B: 2 cannot be connected to 2 by 2 bridges, so make domain A..1
-make_domains, board(X1, Y1, 2, N, _, _, _), neighbors(X1, Y1, 'N', X2, Y2), island(X2, Y2, 2) \ N in A..2 <=> var(N) | N in A..1.
-make_domains, board(X1, Y1, 2, _, E, _, _), neighbors(X1, Y1, 'E', X2, Y2), island(X2, Y2, 2) \ E in A..2 <=> var(E) | E in A..1.
-make_domains, board(X1, Y1, 2, _, _, S, _), neighbors(X1, Y1, 'S', X2, Y2), island(X2, Y2, 2) \ S in A..2 <=> var(S) | S in A..1.
-make_domains, board(X1, Y1, 2, _, _, _, W), neighbors(X1, Y1, 'W', X2, Y2), island(X2, Y2, 2) \ W in A..2 <=> var(W) | W in A..1.
+% % improvement B: 2 cannot be connected to 2 by 2 bridges, so make domain A..1
+% make_domains, board(X1, Y1, 2, N, _, _, _), neighbors(X1, Y1, 'N', X2, Y2), island(X2, Y2, 2) \ N in A..2 <=> var(N) | N in A..1.
+% make_domains, board(X1, Y1, 2, _, E, _, _), neighbors(X1, Y1, 'E', X2, Y2), island(X2, Y2, 2) \ E in A..2 <=> var(E) | E in A..1.
+% % make_domains, board(X1, Y1, 2, _, _, S, _), neighbors(X1, Y1, 'S', X2, Y2), island(X2, Y2, 2) \ S in A..2 <=> var(S) | S in A..1.
+% % make_domains, board(X1, Y1, 2, _, _, _, W), neighbors(X1, Y1, 'W', X2, Y2), island(X2, Y2, 2) \ W in A..2 <=> var(W) | W in A..1.
 
 % Improvement 2 (C and D): Isolation of a three-island segment
 % improvement C: island with 2 cannot be connected to two islands with 1
@@ -166,16 +166,85 @@ make_domains <=> true.
 %   6   | 0.272s  | 0.27s  | 0.288s | 0.258s
 %   8   | 0.015s  | 0.016s | 0.009s | 0.009s
 %   9   | 0.015s  | 0.024s | 0.014s | 0.012s
-%   10  | 0.403s  | 0.4s   | 0.446s | 0.395s
-%   11  | 35.927s | 2.967s | 93.877s | 3.017s
-%   12  | 0.148s  | 0.128s | 0.151s | 0.131s
-%   13  | 0.12s   | 0.137s | 0.143s | 0.127s
-%   14  | 0.243s  | 0.198s | 0.223s | 0.18s
-%   15  | 0.19s   | 0.223s | 0.21s | 0.216s
-%   16  | 3.938s  | 3.594s | 4.046s | 3.706s
-%   17  | 4.546s  | 4.054s | 4.611s | 4.002s
-%   18  | 54.622s | 1.054s | 53.611s | 1.023s
+%   10  | 35.927s | 2.967s | 93.877s | 3.017s
+%   11  | 0.148s  | 0.128s | 0.151s | 0.131s
+%   12  | 0.12s   | 0.137s | 0.143s | 0.127s
+%   13  | 0.243s  | 0.198s | 0.223s | 0.18s
+%   14  | 0.19s   | 0.223s | 0.21s | 0.216s
+%   15  | 3.938s  | 3.594s | 4.046s | 3.706s
+%   16  | 4.546s  | 4.054s | 4.611s | 4.002s
+%   17  | 54.622s | 1.054s | 53.611s | 1.023s
 %   2   | aborted after 6405s | still takes way too long, wtf you doin matey
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% RULES USED TO DETECT CONNECTIONS BETWEEN ISLANDS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% when an island's bridge is found, add a new connected fact
+board(A, B, Am, N, _, _, _), neighbors(A, B, 'N', C, D) ==> Am > 0, number(N), N > 0 | connected([A, B], [C, D]).
+board(A, B, Am, _, E, _, _), neighbors(A, B, 'E', C, D) ==> Am > 0, number(E), E > 0 | connected([A, B], [C, D]).
+% board(A, B, Am, _, _, S, _), neighbors(A, B, 'S', C, D) ==> Am > 0, number(S), S > 0 | connected([A, B], [C, D]).
+% board(A, B, Am, _, _, _, W), neighbors(A, B, 'W', C, D) ==> Am > 0, number(W), W > 0 | connected([A, B], [C, D]).
+
+% % remove duplicate connected facts
+% connected(A, B) \ connected(A, B) <=> true.
+% connected(A, B) \ connected(B, A) <=> true.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CONNECTIVITY CONSTRAINT PROPAGATION METHOD 1
+%   build up a 'reachable' set starting from a certain island
+%   when a connection is made between an island and the set, add the island to the set
+%   if at the end of the search, not all islands are in the reachable set,
+%   then the solution is not valid
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% % put first island in reachable set
+% connected => pick_first_island.
+% island(X, Y, _) \ pick_first_island <=> reachable(X, Y).
+%
+% % build up reachable set
+% reachable(X, Y) \ connected([X, Y], [A, B]) <=> reachable(A, B).
+% reachable(X, Y) \ connected([A, B], [X, Y]) <=> reachable(A, B).
+%
+% % remove duplicate reachable facts
+% reachable(A, B) \ reachable(A, B) <=> true.
+%
+% % connectivity constraint: each island fact needs to have an accompanying reachable fact
+% connected \ island(X, Y, _), reachable(X, Y)  <=> true.
+% connected, island(_, _, _)                    <=> false.
+% connected <=> true.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CONNECTIVITY CONSTRAINT PROPAGATION METHOD 2
+%   at the beginning, each island forms its own connected set
+%   when two islands become connected, merge their connected sets (Set1 union Set2)
+%   if at the end of the search, there exists more than one connected set
+%   then the solution is not valid
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% when two islands become connected, merge their connected sets, only merge smaller sets into larger sets
+connected_set(A, B, Set1), connected_set(C, D, Set2), connected_set_counter(Set1, Count1)
+    \ connected([A, B], [C, D]), connected_set_counter(Set2, Count2) <=> Set1 \== Set2, Count2 =< Count1 | connected_sets_union(Set1, Set2).
+connected_set(A, B, Set1), connected_set(C, D, Set2), connected_set_counter(Set1, Count1)
+    \ connected([C, D], [A, B]), connected_set_counter(Set2, Count2) <=> Set1 \== Set2, Count2 =< Count1 | connected_sets_union(Set1, Set2).
+
+% if islands already belong to the same set, don't need to do anything with the connection
+connected_set(A, B, Set), connected_set(C, D, Set) \ connected([A, B], [C, D]) <=> true.
+connected_set(A, B, Set), connected_set(C, D, Set) \ connected([C, D], [A, B]) <=> true.
+
+% merge two connected sets by changing the identifier of one set to the identifier of the other set
+connected_sets_union(Set1, Set2) \ connected_set(X, Y, Set2), connected_set_counter(Set1, Count) <=> NCount is Count + 1 |
+    connected_set(X, Y, Set1),
+    connected_set_counter(Set1, NCount).
+connected_sets_union(_, _) <=> true.
+
+connected, connected_set(_, _, Set1), connected_set(_, _, Set2) ==> Set1 \== Set2 | fail.
+connected \ connected_set(_, _, _) <=> true.
+connected \ connected_set_counter(_, _) <=> true.
+connected <=> true.
+
+% boards for which wrong solutions with multiple connected sets are possible:
+%   6, 7, 9, 13, 16, 18
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR DOMAIN SOLVING
@@ -222,57 +291,8 @@ search, X in _.._ ==> var(X) |
 search <=> true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% CONNECTIVITY CONSTRAINT RULES
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% when an island's bridge is found, add a new connected fact
-board(A, B, Am, N, _, _, _) ==> Am > 0, number(N), N > 0 | create_connection(A, B, 'N').
-board(A, B, Am, _, E, _, _) ==> Am > 0, number(E), E > 0 | create_connection(A, B, 'E').
-board(A, B, Am, _, _, S, _) ==> Am > 0, number(S), S > 0 | create_connection(A, B, 'S').
-board(A, B, Am, _, _, _, W) ==> Am > 0, number(W), W > 0 | create_connection(A, B, 'W').
-
-% adds a new connected fact for an island going to direction Direction from position (A, B)
-create_connection(A, B, Direction) <=>
-    next_pos(A, B, Direction, C, D),
-    create_connection(A, B, Direction, C, D).
-board(X, Y, Amount, _, _, _, _) \ create_connection(OriginalX, OriginalY, _, X, Y) <=> Amount > 0 |
-    connected([OriginalX, OriginalY], [X, Y]).
-board(X, Y, Amount, _, _, _, _) \ create_connection(OriginalX, OriginalY, Direction, X, Y) <=> Amount == 0 |
-    next_pos(X, Y, Direction, XN, YN),
-    create_connection(OriginalX, OriginalY, Direction, XN, YN).
-
-% remove duplicate connected facts
-connected(A, B) \ connected(A, B) <=> true.
-connected(A, B) \ connected(B, A) <=> true.
-
-% put first island in reachable set
-island(X, Y, _) \ pick_first_island <=> reachable(X, Y).
-
-% build up reachable set
-reachable(X, Y) \ connected([X, Y], [A, B]) <=> reachable(A, B).
-reachable(X, Y) \ connected([A, B], [X, Y]) <=> reachable(A, B).
-
-% remove duplicate reachable facts
-reachable(A, B) \ reachable(A, B) <=> true.
-
-% connectivity constraint: each island fact needs to have an accompanying reachable fact
-connected \ island(X, Y, _), reachable(X, Y)  <=> true.
-connected, island(_, _, _)                    <=> false.
-connected <=> true.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HELPER RULES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% clear the chr store after solving the puzzle
-clear_store \ board(_, _, _, _, _, _, _) <=> true.
-clear_store \ neighbors(_, _, _, _, _) <=> true.
-clear_store \ xmax(_), ymax(_) <=> true.
-clear_store \ 0 in 0..0, 1 in 1..1, 2 in 2..2 <=> true.
-clear_store \ 3 in 3..3, 4 in 4..4 <=> true.
-clear_store \ 5 in 5..5, 6 in 6..6 <=> true.
-clear_store \ 7 in 7..7, 8 in 8..8 <=> true.
-clear_store <=> true.
 
 % create board facts from a puzzle fact
 %   Each puzzle(Id, S, Islands) fact defines the input of one problem:
@@ -281,26 +301,25 @@ load_board(Number) <=> puzzle(Number, Size, Islands) |
     ymax(Size),
     xmax(Size),
     create_empty_board(1, 1),
+    connected_sets_counter(0),
     create_islands(Islands).
 
 % create board facts for an empty board
-xmax(Size) \ create_empty_board(_, Y) <=> Y > Size | true.
-
-xmax(Size) \ create_empty_board(X, Y) <=> X > Size |
-    Y2 is Y + 1,
-    create_empty_board(1, Y2).
-
-xmax(Size) \ create_empty_board(X, Y) <=> X =< Size |
+xmax(Size) \ create_empty_board(_, Y) <=> Y > Size               | true.
+xmax(Size) \ create_empty_board(X, Y) <=> X > Size,  Y2 is Y + 1 | create_empty_board(1, Y2).
+xmax(Size) \ create_empty_board(X, Y) <=> X =< Size, X2 is X + 1 |
     board(X, Y, 0, _, _, _, _),
-    X2 is X + 1,
     create_empty_board(X2, Y).
 
 % create board facts from an array of Islands
 %   each island takes the form (X, Y, N) where X is the row number, Y is the column
 %   number and N the number of bridges that should arrive in this island.
-create_islands([ [X, Y, Amount] | Islands ]), board(X, Y, _, N, E, S, W) <=>
+create_islands([ [X, Y, Amount] | Islands ]), board(X, Y, _, N, E, S, W), connected_sets_counter(Count) <=> NCount is Count + 1 |
     board(X, Y, Amount, N, E, S, W),
     island(X, Y, Amount),
+    connected_set(X, Y, NCount),
+    connected_set_counter(NCount, 1),
+    connected_sets_counter(NCount),
     create_islands(Islands).
 create_islands([]) <=> true.
 
@@ -308,41 +327,53 @@ create_islands([]) <=> true.
 load_board(Number) <=> board(Number, Matrix), length(Matrix, XMax), nth1(1, Matrix, Row), length(Row, YMax) |
     xmax(XMax),
     ymax(YMax),
-    board_facts_from_matrix(Matrix, 1).
+    board_facts_from_matrix(Matrix, 1),
+    connected_sets_counter(0).
 
 % create board facts from a matrix that contains the board
-board_facts_from_matrix([], _).
-board_facts_from_matrix([ Row | Rows ], X) <=>
+board_facts_from_matrix([ Row | Rows ], X) <=> XN is X + 1 |
     board_facts_from_row(Row, X, 1),
-    XN is X + 1,
-    board_facts_from_matrix(Rows, XN),
-    !.
+    board_facts_from_matrix(Rows, XN).
+    board_facts_from_matrix([], _) <=> true.
 
 % create board facts from a row that contains a row of the board
-board_facts_from_row([], _, _).
-board_facts_from_row([ Number | Row ], X, Y) <=>
-    board(X, Y, Number, _, _, _, _),
-    ( Number > 0 ->
-        island(X, Y, Number)
-    ;
-        true
-    ),
-    YN is Y + 1,
+board_facts_from_row([ 0 | Row ], X, Y) <=> YN is Y + 1 |
+    board(X, Y, 0, _, _, _, _),
     board_facts_from_row(Row, X, YN).
+board_facts_from_row([ Number | Row ], X, Y), connected_sets_counter(Count) <=> YN is Y + 1, NCount is Count + 1 |
+    board(X, Y, Number, _, _, _, _),
+    island(X, Y, Number),
+    connected_set(X, Y, NCount),
+    connected_set_counter(NCount, 1),
+    connected_sets_counter(NCount),
+    board_facts_from_row(Row, X, YN).
+    board_facts_from_row([], _, _) <=> true.
 
 % create neighbor facts. two islands are neighbors when they can be connected by a bridge
 create_neighbors, island(X1, Y, _), island(X2, Y, _) ==> X1 > X2 | neighbors(X1, Y, 'N', X2, Y).
 create_neighbors, island(X, Y1, _), island(X, Y2, _) ==> Y1 < Y2 | neighbors(X, Y1, 'E', X, Y2).
-create_neighbors, island(X1, Y, _), island(X2, Y, _) ==> X1 < X2 | neighbors(X1, Y, 'S', X2, Y).
-create_neighbors, island(X, Y1, _), island(X, Y2, _) ==> Y1 > Y2 | neighbors(X, Y1, 'W', X, Y2).
+% create_neighbors, island(X1, Y, _), island(X2, Y, _) ==> X1 < X2 | neighbors(X1, Y, 'S', X2, Y).
+% create_neighbors, island(X, Y1, _), island(X, Y2, _) ==> Y1 > Y2 | neighbors(X, Y1, 'W', X, Y2).
 
 % remove neighbor facts when there is another island in between to islands
 create_neighbors, neighbors(X1, Y, 'N', X, Y) \ neighbors(X2, Y, 'N', X, Y) <=> X1 < X2 | true.
 create_neighbors, neighbors(X, Y1, 'E', X, Y) \ neighbors(X, Y2, 'E', X, Y) <=> Y1 > Y2 | true.
-create_neighbors, neighbors(X1, Y, 'S', X, Y) \ neighbors(X2, Y, 'S', X, Y) <=> X1 > X2 | true.
-create_neighbors, neighbors(X, Y1, 'W', X, Y) \ neighbors(X, Y2, 'W', X, Y) <=> Y1 < Y2 | true.
+% create_neighbors, neighbors(X1, Y, 'S', X, Y) \ neighbors(X2, Y, 'S', X, Y) <=> X1 > X2 | true.
+% create_neighbors, neighbors(X, Y1, 'W', X, Y) \ neighbors(X, Y2, 'W', X, Y) <=> Y1 < Y2 | true.
 
 create_neighbors <=> true.
+
+% clear the chr store after solving the puzzle
+clear_store \ board(_, _, _, _, _, _, _) <=> true.
+clear_store \ island(_, _, _) <=> true.
+clear_store \ neighbors(_, _, _, _, _) <=> true.
+clear_store \ connected_sets_counter(_) <=> true.
+clear_store \ xmax(_), ymax(_) <=> true.
+clear_store \ 0 in 0..0, 1 in 1..1, 2 in 2..2 <=> true.
+clear_store \ 3 in 3..3, 4 in 4..4 <=> true.
+clear_store \ 5 in 5..5, 6 in 6..6 <=> true.
+clear_store \ 7 in 7..7, 8 in 8..8 <=> true.
+clear_store <=> true.
 
 % prints the board
 print_board <=> print_board(1, 1).
@@ -385,8 +416,3 @@ symbol(0, 2, '=').
 symbol(1, 0, '|').
 symbol(2, 0, '"').
 symbol(_, _, "*").
-
-next_pos(X, Y, 'N', X2, Y) :- X2 is X-1.
-next_pos(X, Y, 'S', X2, Y) :- X2 is X+1.
-next_pos(X, Y, 'E', X, Y2) :- Y2 is Y+1.
-next_pos(X, Y, 'W', X, Y2) :- Y2 is Y-1.
