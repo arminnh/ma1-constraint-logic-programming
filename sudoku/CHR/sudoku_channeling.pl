@@ -1,17 +1,17 @@
 :- use_module(library(chr)).
 
 :- chr_constraint solve/1, sudoku_channeling/1, print_board/1, print_numbers/1.
-:- chr_constraint diff/2, enum/1, enum_board/1, upto/2, domain_list/1, make_domain/2, make_domains/1.
+:- chr_constraint diff/2, enum/1, enum_board/0, upto/2, domain_list/1, make_domain/2, make_domains/1.
 :- chr_constraint board/4.
 :- chr_constraint generate_board_facts/3.
 :- chr_constraint sn/1, n/1.
-:- chr_constraint solve_other_viewpoint/1, sudoku_other_viewpoint/1, print_board_other_viewpoint/2.
+:- chr_constraint solve_other_viewpoint/2, sudoku_other_viewpoint/1, print_board_other_viewpoint/2.
 :- chr_constraint enum_board_other_viewpoint/0.
 :- chr_constraint board_other_viewpoint/4, generate_known_board_facts/3.
 :- chr_constraint generate_remaining_board_facts/1, generate_board_value_facts/2.
 :- chr_constraint do_diffs/0.
-:- chr_constraint channel/0, enum_other_view_point/1.
-:- chr_constraint sudoku/1, sudoku_other/1, solve_classic/1, solve_channel/1.
+:- chr_constraint channel/0.
+:- chr_constraint sudoku/1, sudoku_other/1, solve_classic/2, solve_channel/2.
 :- chr_constraint incr_counter/0, count/1, change_count/1.
 
 :- op(700, xfx, in).
@@ -22,33 +22,75 @@
 :- chr_option(debug,off).
 :- chr_option(optimize,full).
 :- consult(sudex_toledo).
+
+:- chr_constraint experiments/0.
+
+experiments <=>
+	open('experiments.txt', write, Stream),
+	write(Stream, "\\begin{table}[h!]
+  \\begin{tabular}{|c|c|c|c|c|c|c|}
+    \\hline
+    \\multirow{1}{*}{Puzzle} &
+      \\multicolumn{1}{L|}{Classical Viewpoint} &
+      \\multicolumn{1}{L|}{Our Viewpoint} &
+      \\multicolumn{1}{L|}{Channeling} \\\\
+    & ms & ms & ms \\\\
+    \\hline\n"),
+	(   puzzles(P, lambda),
+		writeln(lambda),
+
+		% Classic viewpoint
+		solve_classic(lambda, Time1),
+		%solve_other_viewpoint(lambda, Time2),
+		%solve_channel(lambda,Time3),
+	    %writeln('Execution took '), write(ExTimeS), write(' s.'), nl,
+
+	 	write(Stream, lambda),
+		write(Stream, " & "),
+		write(Stream, Time1),
+		write(Stream, "s & "),
+		write(Stream, Time2),
+		write(Stream, "s & "),
+		write(Stream, Time3),
+		write(Stream, '\\\\'),
+		write(Stream, "\n"),
+		writeln(["finished", lambda])
+    ;   true
+    ),
+	write(Stream," \\hline
+  \\end{tabular}
+\\end{table}"),
+	writeln("Finished all"),
+	close(Stream).
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SUDOKU SOLUTION USING TRIVIAL VIEWPOINT
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-solve_classic(ProblemName) <=>
+solve_classic(ProblemName, ExTimeS) <=>
     % statistics(walltime, [TimeSinceStart | [TimeSinceLastCall]]),
     statistics(walltime, [_ | [_]]),
 
     % get the sudoku board
     (problem(ProblemName, Board) ; puzzles(Board, ProblemName)),
-    print_board(Board),
+    %print_board(Board),
     count(0),
     % fill the sudoku board
     sudoku(Board),
 
-    writeln("\nResult:"),
+    %writeln("\nResult:"),
     print_board(Board),
-    writeln(Board),
+    %writeln(Board),
 
     % statistics(walltime, [NewTimeSinceStart | [ExecutionTime]]),
     statistics(walltime, [_ | [ExecutionTimeMS]]),
-    write('Execution took '), write(ExecutionTimeMS), write(' ms.'), nl,
+    %write('Execution took '), write(ExecutionTimeMS), write(' ms.'), nl,
 
     ExTimeS is ExecutionTimeMS / 1000,
-    write('Execution took '), write(ExTimeS), write(' s.'), nl,
+    %write('Execution took '), write(ExTimeS), write(' s.'), nl,
 
-    ExTimeM is ExTimeS / 60,
-    write('Execution took '), write(ExTimeM), write(' min.'), nl,
+    %ExTimeM is ExTimeS / 60,
+    %write('Execution took '), write(ExTimeM), write(' min.'), nl,
     true.
 
 sudoku(Board) <=>
@@ -73,10 +115,10 @@ sudoku(Board) <=>
     generate_board_facts(Board, 1, 1),
 
     % search for values
-    %enum_board(Board),
+    enum_board,
     true.
 
-solve_other_viewpoint(ProblemName) <=>
+solve_other_viewpoint(ProblemName, ExTimeS) <=>
     % statistics(walltime, [TimeSinceStart | [TimeSinceLastCall]]),
     statistics(walltime, [_ | [_]]),
     count(0),
@@ -86,18 +128,18 @@ solve_other_viewpoint(ProblemName) <=>
     % fill the sudoku board
     sudoku_other_viewpoint(Board),
 
-    writeln("\nResult:"),
-    print_board_other_viewpoint(1,1),
+    % writeln("\nResult:"),
+    % print_board_other_viewpoint(1,1),
 
     % statistics(walltime, [NewTimeSinceStart | [ExecutionTime]]),
     statistics(walltime, [_ | [ExecutionTimeMS]]),
-    write('Execution took '), write(ExecutionTimeMS), write(' ms.'), nl,
+    %write('Execution took '), write(ExecutionTimeMS), write(' ms.'), nl,
 
     ExTimeS is ExecutionTimeMS / 1000,
-    write('Execution took '), write(ExTimeS), write(' s.'), nl,
+    %write('Execution took '), write(ExTimeS), write(' s.'), nl,
 
-    ExTimeM is ExTimeS / 60,
-    write('Execution took '), write(ExTimeM), write(' min.'), nl,
+    %ExTimeM is ExTimeS / 60,
+    %write('Execution took '), write(ExTimeM), write(' min.'), nl,
     true.
 
 sudoku_other_viewpoint(Board) <=>
@@ -124,37 +166,37 @@ sudoku_other_viewpoint(Board) <=>
     % start generation of diffs
     do_diffs,
 
-    print_board_other_viewpoint(1,1),
+    %print_board_other_viewpoint(1,1),
 
     % start search for values
     enum_board_other_viewpoint,
     true.
 
-solve_channel(ProblemName) <=>
+solve_channel(ProblemName, ExTimeS) <=>
     % statistics(walltime, [TimeSinceStart | [TimeSinceLastCall]]),
     statistics(walltime, [_ | [_]]),
-
+    count(0),
     % get the sudoku board
     (problem(ProblemName, Board) ;  puzzles(Board, ProblemName)),
-    print_board(Board),
+    %print_board(Board),
 
     % fill the sudoku board
     sudoku_channeling(Board),
 
-    writeln("\nResult:"),
-    print_board(Board),
-    print_board_other_viewpoint(1,1),
-    writeln(Board),
+    % writeln("\nResult:"),
+    % print_board(Board),
+    % print_board_other_viewpoint(1,1),
+    % writeln(Board),
 
     % statistics(walltime, [NewTimeSinceStart | [ExecutionTime]]),
     statistics(walltime, [_ | [ExecutionTimeMS]]),
-    write('Execution took '), write(ExecutionTimeMS), write(' ms.'), nl,
+    %write('Execution took '), write(ExecutionTimeMS), write(' ms.'), nl,
 
     ExTimeS is ExecutionTimeMS / 1000,
-    write('Execution took '), write(ExTimeS), write(' s.'), nl,
+    %write('Execution took '), write(ExTimeS), write(' s.'), nl,
 
-    ExTimeM is ExTimeS / 60,
-    write('Execution took '), write(ExTimeM), write(' min.'), nl,
+    %ExTimeM is ExTimeS / 60,
+    %write('Execution took '), write(ExTimeM), write(' min.'), nl,
     true.
 
 sudoku_channeling(Board) <=>
@@ -185,10 +227,10 @@ sudoku_channeling(Board) <=>
 
     % start generation of diffs
     do_diffs,
-    writeln("channel"),
+    %writeln("channel"),
     channel,
     % search for values
-    %enum_board(Board),
+    %enum_board,
     enum_board_other_viewpoint,
 
     true.
@@ -270,12 +312,16 @@ board(X, Y1, _, Value1), board(X, Y2, _, Value2) ==> Y1 < Y2 |
     diff(Value1, Value2).
 
 % all values in same blocks must be different, guards used to break symmetry
-board(X1, Y1, BlockIndex, Value1), board(X2, Y2, BlockIndex, Value2) ==> (X1 < X2), (Y1 < Y2) |
-    diff(Value1, Value2).
+board(X1, Y1, BlockIndex, Value1), board(X2, Y2, BlockIndex, Value2) ==> X1 \== X2, Y1 \== Y2 |
+     diff(Value1, Value2).
 
 %board(_, Y1, BlockIndex, Value1), board(_, Y2, BlockIndex, Value2) ==> (Y1 < Y2) |
 %    diff(Value1, Value2).
-
+enum(X)              <=> number(X) | true .
+enum(X), X in Domain <=> member(X, Domain), incr_counter.
+incr_counter, count(N) <=>
+    N2 is N +1,
+    count(N2).
 
 % X and Y are instantiated and are different
 diff(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
@@ -288,15 +334,9 @@ diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % enum(L): assigns values to variables X in L
-enum([])                        <=> true.
-enum([ X | Tail ])              <=> number(X) | enum(Tail).
-enum([ X | Tail ]), X in Domain <=> member(X, Domain), enum(Tail).
-
 % enum_board(Board): fills Board with values
-enum_board([]) <=> true.
-enum_board([ Row | Rows ]) <=>
-    enum(Row),
-    enum_board(Rows).
+board(_,_, _, Value), enum_board ==>
+    enum(Value).
 
 % upto(N, L): L = [1..N]
 upto([], 0).
@@ -425,14 +465,11 @@ do_diffs, board_other_viewpoint(Value1, X, Y1, _), board_other_viewpoint(Value2,
 % no need for symmetry breaking here as it's been done during construction
 % diff(X, Y), diff(X, Y) <=> diff(X, Y).
 % diff(Y, X), diff(X, Y) <=> diff(X, Y).
-enum_other_view_point(X)              <=> number(X) | true .
-enum_other_view_point(X), X in Domain <=> member(X, Domain), incr_counter.
-incr_counter, count(N) <=>
-    N2 is N +1,
-    count(N2).
 
-board_other_viewpoint(_, _, Y, _), enum_board_other_viewpoint ==>
-    enum_other_view_point(Y).
+
+board_other_viewpoint(Val, X, Y, BlockIndex), enum_board_other_viewpoint ==>
+    %writeln(["Enum", Val, X, Y, BlockIndex]),
+    enum(Y).
     % enum(BlockIndex),
 
 sn(SN), board_other_viewpoint(_, X, Y, BlockIndex), enum_board_other_viewpoint ==> number(Y), var(BlockIndex) |
@@ -476,16 +513,6 @@ print_board_other_viewpoint(X,Y2) <=>
     Y3 is Y2 + 1,
     print_board_other_viewpoint(X,Y3).
 
-solve_other_viewpoint1() :- solve_other_viewpoint(1).
-solve_other_viewpoint2() :- solve_other_viewpoint(2).
-solve_other_viewpoint3() :- solve_other_viewpoint(3).
-solve_other_viewpoint4() :- solve_other_viewpoint(4).
-solve_other_viewpoint5() :- solve_other_viewpoint(5).
-solve_other_viewpoint6() :- solve_other_viewpoint(6).
-solve_other_viewpoint7() :- solve_other_viewpoint(7).
-solve_other_viewpoint8() :- solve_other_viewpoint(8).
-
-
 % filter_list(DomainList, Row) :- filter_list(DomainList, Row, []).
 %
 %
@@ -515,15 +542,6 @@ print_board([]) <=> writeln("").
 print_board([ Row | Tail ]) <=>
     print_numbers(Row),
     print_board(Tail).
-
-solve1() :- solve(1).
-solve2() :- solve(2).
-solve3() :- solve(3).
-solve4() :- solve(4).
-solve5() :- solve(5).
-solve6() :- solve(6).
-solve7() :- solve(7).
-solve8() :- solve(8).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAMPLE PROBLEMS

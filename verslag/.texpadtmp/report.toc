@@ -11,14 +11,17 @@
 \contentsline {subsubsection}{input order as value heuristic, alldifferent from ic}{6}
 \contentsline {subsubsection}{first fail as value heuristic, alldifferent from ic\_global}{7}
 \contentsline {subsubsection}{first fail as value heuristic, alldifferent from ic}{7}
-\contentsline {subsection}{\numberline {1.4.2}CHR}{7}
-\contentsline {chapter}{Part 2: Hashiwokakero}{8}
-\contentsline {section}{\numberline {2.1}ECLiPSe}{8}
-\contentsline {subsection}{\numberline {2.1.1}Optimization}{8}
-\contentsline {section}{\numberline {2.2}CHR}{8}
-\contentsline {subsection}{\numberline {2.2.1}Optimization}{8}
-\contentsline {chapter}{Conclusion}{9}
-\contentsline {section}{\numberline {3.1}Weak points}{9}
-\contentsline {section}{\numberline {3.2}Strong points}{9}
-\contentsline {section}{\numberline {3.3}Lessons learned}{9}
-\contentsline {chapter}{Appendix}{10}
+\contentsline {subsection}{\numberline {1.4.2}Impact of the different search strategies and alldifferent}{8}
+\contentsline {subsubsection}{Input order vs first fail}{8}
+\contentsline {subsubsection}{ic\_global vs ic}{8}
+\contentsline {subsection}{\numberline {1.4.3}CHR}{8}
+\contentsline {chapter}{Part 2: Hashiwokakero}{9}
+\contentsline {section}{\numberline {2.1}ECLiPSe}{9}
+\contentsline {subsection}{\numberline {2.1.1}Optimization}{9}
+\contentsline {section}{\numberline {2.2}CHR}{9}
+\contentsline {subsection}{\numberline {2.2.1}Optimization}{9}
+\contentsline {chapter}{Conclusion}{10}
+\contentsline {section}{\numberline {3.1}Weak points}{10}
+\contentsline {section}{\numberline {3.2}Strong points}{10}
+\contentsline {section}{\numberline {3.3}Lessons learned}{10}
+\contentsline {chapter}{Appendix}{11}

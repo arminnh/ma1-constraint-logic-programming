@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2017.4.29)  2 JUN 2017 14:22
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2017.4.29)  2 JUN 2017 23:16
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -766,26 +766,33 @@ Overfull \hbox (25.41742pt too wide) in paragraph at lines 387--411
 [][] 
  []
 
-[7] [8
+[7]
+Underfull \hbox (badness 10000) in paragraph at lines 415--419
 
-] [9
+ []
+
+[8] [9
 
 ] [10
 
+] (/Users/thierryderuyttere/Desktop/Unif_1e_master/APLAI/aplai/verslag/.texpadtmp/report.bbl [11
+
+]) [12
+
 ] (/Users/thierryderuyttere/Desktop/Unif_1e_master/APLAI/aplai/verslag/.texpadtmp/report.aux) ) 
 Here is how much of TeX's memory you used:
- 5364 strings out of 493014
- 72942 string characters out of 6133351
- 170580 words of memory out of 5000000
- 8832 multiletter control sequences out of 15000+600000
+ 5368 strings out of 493014
+ 73140 string characters out of 6133351
+ 170583 words of memory out of 5000000
+ 8833 multiletter control sequences out of 15000+600000
  7007 words of font info for 26 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  38i,11n,47p,1212b,1173s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmitt10.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
-Output written on /Users/thierryderuyttere/Desktop/Unif_1e_master/APLAI/aplai/verslag/.texpadtmp/report.pdf (11 pages, 149277 bytes).
+Output written on /Users/thierryderuyttere/Desktop/Unif_1e_master/APLAI/aplai/verslag/.texpadtmp/report.pdf (13 pages, 152753 bytes).
 PDF statistics:
- 83 PDF objects out of 1000 (max. 8388607)
- 56 compressed objects within 1 object stream
+ 90 PDF objects out of 1000 (max. 8388607)
+ 61 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  11 words of extra memory for PDF output out of 10000 (max. 10000000)
 
