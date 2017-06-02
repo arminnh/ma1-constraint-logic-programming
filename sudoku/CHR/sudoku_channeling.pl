@@ -1,6 +1,6 @@
 :- use_module(library(chr)).
 
-:- chr_constraint solve/1, sudoku/1, print_board/1, print_numbers/1.
+:- chr_constraint solve/1, sudoku_channeling/1, print_board/1, print_numbers/1.
 :- chr_constraint diff/2, enum/1, enum_board/1, upto/2, domain_list/1, make_domain/2, make_domains/1.
 :- chr_constraint board/4.
 :- chr_constraint generate_board_facts/3.
@@ -11,6 +11,8 @@
 :- chr_constraint generate_remaining_board_facts/1, generate_board_value_facts/2.
 :- chr_constraint do_diffs/0.
 :- chr_constraint channel/0, enum_other_view_point/1.
+:- chr_constraint sudoku/1, sudoku_other/1, solve_classic/1, solve_channel/1.
+:- chr_constraint incr_counter/0, count/1, change_count/1.
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
@@ -19,24 +21,23 @@
 :- chr_constraint le/2, eq/2, in/2, add/3.
 :- chr_option(debug,off).
 :- chr_option(optimize,full).
+:- consult(sudex_toledo).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SUDOKU SOLUTION USING TRIVIAL VIEWPOINT
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-solve(ProblemName) <=>
+solve_classic(ProblemName) <=>
     % statistics(walltime, [TimeSinceStart | [TimeSinceLastCall]]),
     statistics(walltime, [_ | [_]]),
 
     % get the sudoku board
-    problem(ProblemName, Board),
+    (problem(ProblemName, Board) ; puzzles(Board, ProblemName)),
     print_board(Board),
-
+    count(0),
     % fill the sudoku board
     sudoku(Board),
 
     writeln("\nResult:"),
     print_board(Board),
-    print_board_other_viewpoint(1,1),
     writeln(Board),
 
     % statistics(walltime, [NewTimeSinceStart | [ExecutionTime]]),
@@ -70,6 +71,113 @@ sudoku(Board) <=>
     % generate (X, Y, BlockIndex, Value) facts
     % those facts will later be used for insertion of diff(A, B) rules
     generate_board_facts(Board, 1, 1),
+
+    % search for values
+    enum_board(Board),
+    true.
+
+solve_other_viewpoint(ProblemName) <=>
+    % statistics(walltime, [TimeSinceStart | [TimeSinceLastCall]]),
+    statistics(walltime, [_ | [_]]),
+    count(0),
+    % get the sudoku board
+    (problem(ProblemName, Board) ;  puzzles(Board, ProblemName)),
+
+    % fill the sudoku board
+    sudoku_other_viewpoint(Board),
+
+    writeln("\nResult:"),
+    print_board_other_viewpoint(1,1),
+
+    % statistics(walltime, [NewTimeSinceStart | [ExecutionTime]]),
+    statistics(walltime, [_ | [ExecutionTimeMS]]),
+    write('Execution took '), write(ExecutionTimeMS), write(' ms.'), nl,
+
+    ExTimeS is ExecutionTimeMS / 1000,
+    write('Execution took '), write(ExTimeS), write(' s.'), nl,
+
+    ExTimeM is ExTimeS / 60,
+    write('Execution took '), write(ExTimeM), write(' min.'), nl,
+    true.
+
+sudoku_other_viewpoint(Board) <=>
+    % store N for later reuse = size of N*N board
+    length(Board, N),
+    n(N),
+
+    % store SN for later reuse = sqrt(N) = amount of sudoku blocks
+    sqrt(N, NN),
+    SN is round(NN),
+    sn(SN),
+
+    % create and store a list that contains the domain of the possible values on the board
+    upto(DomainList, N),
+    domain_list(DomainList),
+
+    % generate (X, Y, BlockIndex, Value) facts
+    % those facts will later be used for insertion of diff(A, B) rules
+    generate_known_board_facts(Board, 1, 1),
+
+    % set the domains of the possible values on the board
+    generate_remaining_board_facts(N),
+
+    % start generation of diffs
+    do_diffs,
+
+    print_board_other_viewpoint(1,1),
+
+    % start search for values
+    enum_board_other_viewpoint,
+    true.
+
+solve_channel(ProblemName) <=>
+    % statistics(walltime, [TimeSinceStart | [TimeSinceLastCall]]),
+    statistics(walltime, [_ | [_]]),
+
+    % get the sudoku board
+    (problem(ProblemName, Board) ;  puzzles(Board, ProblemName)),
+    print_board(Board),
+
+    % fill the sudoku board
+    sudoku_channeling(Board),
+
+    writeln("\nResult:"),
+    print_board(Board),
+    print_board_other_viewpoint(1,1),
+    writeln(Board),
+
+    % statistics(walltime, [NewTimeSinceStart | [ExecutionTime]]),
+    statistics(walltime, [_ | [ExecutionTimeMS]]),
+    write('Execution took '), write(ExecutionTimeMS), write(' ms.'), nl,
+
+    ExTimeS is ExecutionTimeMS / 1000,
+    write('Execution took '), write(ExTimeS), write(' s.'), nl,
+
+    ExTimeM is ExTimeS / 60,
+    write('Execution took '), write(ExTimeM), write(' min.'), nl,
+    true.
+
+sudoku_channeling(Board) <=>
+    % store N for later reuse = size of N*N board
+    length(Board, N),
+    n(N),
+
+    % store SN for later reuse = sqrt(N) = amount of sudoku blocks
+    sqrt(N, NN),
+    SN is round(NN),
+    sn(SN),
+
+    % create and store a list that contains the domain of the possible values on the board
+    upto(DomainList, N),
+    domain_list(DomainList),
+
+    % set the domains of the possible values on the board
+    make_domains(Board),
+
+    % generate (X, Y, BlockIndex, Value) facts
+    % those facts will later be used for insertion of diff(A, B) rules
+    generate_board_facts(Board, 1, 1),
+
     generate_known_board_facts(Board, 1, 1),
 
     % set the domains of the possible values on the board
@@ -108,6 +216,13 @@ channel,board_other_viewpoint(Value, X, Y, BlockIndex),
 % RULES USED FOR CONSTRAINTS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+change_count(Val), count(N) <=> var(Val) |
+    N2 is N -1,
+    count(N2).
+
+change_count(Val) <=> true.
+
+
 % generate_board_facts(Board, X, Y) will generate board(X,Y, BlockIndex, Value)
 % facts which will later be used to instert diff rules into the constraint store
 
@@ -124,7 +239,7 @@ sn(SN) \ generate_board_facts(Board, X, Y) <=>
     % get the value on position (X, Y) on the board
     nth1(X, Board, Row),
     nth1(Y, Row, Value),
-
+    change_count(Value),
     % calculate block index
     XX is X-1,
     XXX is XX // SN,
@@ -250,7 +365,9 @@ domain_list(Domain) \ generate_board_value_facts(Value, Index) <=> Index > 0 |
 generate_remaining_board_facts(0) <=>
     true.
 
-n(N) \ generate_remaining_board_facts(Value) <=>
+n(N) \ generate_remaining_board_facts(Value), count(Count) <=>
+    N2 is Count - 1,
+    count(N2),
     generate_board_value_facts(Value, N),
     Value2 is Value - 1,
     generate_remaining_board_facts(Value2).
@@ -309,7 +426,10 @@ do_diffs, board_other_viewpoint(Value1, X, Y1, _), board_other_viewpoint(Value2,
 % diff(X, Y), diff(X, Y) <=> diff(X, Y).
 % diff(Y, X), diff(X, Y) <=> diff(X, Y).
 enum_other_view_point(X)              <=> number(X) | true .
-enum_other_view_point(X), X in Domain <=> member(X, Domain).
+enum_other_view_point(X), X in Domain <=> member(X, Domain), incr_counter.
+incr_counter, count(N) <=>
+    N2 is N +1,
+    count(N2).
 
 board_other_viewpoint(_, _, Y, _), enum_board_other_viewpoint ==>
     enum_other_view_point(Y).
