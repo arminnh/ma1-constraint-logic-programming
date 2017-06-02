@@ -66,7 +66,7 @@ sudoku(Board) <=>
     generate_board_facts(Board, 1, 1),
 
     % search for values
-    enum_board(Board),
+    %enum_board(Board),
     true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
