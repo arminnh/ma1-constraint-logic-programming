@@ -7,7 +7,10 @@
 \contentsline {subsubsection}{CHR channeling constraints}{5}
 \contentsline {section}{\numberline {1.4}Experiments}{6}
 \contentsline {subsection}{\numberline {1.4.1}ECLiPSe}{6}
-\contentsline {subsubsection}{input order as value heuristic}{6}
+\contentsline {subsubsection}{input order as value heuristic, alldifferent from ic\_global}{6}
+\contentsline {subsubsection}{input order as value heuristic, alldifferent from ic}{6}
+\contentsline {subsubsection}{first fail as value heuristic, alldifferent from ic\_global}{7}
+\contentsline {subsubsection}{first fail as value heuristic, alldifferent from ic}{7}
 \contentsline {chapter}{Part 2: Hashiwokakero}{8}
 \contentsline {section}{\numberline {2.1}ECLiPSe}{8}
 \contentsline {subsection}{\numberline {2.1.1}Optimization}{8}

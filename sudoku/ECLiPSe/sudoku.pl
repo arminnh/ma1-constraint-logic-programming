@@ -17,20 +17,78 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :- lib(ic).
-:- import alldifferent/1, sorted/2 from ic_global.
+:- import sorted/2 from ic_global.
 :- coroutine.
 % :- lib(lists).
 :- import nth1/3 from listut.
 :- [sudex_toledo].
 
-solve(ProblemName) :-
+experiments :-
+	open('experiments.txt', write, Stream),
+	write(Stream, "\\begin{table}[h!]
+  \\begin{tabular}{|c|c|c|c|c|c|c|}
+    \\hline
+    \\multirow{2}{*}{Puzzle} &
+      \\multicolumn{2}{L|}{Classical Viewpoint (ifirst fail)} &
+      \\multicolumn{2}{L|}{Our Viewpoint (first fail)} &
+      \\multicolumn{2}{L|}{ Channeling (first fail)} \\\\
+    & ms & backracks & ms & backracks & ms & backracks \\\\
+    \\hline\n"),
+	(   puzzles(P, X),
+		writeln(X),
+
+		% Classic viewpoint
+		statistics(runtime, [_ | [_]]),
+		solve(X, B1),
+		statistics(runtime, [_ | [ExecutionTimeMS1]]),
+		ExTimeS1 is ExecutionTimeMS1 / 1000,
+		statistics(runtime, [_ | [_]]),
+		solve2(X, B2),
+		statistics(runtime, [_ | [ExecutionTimeMS2]]),
+		ExTimeS2 is ExecutionTimeMS2 / 1000,
+		statistics(runtime, [_ | [_]]),
+		solve3(X, B3),
+		statistics(runtime, [_ | [ExecutionTimeMS3]]),
+		ExTimeS3 is ExecutionTimeMS3 / 1000,
+	    %writeln('Execution took '), write(ExTimeS), write(' s.'), nl,
+
+	 	write(Stream, X),
+		write(Stream, " & "),
+		write(Stream, ExTimeS1),
+		write(Stream, "s & "),
+		write(Stream, B1),
+		write(Stream, " & "),
+		write(Stream, ExTimeS2),
+		write(Stream, "s & "),
+		write(Stream, B2),
+		write(Stream, " & "),
+		write(Stream, ExTimeS3),
+		write(Stream, "s & "),
+		write(Stream, B3),
+		write(Stream, '\\\\'),
+		write(Stream, "\n"),
+		writeln(["finished", X]),
+		fail
+    ;   true
+    ),
+	write(Stream," \\hline
+  \\end{tabular}
+\\end{table}"),
+	writeln("Finished all"),
+	close(Stream).
+
+
+
+solve(ProblemName, Back) :-
 	(problem(ProblemName, Board); translate(ProblemName, Board)),
-	print_board(Board),
+	%print_board(Board),
 	sudoku(Board),
 	search(naive, Board, Back),
-	labeling(Board),
-	print_board(Board),
-	writeln(["Backtracks: ", Back]).
+	%labeling(Board)
+	%print_board(Board),
+	%writeln(["Backtracks: ", Back])
+	true
+	.
 
 
 sudoku(Board) :-
@@ -79,13 +137,13 @@ channel(NumbersPositions, Board):-
     )
 	.
 
-solve3(ProblemName):-
+solve3(ProblemName, Back):-
 	(problem(ProblemName, Board); translate(ProblemName, Board)),
 
-    writeln("Given board:"),
-	print_board(Board),
-
-    writeln('Sudoku2:'),
+    % writeln("Given board:"),
+	% print_board(Board),
+	%
+    % writeln('Sudoku2:'),
     % set up variables and their constraints
     sudoku2(Board, NumbersPositions),
 	sudoku(Board),
@@ -93,44 +151,47 @@ solve3(ProblemName):-
 
     % do search on variables
 	search(naive, NumbersPositions, Back),
-	writeln("Channeling"),
-	print_board(Board),
+	%writeln("Channeling"),
+	%print_board(Board),
 
     % print results
-    writeln("Sudoku2 done:"),
-    print_positions(NumbersPositions),
+    %writeln("Sudoku2 done:"),
+    %print_positions(NumbersPositions),
 
-    writeln("Converted back to sudoku board:"),
-    numbers_positions_to_board(NumbersPositions, Board2),
-    print_board(Board2),
-	writeln(["Backtracks: ", Back]),
+    % writeln("Converted back to sudoku board:"),
+    % numbers_positions_to_board(NumbersPositions, Board2),
+    % print_board(Board2),
+	%writeln(["Backtracks: ", Back]),
 
-    writeln("Given board again for checking:"),
-	print_board(Board).
+    %writeln("Given board again for checking:"),
+	%print_board(Board).
+	true.
 
-solve2(ProblemName) :-
+solve2(ProblemName, Back) :-
     (problem(ProblemName, Board); translate(ProblemName, Board)),
 
-    writeln("Given board:"),
-	print_board(Board),
-
-    writeln('Sudoku2:'),
+    % writeln("Given board:"),
+	% print_board(Board),
+	%
+    % writeln('Sudoku2:'),
     % set up variables and their constraints
     sudoku2(Board, NumbersPositions),
-	writeln("Back"),
+	%%writeln("Back"),
     % do search on variables
 	search(naive, NumbersPositions, Back),
 
     % print results
-    writeln("Sudoku2 done:"),
-    print_positions(NumbersPositions),
-	writeln(["Backtracks: ", Back]),
-    writeln("Converted back to sudoku board:"),
-    numbers_positions_to_board(NumbersPositions, Board2),
-    print_board(Board2),
+    % writeln("Sudoku2 done:"),
+    % print_positions(NumbersPositions),
+	% writeln(["Backtracks: ", Back]),
+    % writeln("Converted back to sudoku board:"),
+    % numbers_positions_to_board(NumbersPositions, Board2),
+    % print_board(Board2),
 
-    writeln("Given board again for checking:"),
-	print_board(Board).
+    %writeln("Given board again for checking:"),
+	%print_board(Board).
+	%writeln(["Backtracks: ", Back]).
+	true.
 
 sudoku2(Board, NumbersPositions) :-
     % dimensions of board = N by N and there are N possible numbers to be used on the Board
