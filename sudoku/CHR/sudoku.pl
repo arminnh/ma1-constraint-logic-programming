@@ -1,7 +1,7 @@
 :- use_module(library(chr)).
 
 :- chr_constraint solve/1, sudoku/1, print_board/1, print_numbers/1.
-:- chr_constraint diff/2, enum/1, enum_board/1, upto/2, domain_list/1, make_domain/2, make_domains/1.
+:- chr_constraint diff/2, enum/1, enum_board/0, upto/2, domain_list/1, make_domain/2, make_domains/1.
 :- chr_constraint board/4.
 :- chr_constraint generate_board_facts/3.
 :- chr_constraint sn/1, n/1.
@@ -14,6 +14,8 @@
 :- chr_constraint le/2, eq/2, in/2, add/3.
 :- chr_option(debug,off).
 :- chr_option(optimize,full).
+:- consult(sudex_toledo).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SUDOKU SOLUTION USING TRIVIAL VIEWPOINT
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -23,7 +25,7 @@ solve(ProblemName) <=>
     statistics(walltime, [_ | [_]]),
 
     % get the sudoku board
-    problem(ProblemName, Board),
+    (problem(ProblemName, Board) ; puzzles(Board, ProblemName)),
     print_board(Board),
 
     % fill the sudoku board
@@ -66,7 +68,7 @@ sudoku(Board) <=>
     generate_board_facts(Board, 1, 1),
 
     % search for values
-    %enum_board(Board),
+    enum_board,%(Board),
     true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -110,8 +112,8 @@ sn(SN) \ generate_board_facts(Board, X, Y) <=>
 % 9x9 board: 1458 diff rules -> 972 rules = sum([1..8]) * 9 * 2 + 5 * 9
 %                                         = sum([1..N-1]) * N * SN
 
-%% All these symmetry breaking things should go into the report
-% all values in same columns must be different, guards used to break symmetry
+% All these symmetry breaking things should go into the report
+%all values in same columns must be different, guards used to break symmetry
 board(X1, Y, _, Value1), board(X2, Y, _, Value2) ==> X1 < X2 |
     diff(Value1, Value2).
 
@@ -119,9 +121,9 @@ board(X1, Y, _, Value1), board(X2, Y, _, Value2) ==> X1 < X2 |
 board(X, Y1, _, Value1), board(X, Y2, _, Value2) ==> Y1 < Y2 |
     diff(Value1, Value2).
 
-% all values in same blocks must be different, guards used to break symmetry
-board(X1, Y1, BlockIndex, Value1), board(X2, Y2, BlockIndex, Value2) ==> (X1 < X2), (Y1 < Y2) |
-    diff(Value1, Value2).
+% % all values in same blocks must be different, guards used to break symmetry
+board(X1, Y1, BlockIndex, Value1), board(X2, Y2, BlockIndex, Value2) ==> X1 \== X2, Y1 \== Y2 |
+     diff(Value1, Value2).
 
 %board(_, Y1, BlockIndex, Value1), board(_, Y2, BlockIndex, Value2) ==> (Y1 < Y2) |
 %    diff(Value1, Value2).
@@ -138,15 +140,24 @@ diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % enum(L): assigns values to variables X in L
-enum([])                        <=> true.
-enum([ X | Tail ])              <=> number(X) | enum(Tail).
-enum([ X | Tail ]), X in Domain <=> member(X, Domain), enum(Tail).
+enum(X)              <=> number(X) | true .
+enum(X), X in Domain <=> member(X, Domain).
 
-% enum_board(Board): fills Board with values
-enum_board([]) <=> true.
-enum_board([ Row | Rows ]) <=>
-    enum(Row),
-    enum_board(Rows).
+board(_,_, _, Value), enum_board ==>
+    enum(Value).
+    % enum(BlockIndex),
+
+
+% % enum(L): assigns values to variables X in L
+% enum([])                        <=> true.
+% enum([ X | Tail ])              <=> number(X) | enum(Tail).
+% enum([ X | Tail ]), X in Domain <=> member(X, Domain), enum(Tail).
+%
+% % enum_board(Board): fills Board with values
+% enum_board([]) <=> true.
+% enum_board([ Row | Rows ]) <=>
+%     enum(Row),
+%     enum_board(Rows).
 
 % upto(N, L): L = [1..N]
 upto([], 0).

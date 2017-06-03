@@ -409,7 +409,16 @@ sudowiki\_nb49 & 0.07s & 655 & 11.9s & 32895 & 0.19s & 241\\
  \hline
   \end{tabular}
 \end{table}
+\newpage
+\subsection{Impact of the different search strategies and alldifferent}
+\subsubsection{Input order vs first fail}
+When we compare the two tables for \texttt{input order} and \texttt{first fail} with the alldifferent from ic\_global we see that actually for most of the puzzles in all the three columns, the \texttt{first fail} heuristic does a better job than \texttt{input order}! We can see that there are sometimes really big differences between the two tables, for example 'extra2' for our viewpoint in the \texttt{input order} table has 662k backtracks but when you look over at the \texttt{first fail} table you see that it only has 909 backtracks! Though, it is not always \texttt{first fail} that is faster. If we look at 'extra4' for yet again our viewpoint we see that \texttt{input order} is faster this time! 197306 backtracks \texttt{input order} for vs 858267 backtracks \texttt{first fail}. This is quite odd behavior since 'extra4' is just puzzle 'extra3', where \texttt{first fail} outperforms \texttt{input order} by more than 50\%, with an extra hint.
+\newline
+\newline
+When we look to the alldifferent from the ic library tables, we see exactly the same behavior as mentioned before. We see that most of the times \texttt{first fail} is faster than \texttt{input order} but yet again we observe the same odd behavior for 'extra4'. 
 
+\subsubsection{ic\_global vs ic}
+When we compare the alldifferent from ic\_global vs ic we see that the version from ic\_global is faster! For our viewpoint the increase is not that big but when you look at the channeling column and the classical viewpoint, then you see that the increases in backtracks here are quite big! This was a bit expected though, the alldifferent from ic\_global has been programmed with stronger propagation behaviour \cite{alldiff_global}. 
 \subsection{CHR}
 
 
@@ -430,4 +439,9 @@ Optimization for 4 in corner, 6 at one of the sides or 8 on the board is already
 Never use this system ever again.
 \mychapter{4}{Appendix}
 We started working on this project before the easter holiday. During our start we often lost quite some time since we didn't really know how the systems worked. During the second week of the easter holiday we continued to work on the project each evening and we finished the Sudoku part at the end of the holiday. We then had to pause our work since we had an enormous deadline for an other course so sadly enough we could only continue working on the project after this deadline (10th may). As the semester was coming to an end other deadlines also started to come closer and closer so we had to manage these first, so it is only at the start of the study period that we could continue our work. From the start of the study period we tried to spend around 6 hours of work each day for this project. The work was not really divided since we were doing pair programming most of the time. Sometimes someone made some individual changes when they had time but most of our work has been made in group over hangouts by using screensharing. We could argue that by doing pair programming we lost quite some time, which is true, but by doing this we worked very closely together and we learned quite a lot. 
+
+\bibliographystyle{ieeetr}
+\bibliography{bibliography}
+
+
 \end{document}
