@@ -138,7 +138,7 @@ board(A, B, Am, N, _, _, _), neighbors(A, B, 'N', C, D) ==> Am > 0, number(N), N
 board(A, B, Am, _, E, _, _), neighbors(A, B, 'E', C, D) ==> Am > 0, number(E), E > 0 | connected([A, B], [C, D]).
 
 % boards for which wrong solutions with multiple connected sets are possible:
-%   6, 7, 9, 13, 16, 18
+%   6 (with improvement A turned off), 7 (with improvements A and B turned off), 9 (with improvement B off), 12, 15, 17
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CONNECTIVITY CONSTRAINT PROPAGATION METHOD 1
