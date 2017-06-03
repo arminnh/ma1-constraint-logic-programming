@@ -9,10 +9,11 @@
 :- chr_constraint connected/0, connected/2, pick_first_island/0, reachable/2.
 :- chr_constraint connected_sets_counter/1, connected_set/3, connected_sets_union/2, connected_set_counter/2.
 
-:- op(700, xfx, eq).
 :- op(700, xfx, in).
-% :- op(600, xfx, add).
+:- op(700, xfx, eq).
+:- op(600, xfx, add).
 :- op(600, xfx, '..').
+
 :- chr_option(debug, off).
 :- chr_option(optimize, full).
 
@@ -21,16 +22,22 @@ solve(Number) <=>
     % find the game board and load the board facts into the constraint store
     load_board(Number),
     writeln("Given board:"), print_board,
+
     % create the bridge constraint rules
     bridge_constraints,
+
     % after doing all bridge constraints, make domains for remaining variables (N E S W)
     make_domains,
+
     writeln("Board before search:"), print_board,
     % chr_show_store(user),
+
     % after generating all necessary domains, start the search
     search,
+
     % all islands need to be in the reachable set
     connected,
+
     writeln("Board after search:"), print_board,
     clear_store,
     true.
@@ -45,9 +52,11 @@ time(Number) <=>
 
     load_board(Number), bridge_constraints, make_domains, search, connected, clear_store,
 
+    % statistics(walltime, [NewTimeSinceStart | [ExecutionTime]]),
     statistics(walltime, [_ | [ExecutionTimeMS]]),
     ExTimeS is ExecutionTimeMS / 1000,
-    write(Number), write(': '), write(ExTimeS), write('s'), nl.
+    write(Number), write(': '), write(ExTimeS), write('s'), nl,
+    true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % BRIDGE CONSTRAINT RULES
@@ -68,16 +77,15 @@ bridge_constraints, board(_, _, 0, N, E, S, W) ==> N = S, E = W.
 board(_, _, 0, N, E, _, _) ==> number(N), N > 0 | E = 0.
 board(_, _, 0, N, E, _, _) ==> number(E), E > 0 | N = 0.
 
-% bridges going north == bridges going south in position above
+% bridges going one way == bridges going the other way
 bridge_constraints, board(X, Y, _, N, _, _, _), board(X2, Y, _, _, _, S, _) ==> X > 1, X2 is X-1  | eq(N, S).
-% bridges going east == bridges going west in position to the right
 bridge_constraints, board(X, Y, _, _, E, _, _), board(X, Y2, _, _, _, _, W) ==> Y2 is Y+1         | eq(E, W).
 
 % bridges cannot go outside of the board
-bridge_constraints, board(1, _, _, N, _, _, _)                ==> N = 0.
-bridge_constraints, board(_, YMax, _, _, E, _, _), ymax(YMax) ==> E = 0.
-bridge_constraints, board(XMax, _, _, _, _, S, _), xmax(XMax) ==> S = 0.
-bridge_constraints, board(_, 1, _, _, _, _, W)                ==> W = 0.
+bridge_constraints, board(X, _, _, N, _, _, _)                              ==> X == 1            | N = 0.
+bridge_constraints, board(_, Y, _, _, E, _, _), ymax(Size)                  ==> Y == Size         | E = 0.
+bridge_constraints, board(X, _, _, _, _, S, _), xmax(Size)                  ==> X == Size         | S = 0.
+bridge_constraints, board(_, Y, _, _, _, _, W)                              ==> Y == 1            | W = 0.
 
 bridge_constraints <=> true.
 
@@ -129,6 +137,9 @@ make_domains <=> true.
 board(A, B, Am, N, _, _, _), neighbors(A, B, 'N', C, D) ==> Am > 0, number(N), N > 0 | connected([A, B], [C, D]).
 board(A, B, Am, _, E, _, _), neighbors(A, B, 'E', C, D) ==> Am > 0, number(E), E > 0 | connected([A, B], [C, D]).
 
+% boards for which wrong solutions with multiple connected sets are possible:
+%   6 (with improvement A turned off), 7 (with improvements A and B turned off), 9 (with improvement B off), 12, 15, 17
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CONNECTIVITY CONSTRAINT PROPAGATION METHOD 1
 %   build up a 'reachable' set starting from a certain island
@@ -137,25 +148,25 @@ board(A, B, Am, _, E, _, _), neighbors(A, B, 'E', C, D) ==> Am > 0, number(E), E
 %   then the solution is not valid
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% remove the facts that are used for propagation method 2
-connected_set(_, _, _) <=> true.
-connected_set_counter(_, _) <=> true.
-
-% put first island in reachable set
-connected ==> pick_first_island.
-island(X, Y, _) \ pick_first_island <=> reachable(X, Y).
-
-% build up reachable set
-reachable(X, Y) \ connected([X, Y], [A, B]) <=> reachable(A, B).
-reachable(X, Y) \ connected([A, B], [X, Y]) <=> reachable(A, B).
-
-% remove duplicate reachable facts
-reachable(A, B) \ reachable(A, B) <=> true.
-
-% connectivity constraint: each island fact needs to have an accompanying reachable fact
-connected \ island(X, Y, _), reachable(X, Y) <=> true.
-connected, island(_, _, _)                   <=> false.
-connected <=> true.
+% % remove facts that are meant for propagation method 2
+% connected \ connected_set(_, _, _) <=> true.
+% connected \ connected_set_counter(_, _) <=> true.
+%
+% % put first island in reachable set
+% connected ==> pick_first_island.
+% island(X, Y, _) \ pick_first_island <=> reachable(X, Y).
+%
+% % build up reachable set
+% reachable(X, Y) \ connected([X, Y], [A, B]) <=> reachable(A, B).
+% reachable(X, Y) \ connected([A, B], [X, Y]) <=> reachable(A, B).
+%
+% % remove duplicate reachable facts
+% reachable(A, B) \ reachable(A, B) <=> true.
+%
+% % connectivity constraint: each island fact needs to have an accompanying reachable fact
+% connected \ island(X, Y, _), reachable(X, Y)  <=> true.
+% connected, island(_, _, _)                    <=> false.
+% connected <=> true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CONNECTIVITY CONSTRAINT PROPAGATION METHOD 2
@@ -165,26 +176,26 @@ connected <=> true.
 %   then the solution is not valid
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% % when two islands become connected, merge their connected sets, only merge smaller sets into larger sets
-% connected_set(A, B, Set1), connected_set(C, D, Set2), connected_set_counter(Set1, Count1)
-%     \ connected([A, B], [C, D]), connected_set_counter(Set2, Count2) <=> Set1 \== Set2, Count2 =< Count1 | connected_sets_union(Set1, Set2).
-% connected_set(A, B, Set1), connected_set(C, D, Set2), connected_set_counter(Set1, Count1)
-%     \ connected([C, D], [A, B]), connected_set_counter(Set2, Count2) <=> Set1 \== Set2, Count2 =< Count1 | connected_sets_union(Set1, Set2).
-%
-% % if islands already belong to the same set, don't need to do anything with the connection
-% connected_set(A, B, Set), connected_set(C, D, Set) \ connected([A, B], [C, D]) <=> true.
-% connected_set(A, B, Set), connected_set(C, D, Set) \ connected([C, D], [A, B]) <=> true.
-%
-% % merge two connected sets by changing the identifier of one set to the identifier of the other set
-% connected_sets_union(Set1, Set2) \ connected_set(X, Y, Set2), connected_set_counter(Set1, Count) <=> NCount is Count + 1 |
-%     connected_set(X, Y, Set1),
-%     connected_set_counter(Set1, NCount).
-% connected_sets_union(_, _) <=> true.
-%
-% connected, connected_set(_, _, Set1), connected_set(_, _, Set2) ==> Set1 \== Set2 | fail.
-% connected \ connected_set(_, _, _) <=> true.
-% connected \ connected_set_counter(_, _) <=> true.
-% connected <=> true.
+% when two islands become connected, merge their connected sets, only merge smaller sets into larger sets
+connected_set(A, B, Set1), connected_set(C, D, Set2), connected_set_counter(Set1, Count1)
+    \ connected([A, B], [C, D]), connected_set_counter(Set2, Count2) <=> Set1 \== Set2, Count2 =< Count1 | connected_sets_union(Set1, Set2).
+connected_set(A, B, Set1), connected_set(C, D, Set2), connected_set_counter(Set1, Count1)
+    \ connected([C, D], [A, B]), connected_set_counter(Set2, Count2) <=> Set1 \== Set2, Count2 =< Count1 | connected_sets_union(Set1, Set2).
+
+% if islands already belong to the same set, don't need to do anything with the connection
+connected_set(A, B, Set), connected_set(C, D, Set) \ connected([A, B], [C, D]) <=> true.
+connected_set(A, B, Set), connected_set(C, D, Set) \ connected([C, D], [A, B]) <=> true.
+
+% merge two connected sets by changing the identifier of one set to the identifier of the other set
+connected_sets_union(Set1, Set2) \ connected_set(X, Y, Set2), connected_set_counter(Set1, Count) <=> NCount is Count + 1 |
+    connected_set(X, Y, Set1),
+    connected_set_counter(Set1, NCount).
+    connected_sets_union(_, _) <=> true.
+
+connected, connected_set(_, _, Set1), connected_set(_, _, Set2) ==> Set1 \== Set2 | fail.
+connected \ connected_set(_, _, _) <=> true.
+connected \ connected_set_counter(_, _) <=> true.
+connected <=> true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR DOMAIN SOLVING
@@ -235,21 +246,21 @@ search <=> true.
 load_board(Number) <=> puzzle(Number, Size, Islands) |
     ymax(Size),
     xmax(Size),
-    create_empty_board(1, 1),
     connected_sets_counter(0),
+    create_empty_board(1, 1),
     create_islands(Islands).
 
 % create board facts for an empty board
-xmax(Size) \ create_empty_board(_, Y) <=> Y > Size               | true.
-xmax(Size) \ create_empty_board(X, Y) <=> X > Size,  Y2 is Y + 1 | create_empty_board(1, Y2).
-xmax(Size) \ create_empty_board(X, Y) <=> X =< Size, X2 is X + 1 |
+xmax(XMax) \ create_empty_board(_, Y) <=> Y > XMax               | true.
+xmax(XMax) \ create_empty_board(X, Y) <=> X > XMax,  Y2 is Y + 1 | create_empty_board(1, Y2).
+xmax(XMax) \ create_empty_board(X, Y) <=> X =< XMax, X2 is X + 1 |
     board(X, Y, 0, _, _, _, _),
     create_empty_board(X2, Y).
 
 % create board facts from an array of Islands
 %   each island takes the form (X, Y, N) where X is the row number, Y is the column
 %   number and N the number of bridges that should arrive in this island.
-create_islands([ [X, Y, Amount] | Islands ]), board(X, Y, _, N, E, S, W), connected_sets_counter(Count) <=> NCount is Count + 1 |
+create_islands([ [X, Y, Amount] | Islands ]), board(X, Y, _, N, E, S, W), connected_sets_counter(Count) <=> NCount is Count + 1 |
     board(X, Y, Amount, N, E, S, W),
     island(X, Y, Amount),
     connected_set(X, Y, NCount),
@@ -262,14 +273,14 @@ create_islands([]) <=> true.
 load_board(Number) <=> board(Number, Matrix), length(Matrix, XMax), nth1(1, Matrix, Row), length(Row, YMax) |
     xmax(XMax),
     ymax(YMax),
-    board_facts_from_matrix(Matrix, 1),
-    connected_sets_counter(0).
+    connected_sets_counter(0),
+    board_facts_from_matrix(Matrix, 1).
 
 % create board facts from a matrix that contains the board
 board_facts_from_matrix([ Row | Rows ], X) <=> XN is X + 1 |
     board_facts_from_row(Row, X, 1),
     board_facts_from_matrix(Rows, XN).
-    board_facts_from_matrix([], _) <=> true.
+board_facts_from_matrix([], _) <=> true.
 
 % create board facts from a row that contains a row of the board
 board_facts_from_row([ 0 | Row ], X, Y) <=> YN is Y + 1 |
@@ -282,7 +293,7 @@ board_facts_from_row([ Number | Row ], X, Y), connected_sets_counter(Count) <=> 
     connected_set_counter(NCount, 1),
     connected_sets_counter(NCount),
     board_facts_from_row(Row, X, YN).
-    board_facts_from_row([], _, _) <=> true.
+board_facts_from_row([], _, _) <=> true.
 
 % create neighbor facts. two islands are neighbors when they can be connected by a bridge
 island(X1, Y, _), island(X2, Y, _) ==> X1 > X2 | neighbors(X1, Y, 'N', X2, Y).
@@ -293,17 +304,17 @@ neighbors(X1, Y, 'N', X, Y) \ neighbors(X2, Y, 'N', X, Y) <=> X1 < X2 | true.
 neighbors(X, Y1, 'E', X, Y) \ neighbors(X, Y2, 'E', X, Y) <=> Y1 > Y2 | true.
 
 % clear the chr store after solving the puzzle
+clear_store \ xmax(_), ymax(_) <=> true.
 clear_store \ board(_, _, _, _, _, _, _) <=> true.
 clear_store \ island(_, _, _) <=> true.
 clear_store \ neighbors(_, _, _, _, _) <=> true.
 clear_store \ connected_sets_counter(_) <=> true.
-clear_store \ xmax(_), ymax(_) <=> true.
 clear_store \ X in _.._ <=> number(X) | true.
 clear_store <=> true.
 
 % prints the board
 print_board <=> print_board(1, 1).
-board(X,Y, Val, N, E, _, _) \ print_board(X, Y) <=>
+board(X,Y, Val, N, E, _, _) \ print_board(X, Y) <=> Y2 is Y + 1 |
     (Val > 0 ->
         write(Val)
     ;
@@ -314,13 +325,9 @@ board(X,Y, Val, N, E, _, _) \ print_board(X, Y) <=>
             write(Char)
         )
     ),
-    Y2 is Y + 1,
     print_board(X, Y2),
     !.
-board(X, _, _, _, _, _, _) \ print_board(X, _) <=>
-    X2 is X + 1,
-    nl,
-    print_board(X2, 1).
+board(X, _, _, _, _, _, _) \ print_board(X, _) <=> X2 is X + 1, nl | print_board(X2, 1).
 print_board(_, _) <=> nl.
 
 N in 0..1 \ write_variable(N, _) <=> write('.').

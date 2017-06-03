@@ -1,44 +1,41 @@
-% boards for which wrong solutions with multiple connected sets are possible:
-%   6, 7, 9, 12, 15, 17
-%
 % IMPACT OF IMPROVEMENTS ON PREVIOUSLY SLOW BOARDS:
 %
 %   CONNECTIVITY PROPAGATOR 1
-%       board number | time without improvements | time with improvement A | time with improvement B | time with improvements A and B
-%       1   | X | Y | Z |  0.081s
-%       3   | X | Y | Z |  0.044s
-%       4   | X | Y | Z |  0.094s
-%       5   | X | Y | Z |  0.091s
-%       6   | X | Y | Z |  0.212s
-%       8   | X | Y | Z |  0.007s
-%       9   | X | Y | Z |  0.02s
-%       10  | X | Y | Z |  2.847s
-%       11  | X | Y | Z |  0.078s
-%       12  | X | Y | Z |  0.099s
-%       13  | X | Y | Z | 0.109s
-%       14  | X | Y | Z |  0.137s
-%       15  | X | Y | Z |  2.843s
-%       16  | X | Y | Z |  1.887s
-%       17  | X | Y | Z |  0.401s
+%       board number | time without improvements |  time with improvements
+%       1   | 0.077s |  0.07s
+%       3   | 0.044s |  0.044s
+%       4   | 0.088s |  0.088s
+%       5   | 0.079s |  0.088s
+%       6   | 0.207s |  0.198s
+%       8   | 0.006s |  0.006s
+%       9   | 0.012s |  0.011s
+%       10  | 48.174s | 2.258s
+%       11  | 0.077s |  0.069s
+%       12  | 0.088s |  0.081s
+%       13  | 0.091s |  0.085s
+%       14  | 0.146s |  0.114s
+%       15  | 2.657s |  2.538s
+%       16  | 1.923s |  1.971s
+%       17  | 3.579s |  0.373s
 %       2   | aborted after 6405s | X | Y | 1001s
 
 %   CONNECTIVITY PROPAGATOR 2
-%       board number | time without improvements | time with improvement A | time with improvement B | time with improvements A and B
-%       1   | X | Y | Z | 0.075s
-%       3   | X | Y | Z | 0.057s
-%       4   | X | Y | Z | 0.091s
-%       5   | X | Y | Z | 0.079s
-%       6   | X | Y | Z | 0.198s
-%       8   | X | Y | Z | 0.006s
-%       9   | X | Y | Z | 0.01s
-%       10  | X | Y | Z | 3.014s
-%       11  | X | Y | Z | 0.072s
-%       12  | X | Y | Z | 0.087s
-%       13  | X | Y | Z | 0.112s
-%       14  | X | Y | Z | 0.161s
-%       15  | X | Y | Z | 2.947s
-%       16  | X | Y | Z | 1.908s
-%       17  | X | Y | Z | 0.398s
+%       board number | time without improvements | time with improvements
+%       1   | 0.078s | 0.077s
+%       3   | 0.043s | 0.048s
+%       4   | 0.089s | 0.095s
+%       5   | 0.087s | 0.084s
+%       6   | 0.207s | 0.189s
+%       8   | 0.008s | 0.007s
+%       9   | 0.01s | 0.01s
+%       10  | 48.582s | 2.29s
+%       11  | 0.074s | 0.076s
+%       12  | 0.08s | 0.078s
+%       13  | 0.087s | 0.093s
+%       14  | 0.134s | 0.115s
+%       15  | 2.529s | 2.498s
+%       16  | 1.898s | 1.929s
+%       17  | 3.885s | 0.37s
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAMPLE PROBLEMS
