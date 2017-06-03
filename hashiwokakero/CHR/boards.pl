@@ -1,3 +1,45 @@
+% boards for which wrong solutions with multiple connected sets are possible:
+%   6, 7, 9, 12, 15, 17
+%
+% IMPACT OF IMPROVEMENTS ON PREVIOUSLY SLOW BOARDS:
+%
+%   CONNECTIVITY PROPAGATOR 1
+%       board number | time without improvements | time with improvement A | time with improvement B | time with improvements A and B
+%       1   | X | Y | Z |  0.081s
+%       3   | X | Y | Z |  0.044s
+%       4   | X | Y | Z |  0.094s
+%       5   | X | Y | Z |  0.091s
+%       6   | X | Y | Z |  0.212s
+%       8   | X | Y | Z |  0.007s
+%       9   | X | Y | Z |  0.02s
+%       10  | X | Y | Z |  2.847s
+%       11  | X | Y | Z |  0.078s
+%       12  | X | Y | Z |  0.099s
+%       13  | X | Y | Z | 0.109s
+%       14  | X | Y | Z |  0.137s
+%       15  | X | Y | Z |  2.843s
+%       16  | X | Y | Z |  1.887s
+%       17  | X | Y | Z |  0.401s
+%       2   | aborted after 6405s | X | Y | 1001s
+
+%   CONNECTIVITY PROPAGATOR 2
+%       board number | time without improvements | time with improvement A | time with improvement B | time with improvements A and B
+%       1   | X | Y | Z | 0.075s
+%       3   | X | Y | Z | 0.057s
+%       4   | X | Y | Z | 0.091s
+%       5   | X | Y | Z | 0.079s
+%       6   | X | Y | Z | 0.198s
+%       8   | X | Y | Z | 0.006s
+%       9   | X | Y | Z | 0.01s
+%       10  | X | Y | Z | 3.014s
+%       11  | X | Y | Z | 0.072s
+%       12  | X | Y | Z | 0.087s
+%       13  | X | Y | Z | 0.112s
+%       14  | X | Y | Z | 0.161s
+%       15  | X | Y | Z | 2.947s
+%       16  | X | Y | Z | 1.908s
+%       17  | X | Y | Z | 0.398s
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAMPLE PROBLEMS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
