@@ -333,6 +333,9 @@ diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 % RULES USED FOR DOMAIN SOLVING
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+board(_,_, _, Value), enum_board \ Value in D <=> length(D, C1), C1 == 1 |
+    Value is D.
+
 % enum(L): assigns values to variables X in L
 % enum_board(Board): fills Board with values
 board(_,_, _, Value), enum_board ==>

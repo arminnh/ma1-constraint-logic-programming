@@ -418,7 +418,10 @@ When we compare the two tables for \texttt{input order} and \texttt{first fail} 
 When we look to the alldifferent from the ic library tables, we see exactly the same behavior as mentioned before. We see that most of the times \texttt{first fail} is faster than \texttt{input order} but yet again we observe the same odd behavior for 'extra4'. 
 
 \subsubsection{ic\_global vs ic}
-When we compare the alldifferent from ic\_global vs ic we see that the version from ic\_global is faster! For our viewpoint the increase is not that big but when you look at the channeling column and the classical viewpoint, then you see that the increases in backtracks here are quite big! This was a bit expected though, the alldifferent from ic\_global has been programmed with stronger propagation behaviour \footnote{http://eclipseclp.org/doc/bips/lib/ic\_global/alldifferent-1.html}. 
+When we compare the alldifferent from ic\_global vs ic we see that the version from ic\_global is faster/does less backtracking! For our viewpoint the increase is not that big but when you look at the channeling column and the classical viewpoint, then you see that the increases in backtracks here are quite big! 
+
+\subsection{Analysis of differences}
+This is due to the fact that the alldifferent from ic\_global has been programmed with stronger propagation behaviour \footnote{http://eclipseclp.org/doc/bips/lib/ic\_global/alldifferent-1.html} than the alldifferent from the ic library. 
 \subsection{CHR}
 
 
