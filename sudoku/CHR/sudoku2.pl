@@ -168,6 +168,10 @@ diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 enum(X)              <=> number(X) | true .
 enum(X), X in Domain <=> member(X, Domain).
 
+
+board(_,_,Y, _), enum_board \ Y in D <=> length(D, 1)|
+    Y is D.
+
 board(_, _, Y, _), enum_board ==>
     enum(Y).
     % enum(BlockIndex),

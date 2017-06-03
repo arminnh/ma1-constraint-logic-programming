@@ -67,9 +67,9 @@ sudoku(Board) <=>
     % those facts will later be used for insertion of diff(A, B) rules
     generate_board_facts(Board, 1, 1),
     create_likely_numbers,
-    %fix_domains,
+    fix_domains,
     % search for values
-    %enum_board,%(Board),
+    enum_board,%(Board),
     true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -153,14 +153,17 @@ diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 
 % Put domain in likely number
 % the likely number needs to be something from the domain
-%board(X,Y, _, V1), V1 in D1 ==> var(V1)|
+create_likely_numbers, board(X,Y, _, V1), V1 in D1 ==> var(V1)|
      %add_counters(V1,X,Y, D1).
-     %likely_number(V1,X,Y,D1).
+     likely_number(V1,X,Y,D1).
+
+count_occurrences(List, Occ):-
+     findall([X,L], (bagof(true,member(X,List),Xs), length(Xs,L)), Occ).
 
 % If there are two likely_numbers, take union of the both and check interesection
-% create_likely_numbers, V1 in D \ likely_number(V1,X,Y, R1), likely_number(V1,X,Y, R2)
-%     <=> union(R1,R2,R) |
-%     likely_number(V1,X,Y,R).
+create_likely_numbers, V1 in D \ likely_number(V1,X,Y, R1), likely_number(V1,X,Y, R2)
+    <=> flatten([R1|R2], R) |
+    likely_number(V1,X,Y,R).
 %
 % %likely_number(V, []) <=> true.
 % % For all the elems in a block, take the difference in their domains
@@ -176,6 +179,22 @@ create_likely_numbers, board(X1,Y1, B, V1), V1 in D1, board(_,_, B, V2), V2 in D
 enum(X)              <=> number(X) | true .
 enum(X), X in Domain <=> member(X, Domain).
 
+
+take_first([] , []).
+take_first( [ [V,C] | T ] , Result):-
+    take_first(T, Result2),
+    flatten([V|Result2], Result).
+
+fix_domains \ create_likely_numbers <=> true.
+
+fix_domains \ likely_number(V,X,Y,D), V in Dom <=>
+    count_occurrences(D, Occ),
+    sort(2, @>=, Occ, S),
+    take_first(S,Result),
+    writeln([V,X,Y, Dom, Result, Occ]),
+    V in Result.
+
+enum_board \ fix_domains <=> true.
 % THIS IS ALL A WASTE
 % create_likely_numbers \ domain_counter(V, X, Y, V, C), domain_counter(V, X, Y, V, C) <=> domain_counter(V, X, Y, V, C).
 %
