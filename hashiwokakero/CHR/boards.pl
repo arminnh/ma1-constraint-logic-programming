@@ -5,40 +5,40 @@
 %
 %   CONNECTIVITY PROPAGATOR 1
 %       board number | time without improvements | time with improvement A | time with improvement B | time with improvements A and B
-%       1   | X | Y | Z |  0.081s
-%       3   | X | Y | Z |  0.044s
-%       4   | X | Y | Z |  0.094s
-%       5   | X | Y | Z |  0.091s
-%       6   | X | Y | Z |  0.212s
-%       8   | X | Y | Z |  0.007s
-%       9   | X | Y | Z |  0.02s
-%       10  | X | Y | Z |  2.847s
-%       11  | X | Y | Z |  0.078s
-%       12  | X | Y | Z |  0.099s
-%       13  | X | Y | Z | 0.109s
-%       14  | X | Y | Z |  0.137s
-%       15  | X | Y | Z |  2.843s
-%       16  | X | Y | Z |  1.887s
-%       17  | X | Y | Z |  0.401s
+%       1   | 0.077s | Y | Z | 0.07s
+%       3   | 0.044s | Y | Z | 0.044s
+%       4   | 0.088s | Y | Z | 0.088s
+%       5   | 0.079s | Y | Z | 0.088s
+%       6   | 0.207s | Y | Z | 0.198s
+%       8   | 0.006s | Y | Z | 0.006s
+%       9   | 0.012s | Y | Z | 0.011s
+%       10  | 48.174s | Y | Z | 2.258s
+%       11  | 0.077s | Y | Z | 0.069s
+%       12  | 0.088s | Y | Z | 0.081s
+%       13  | 0.091s | Y | Z | 0.085s
+%       14  | 0.146s | Y | Z | 0.114s
+%       15  | 2.657s | Y | Z | 2.538s
+%       16  | 1.923s | Y | Z | 1.971s
+%       17  | 3.579s | Y | Z | 0.373s
 %       2   | aborted after 6405s | X | Y | 1001s
 
 %   CONNECTIVITY PROPAGATOR 2
 %       board number | time without improvements | time with improvement A | time with improvement B | time with improvements A and B
-%       1   | X | Y | Z | 0.075s
-%       3   | X | Y | Z | 0.057s
-%       4   | X | Y | Z | 0.091s
-%       5   | X | Y | Z | 0.079s
-%       6   | X | Y | Z | 0.198s
-%       8   | X | Y | Z | 0.006s
-%       9   | X | Y | Z | 0.01s
-%       10  | X | Y | Z | 3.014s
-%       11  | X | Y | Z | 0.072s
-%       12  | X | Y | Z | 0.087s
-%       13  | X | Y | Z | 0.112s
-%       14  | X | Y | Z | 0.161s
-%       15  | X | Y | Z | 2.947s
-%       16  | X | Y | Z | 1.908s
-%       17  | X | Y | Z | 0.398s
+%       1   | 0.078s | Y | Z | 0.077s
+%       3   | 0.043s | Y | Z | 0.048s
+%       4   | 0.089s | Y | Z | 0.095s
+%       5   | 0.087s | Y | Z | 0.084s
+%       6   | 0.207s | Y | Z | 0.189s
+%       8   | 0.008s | Y | Z | 0.007s
+%       9   | 0.01s | Y | Z | 0.01s
+%       10  | 48.582s | Y | Z | 2.29s
+%       11  | 0.074s | Y | Z | 0.076s
+%       12  | 0.08s | Y | Z | 0.078s
+%       13  | 0.087s | Y | Z | 0.093s
+%       14  | 0.134s | Y | Z | 0.115s
+%       15  | 2.529s | Y | Z | 2.498s
+%       16  | 1.898s | Y | Z | 1.929s
+%       17  | 3.885s | Y | Z | 0.37s
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAMPLE PROBLEMS
