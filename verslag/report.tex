@@ -11,6 +11,7 @@
 \usepackage{filecontents}
 \usepackage{array}
 \usepackage{multirow}
+\usepackage{hyperref}
 
 \newcolumntype{L}{>{\centering\arraybackslash}m{3cm}}
 
@@ -421,9 +422,13 @@ When we look to the alldifferent from the ic library tables, we see exactly the 
 When we compare the alldifferent from ic\_global vs ic we see that the version from ic\_global is faster/does less backtracking! For our viewpoint the increase is not that big but when you look at the channeling column and the classical viewpoint, then you see that the increases in backtracks here are quite big! 
 
 \subsection{Analysis of differences}
-This is due to the fact that the alldifferent from ic\_global has been programmed with stronger propagation behaviour \footnote{http://eclipseclp.org/doc/bips/lib/ic\_global/alldifferent-1.html} than the alldifferent from the ic library. 
-\subsection{CHR}
+\subsubsection{input order vs first fail}
 
+\subsubsection{alldifferent}
+The difference with the alldifferent is due to the fact that the alldifferent from ic\_global has been programmed with stronger propagation behavior \footnote{\url{http://eclipseclp.org/doc/bips/lib/ic\_global/alldifferent-1.html}} than the alldifferent from the ic library as explained in class. The ic\_global implementation has a global view of the constraints and can thus make smarter decisions about it.
+
+\subsection{CHR}
+For the CHR implementation of the two viewpoints we had a lot of troubles getting something performant. The first classical viewpoint has some advantages over our other viewpoint since when you look at a block and there is only 
 
 \mychapter{2}{Part 2: Hashiwokakero}
 \label{sec:Hashiwokakero}

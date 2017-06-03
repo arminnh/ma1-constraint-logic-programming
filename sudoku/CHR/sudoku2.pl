@@ -1,7 +1,7 @@
 :- use_module(library(chr)).
 
 :- chr_constraint solve/1, sudoku/1, print_board/2.
-:- chr_constraint diff/2, enum/1, enum_board/0, upto/2, domain_list/1.
+:- chr_constraint diff/2, smart_diff/6, enum/1, enum_board/0, upto/2, domain_list/1.
 :- chr_constraint board/4, generate_known_board_facts/3.
 :- chr_constraint sn/1, n/1.
 :- chr_constraint generate_remaining_board_facts/1, generate_board_value_facts/2.
@@ -146,7 +146,7 @@ sn(SN) \ generate_known_board_facts(Board, X, Y) <=> nth1(X, Board, Row), nth1(Y
 
 % all values in same blocks must be different, guards used to break symmetry
 do_diffs, board(Value, X1, Y1, BlockIndex1), board(Value, X2, Y2, BlockIndex2) ==> X1 < X2 |
-    diff(Y1,Y2), diff(BlockIndex1, BlockIndex2).
+    smart_diff(X1, Y1, X2, Y2, BlockIndex1, BlockIndex2), diff(BlockIndex1, BlockIndex2).
 
 do_diffs, board(Value1, X, Y1, _), board(Value2, X, Y2, _) ==> Value1 < Value2 |
     diff(Y1,Y2).
@@ -159,7 +159,41 @@ do_diffs, board(Value1, X, Y1, _), board(Value2, X, Y2, _) ==> Value1 < Value2 |
 % RULES USED FOR DOMAIN SOLVING
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+same_block_row(Block1, Block2, SN):-
+    B1 is Block1 - 1,
+    B2 is Block2 - 1,
+    R1 is div(B1, SN),
+    R2 is div(B2, SN),
+    R1 == R2.
+
+interval([Start|_], Start, Start).
+interval([N|T], Start, N):-
+    N > Start,
+    N1 is N - 1,
+    interval(T, Start, N1).
+
+block_y_vals(Block, SN, L):-
+    B is Block -1,
+    R is mod(B, SN),
+    Start is R * SN + 1,
+    End is (R+1) * SN,
+    interval(L,Start,End),
+    length(L, SN).
+
 % X and Y are instantiated and are different
+smart_diff(_,Y1, _,  Y2, _, _) <=> nonvar(Y1), nonvar(Y2) | Y1 \== Y2.
+sn(SN), smart_diff(X1, Y1, X2, Y2, _, Block2) \ Y1 in L <=>
+    nonvar(Y2), nonvar(Block2), same_block_row(X1, X2, SN),
+    block_y_vals(Block2, SN, Columns), subtract(L, Columns, NL), L \== NL, length(NL,C1), C1 > 0 | Y1 in NL.
+
+sn(SN), smart_diff(X1, Y1, X2, Y2, Block1, _) \ Y2 in L <=>
+    nonvar(Y1), nonvar(Block1), same_block_row(X1, X2, SN),
+    block_y_vals(Block1, SN, Columns), subtract(L, Columns, NL), L \== NL,length(NL,C1), C1 > 0  | Y2 in NL.
+
+smart_diff(_, Y, _,  X, _, _) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
+smart_diff(_,X,_, Y,_,_) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
+
+
 diff(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
 diff(Y, X) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
@@ -169,7 +203,7 @@ enum(X)              <=> number(X) | true .
 enum(X), X in Domain <=> member(X, Domain).
 
 
-board(_,_,Y, _), enum_board \ Y in D <=> length(D, 1)|
+board(_,_,Y, _) \ Y in [D] <=> var(Y) |
     Y is D.
 
 board(_, _, Y, _), enum_board ==>
