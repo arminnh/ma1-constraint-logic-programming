@@ -17,7 +17,7 @@
 %       15  | 2.657s |  2.538s
 %       16  | 1.923s |  1.971s
 %       17  | 3.579s |  0.373s
-%       2   | aborted after 6405s | X | Y | 1001s
+%       2   | aborted after 6405s | 1001s
 
 %   CONNECTIVITY PROPAGATOR 2
 %       board number | time without improvements | time with improvements
@@ -36,6 +36,9 @@
 %       15  | 2.529s | 2.498s
 %       16  | 1.898s | 1.929s
 %       17  | 3.885s | 0.37s
+%       2   | unknown | 1555s 2162.63
+% 656.43 seconds
+% 693.58 seconds
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAMPLE PROBLEMS
