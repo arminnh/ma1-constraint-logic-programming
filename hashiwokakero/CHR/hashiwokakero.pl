@@ -42,13 +42,10 @@ timeall <=>
 
 time(Number) <=>
     statistics(walltime, [_ | [_]]),
-
     load_board(Number), bridge_constraints, make_domains, search, connected, clear_store,
-
     statistics(walltime, [_ | [ExecutionTimeMS]]),
     ExTimeS is ExecutionTimeMS / 1000,
-    write(Number), write(': '), write(ExTimeS), write('s'), nl,
-    true.
+    write(Number), write(': '), write(ExTimeS), write('s'), nl.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % BRIDGE CONSTRAINT RULES
@@ -110,17 +107,6 @@ make_domains, board(X1, Y1, 1, _, E, _, _), neighbors(X1, Y1, 'E', X2, Y2), isla
 make_domains, board(X1, Y1, 2, N, _, _, _), neighbors(X1, Y1, 'N', X2, Y2), island(X2, Y2, 2) \ N in A..2 <=> var(N) | N in A..1.
 make_domains, board(X1, Y1, 2, _, E, _, _), neighbors(X1, Y1, 'E', X2, Y2), island(X2, Y2, 2) \ E in A..2 <=> var(E) | E in A..1.
 
-% % Improvement 2 (C and D): Isolation of a three-island segment
-% % improvement C: island with 2 cannot be connected to two islands with 1
-% % This never happens in any of our boards
-% make_domains, island(X, Y, 2), neighbors(X, Y, Dir, X2, Y2), neighbors(X, Y, Dir, X3, Y3), island(X2, Y2, 1), island(X3, Y3, 1) ==>
-%     writeln(['improvement C on ', X, Y]).
-%
-% % improvement D: island with 3 cannot be connected to an island 1 by 1 bridge and an island 2 by 2 bridges
-% % This never happens in any of our boards
-% make_domains, island(X, Y, 3), neighbors(X, Y, Dir, X2, Y2), neighbors(X, Y, Dir, X3, Y3), island(X2, Y2, 2), island(X3, Y3, 1) ==>
-%     writeln(['improvement D on ', X, Y]).
-
 make_domains <=> true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -174,9 +160,6 @@ board(A, B, Am, N, _, _, _), neighbors(A, B, 'N', C, D) ==> Am > 0, number(N), N
 board(A, B, Am, _, E, _, _), neighbors(A, B, 'E', C, D) ==> Am > 0, number(E), E > 0 |
     % writeln(['new connection', [C, D], ' and ', [A, B], 'E is ', E]),
     connected([A, B], [C, D]).
-
-% boards for which wrong solutions with multiple connected sets are possible:
-%   6 (with improvement A turned off), 7 (with improvements A and B turned off), 9 (with improvement B off), 12, 15, 17
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CONNECTIVITY CONSTRAINT PROPAGATION METHOD 1
@@ -240,9 +223,17 @@ no_isolated_segments <=> true.
 % if there is only one connected set left, then it can be isolated
 connected_sets_counter(1) \ connected_set_not_isolated(_) <=> true.
 % else, a connected set is not isolated if at least one island in the set can still create a bridge
-connected_set(X, Y, Set1), board(X, Y, _, N, E, S, W) \ connected_set_not_isolated(Set1) <=> (var(N) ; var(E) ; var(S) ; var(W)) | true.
+connected_set(X, Y, Set1), board(X, Y, _, N, _, _, _) \ connected_set_not_isolated(Set1) <=> var(N) | true.
+connected_set(X, Y, Set1), board(X, Y, _, _, E, _, _) \ connected_set_not_isolated(Set1) <=> var(E) | true.
+connected_set(X, Y, Set1), board(X, Y, _, _, _, S, _) \ connected_set_not_isolated(Set1) <=> var(S) | true.
+connected_set(X, Y, Set1), board(X, Y, _, _, _, _, W) \ connected_set_not_isolated(Set1) <=> var(W) | true.
 % if no such island was found, fail
-connected_set_not_isolated(Set) <=> writeln(['Set ', Set, ' isolated']), false.
+connected_set_not_isolated(_) <=> false.
+% connected_set_not_isolated(Set) <=> writeln(['Set ', Set, ' isolated']), false.
+
+% OLD METHOD USED TO CHECK THAT THE END RESULT FORMS A CONNECTED SET. this method is worse because it checks connectivity
+% at the end of the search. the improved method (no_isolated_segments) forces backtracking to happen earlier in the search
+% connected, connected_sets_counter(C) ==> C > 1 | fail.
 
 % check that there are no isolated segments on the board at least once (this rule is needed in case 'search, X in _.._' never fires)
 connected ==> no_isolated_segments.
