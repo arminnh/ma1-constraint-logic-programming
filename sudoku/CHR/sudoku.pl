@@ -69,7 +69,10 @@ sudoku(Board) <=>
     create_likely_numbers,
     fix_domains,
     % search for values
-    enum_board,%(Board),
+    writeln("pre search"),
+    print_board(Board),
+
+    %enum_board,%(Board),
     true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -170,6 +173,9 @@ create_likely_numbers, V1 in D \ likely_number(V1,X,Y, R1), likely_number(V1,X,Y
 % % Create likely numbers with this
 % % The idea is that if one number is not in the domain of the other one,
 % % it is very likely that the current pos needs to take that number
+create_likely_numbers, board(X1,Y1, B, V1), V1 in D1, board(_,_, B, V2) ==> number(V2), var(V1), subtract(D1, [V2], R) |
+    likely_number(V1,X1,Y1,R).
+
 create_likely_numbers, board(X1,Y1, B, V1), V1 in D1, board(_,_, B, V2), V2 in D2 ==>
     var(V1), subtract(D1,D2,R), intersection(R,D1,Result), length(R,C), C > 0 |
     %writeln([V1, X2,Y2, D1, D2, R ]),
@@ -182,8 +188,15 @@ enum(X), X in Domain <=> member(X, Domain).
 
 take_first([] , []).
 take_first( [ [V,C] | T ] , Result):-
-    take_first(T, Result2),
-    flatten([V|Result2], Result).
+    (C == 9 ->
+        %writeln("99999999999"),
+        Result = [V]
+    ;
+        take_first(T, Result2),
+        flatten([V|Result2], Result)
+    )
+    .
+
 
 fix_domains \ create_likely_numbers <=> true.
 
@@ -191,42 +204,13 @@ fix_domains \ likely_number(V,X,Y,D), V in Dom <=>
     count_occurrences(D, Occ),
     sort(2, @>=, Occ, S),
     take_first(S,Result),
-    writeln([V,X,Y, Dom, Result, Occ]),
+    %writeln([V,X,Y, Dom, Result, Occ]),
     V in Result.
 
 enum_board \ fix_domains <=> true.
-% THIS IS ALL A WASTE
-% create_likely_numbers \ domain_counter(V, X, Y, V, C), domain_counter(V, X, Y, V, C) <=> domain_counter(V, X, Y, V, C).
-%
-% create_likely_numbers \ likely_number(_,_,_, []) <=> true.
-%
-% create_likely_numbers \ likely_number(V, X, Y, [H|T]), domain_counter(V,X,Y,H,N) <=>
-%     N2 is N + 1,
-%     likely_number(V,X,Y,T),
-%     domain_counter(V,X,Y,H,N2).
-%
-% fix_domains \ create_likely_numbers <=> true.
-%
-% %% Fix domains
-% fix_domains, domain_counter(V,X,Y,0,C) \ domain_counter(V,X,Y,H,C), domain_counter(V,X,Y, -1, T) <=> H \== 0, var(V) |
-%     flatten([T|H], D),
-%     domain_counter(V,X,Y, -1, D).
-%
-% fix_domains\ domain_counter(V,X,Y,0,0) <=> true.
-% fix_domains\ domain_counter(V,X,Y,0,C) <=>
-%     C2 is C - 1,
-%     domain_counter(V,X,Y,0,C2).
-%
-% enum_board \ fix_domains <=> true.
-% enum_board \ domain_counter(V,X,Y,-1,D), V in D2 <=>
-%     V in D.
 
-% enum_board, Value in Domain \ likely_number(Value,X,Y, R) <=> var(Value) |
-%     (member(X,R);member(X, Domain)).
-%% END WASTE
-
-board(_,_,_, Value), enum_board \ Value in D <=> length(D, 1)|
-    Value is D.
+board(_,_,_, Value) \ Value in [X] <=> var(Value) |
+    Value is X.
 
 board(_,_, _, Value), enum_board ==>
     enum(Value).
