@@ -3,28 +3,30 @@
 \contentsline {section}{\numberline {1.1}Other Viewpoint}{3}{section.1.1}
 \contentsline {section}{\numberline {1.2}Criteria to judge if a viewpoint is good or not}{4}{section.1.2}
 \contentsline {section}{\numberline {1.3}Channeling}{4}{section.1.3}
-\contentsline {subsubsection}{ECLiPSe channeling constraints}{4}{subsubsection*.4}
-\contentsline {subsubsection}{CHR channeling constraints}{5}{subsubsection*.5}
+\contentsline {subsubsection}{ECLiPSe channeling constraints}{4}{subsubsection*.5}
+\contentsline {subsubsection}{CHR channeling constraints}{5}{subsubsection*.6}
 \contentsline {section}{\numberline {1.4}Experiments}{6}{section.1.4}
 \contentsline {subsection}{\numberline {1.4.1}ECLiPSe}{6}{subsection.1.4.1}
-\contentsline {subsubsection}{input order as value heuristic, alldifferent from ic\_global}{6}{subsubsection*.6}
-\contentsline {subsubsection}{input order as value heuristic, alldifferent from ic}{6}{subsubsection*.7}
-\contentsline {subsubsection}{first fail as value heuristic, alldifferent from ic\_global}{7}{subsubsection*.8}
-\contentsline {subsubsection}{first fail as value heuristic, alldifferent from ic}{7}{subsubsection*.9}
+\contentsline {subsubsection}{input order as value heuristic, alldifferent from ic\_global}{6}{subsubsection*.7}
+\contentsline {subsubsection}{input order as value heuristic, alldifferent from ic}{6}{subsubsection*.9}
+\contentsline {subsubsection}{first fail as value heuristic, alldifferent from ic\_global}{7}{subsubsection*.11}
+\contentsline {subsubsection}{first fail as value heuristic, alldifferent from ic}{7}{subsubsection*.13}
 \contentsline {subsection}{\numberline {1.4.2}Impact of the different search strategies and alldifferent}{8}{subsection.1.4.2}
-\contentsline {subsubsection}{Input order vs first fail}{8}{subsubsection*.10}
-\contentsline {subsubsection}{ic\_global vs ic}{8}{subsubsection*.11}
+\contentsline {subsubsection}{Input order vs first fail}{8}{subsubsection*.15}
+\contentsline {subsubsection}{ic\_global vs ic}{8}{subsubsection*.16}
 \contentsline {subsection}{\numberline {1.4.3}Analysis of differences}{8}{subsection.1.4.3}
-\contentsline {subsubsection}{input order vs first fail}{8}{subsubsection*.12}
-\contentsline {subsubsection}{alldifferent}{8}{subsubsection*.13}
-\contentsline {subsection}{\numberline {1.4.4}CHR}{8}{subsection.1.4.4}
-\contentsline {chapter}{Part 2: Hashiwokakero}{9}{chapter*.14}
-\contentsline {section}{\numberline {2.1}ECLiPSe}{9}{section.2.1}
-\contentsline {subsection}{\numberline {2.1.1}Optimization}{9}{subsection.2.1.1}
-\contentsline {section}{\numberline {2.2}CHR}{9}{section.2.2}
-\contentsline {subsection}{\numberline {2.2.1}Optimization}{9}{subsection.2.2.1}
-\contentsline {chapter}{Conclusion}{10}{chapter*.15}
-\contentsline {section}{\numberline {3.1}Weak points}{10}{section.3.1}
-\contentsline {section}{\numberline {3.2}Strong points}{10}{section.3.2}
-\contentsline {section}{\numberline {3.3}Lessons learned}{10}{section.3.3}
-\contentsline {chapter}{Appendix}{11}{chapter*.16}
+\contentsline {subsubsection}{input order vs first fail}{8}{subsubsection*.17}
+\contentsline {subsubsection}{alldifferent}{8}{subsubsection*.18}
+\contentsline {subsection}{\numberline {1.4.4}CHR}{9}{subsection.1.4.4}
+\contentsline {subsubsection}{Heuristics classical viewpoint}{9}{subsubsection*.20}
+\contentsline {subsubsection}{Heuristics our viewpoint}{11}{subsubsection*.22}
+\contentsline {chapter}{Part 2: Hashiwokakero}{12}{chapter*.24}
+\contentsline {section}{\numberline {2.1}ECLiPSe}{12}{section.2.1}
+\contentsline {subsection}{\numberline {2.1.1}Optimization}{12}{subsection.2.1.1}
+\contentsline {section}{\numberline {2.2}CHR}{12}{section.2.2}
+\contentsline {subsection}{\numberline {2.2.1}Optimization}{12}{subsection.2.2.1}
+\contentsline {chapter}{Conclusion}{13}{chapter*.25}
+\contentsline {section}{\numberline {3.1}Weak points}{13}{section.3.1}
+\contentsline {section}{\numberline {3.2}Strong points}{13}{section.3.2}
+\contentsline {section}{\numberline {3.3}Lessons learned}{13}{section.3.3}
+\contentsline {chapter}{Appendix}{14}{chapter*.26}

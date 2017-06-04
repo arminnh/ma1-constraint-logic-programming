@@ -146,7 +146,10 @@ sn(SN) \ generate_known_board_facts(Board, X, Y) <=> nth1(X, Board, Row), nth1(Y
 
 % all values in same blocks must be different, guards used to break symmetry
 do_diffs, board(Value, X1, Y1, BlockIndex1), board(Value, X2, Y2, BlockIndex2) ==> X1 < X2 |
-    smart_diff(X1, Y1, X2, Y2, BlockIndex1, BlockIndex2), diff(BlockIndex1, BlockIndex2).
+    diff(Y1,Y2), diff(BlockIndex1, BlockIndex2).
+
+% do_diffs, board(Value, X1, Y1, BlockIndex1), board(Value, X2, Y2, BlockIndex2) ==> X1 < X2 |
+%     smart_diff(X1, Y1, X2, Y2, BlockIndex1, BlockIndex2), diff(BlockIndex1, BlockIndex2).
 
 do_diffs, board(Value1, X, Y1, _), board(Value2, X, Y2, _) ==> Value1 < Value2 |
     diff(Y1,Y2).

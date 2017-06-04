@@ -12,6 +12,7 @@
 \usepackage{array}
 \usepackage{multirow}
 \usepackage{hyperref}
+\usepackage{subfig}
 
 \newcolumntype{L}{>{\centering\arraybackslash}m{3cm}}
 
@@ -426,10 +427,48 @@ When we compare the alldifferent from ic\_global vs ic we see that the version f
 
 \subsubsection{alldifferent}
 The difference with the alldifferent is due to the fact that the alldifferent from ic\_global has been programmed with stronger propagation behavior \footnote{\url{http://eclipseclp.org/doc/bips/lib/ic\_global/alldifferent-1.html}} than the alldifferent from the ic library as explained in class. The ic\_global implementation has a global view of the constraints and can thus make smarter decisions about it.
-
+\newpage
 \subsection{CHR}
-For the CHR implementation of the two viewpoints we had a lot of troubles getting something performant. The first classical viewpoint has some advantages over our other viewpoint since when you look at a block and there is only 
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.5\textwidth]{classicvsour}
+\caption{Classic (red) vs our viewpoint (green). Figure shows only one block row.}
+\label{fig:classic_vs_own}
+\end{figure}
 
+For the CHR implementation of the two viewpoints we had a lot of troubles getting something performant. When we run the two viewpoints on harder boards it takes easily a couple of minutes. Obviously this isn't good so we tried to improve the performance of both our implementations. The first classical viewpoint has some advantages over our other viewpoint since when you look at a block and there is only one spot left you know that whatever number is missing you should input it there. This can be seen on figure \ref{fig:classic_vs_own}. The red colored box is the only box left where 9 can be inputted from the classical point of view. By seeing this, we made our system quite faster! For the other viewpoint however, the only thing it can see are the squares bounded by the two green rectangles. The correct place is still available but it also sees unnecessary other spaces at this time.
+
+\subsubsection{Heuristics classical viewpoint}
+For the classical viewpoint we found that there was one obvious heuristic that we could use to try to improve the search.
+To demonstrate this let's take for example the 'lambda' board from the puzzles provided on toledo. 
+
+\begin{figure}[h]
+    \centering
+    \subfloat[Lambda board]{{\includegraphics[width=5cm]{lambda1}}}%
+    \qquad
+    \subfloat[Lambda board after heuristic]{{\includegraphics[width=5cm]{lambda2} }}%
+    \caption{Lambda board pre vs post heuristic}%
+    \label{fig:classic_heuristic}%
+\end{figure}
+When we look at \ref{fig:classic_heuristic}(a) we for example see that in the bottom left block, at the position (9,9), the only possible number that we can play there is a 6 since it cannot be put anywhere else in the block because of the two sixes of the blocks next to us. This information is critical to be able to solve sudoku's in a smart way. This is what we tried to do with our heuristic. Our heuristic will try to let (9,9) know that it is very likely that 6 should be put there. 
+\newline
+\newline
+\newline
+The way we do this is we check the domain of (9,9) and we compare it with the domains of all the other squares in the block. When doing this comparison we check for the numbers that is in our domain but not in the domain of the square we're comparing. If a number is not present in the domain of the comparing square, let's say 6 for example, then we know that the likelihood that this 6 is at our position increases. So what we do is we keep track of all the differences between the other squares and we count how many times we've seen a number. We then sort our domain according to this in a descending order. Obviously we want to try things that are very likely first and things that are less likely at a later moment. One important observation to this is that if the count of a number is equals to 9 you know that we are the only position that can play this number else we would never see this number appear 8 times from the differences. We get to 9 because we use our domain as a starting point, so this means that each number in our domain immediately gets a count of 1. We do this because it is not certain that when checking all the differences with the other squares, you will get all the values from your domain. So if we would only use the numbers from the differences we might for example never see a 2 while actually 2 was the only answer that could be played at that position in the end. 
+\newline
+\newline
+This scenario happens when for example all the other squares had also a 2 in their domain so you will never see 2 in the difference set and since we reset the current domain to the likelihood domain this would mean that the 2 would be forever gone which might mean that the system keeps on backtracking to try everything until it sees that nothing is left anymore just to fail. This is obviously something that we want to prevent, this is why we start from our original domain. When we look at figure \ref{fig:classic_heuristic}(b), we can see the effect of our likelihood heuristic just before the start of the search. We see that already 5 different squares are filled in (the green and red ones). The green ones are some obvious plays but we were actually surprised when it played the red one. The other green ones are 'easy' because for example for the (9,9) example you see that this position is obviously the only place 6 can be played because of the other sixes. But for the red one we don't see a single other 8 on the board and yet it knew that it had to play an 8 there. We have to admit though that our system is a bit flawed since this heuristic cannot be used during the search since too many calculations are made. For example with everything we have filled in we could deduct that for the yellow square, 5 is the only possible play. But this is not feasible since it is way to slow to calculate this. This is why we ordered the domain according to likelihood. If we look at the domain of (2,1) sorted with likelihood, we see that the domain is [5, 3, 6, 8, 9]. So even though we're not fully sure that the 5 had to come there before we filled in the 4 in our block, our system captures the likelihood of a 5 at (2,1) still quite well. Sadly enough this heuristic doesn't really improve the search a lot.
+
+\newpage
+\subsubsection{Heuristics our viewpoint}
+For our viewpoint it was a bit more difficult to find a heuristic and in fact we weren't really able to find a heuristic for it. The only thing that we found obvious to do is to make the domains smaller when we played a number.
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.8\textwidth]{smartremoval}
+\caption{Smart domain changes}
+\label{fig:smart_domain}
+\end{figure}
+Let's say we want to play a 3 at the green square on figure \ref{fig:smart_domain}. Our initial domain would be from 1 to 9. If we play the 3 in the green square then we know that for all our other 3's that we cannot put them in the first column anymore. So the other domains for playing 3 will remove the first column from their domain. But this play actually contains more information which we try to exploit with our system. Since we played in the first column, we know that for the other 3's in this block row they cannot be played anywhere in block 1 anymore! So for their domain, instead of just removing the first column, we remove all the columns from the first block from their domain! This means that from 9 values we go to 6 immediately and if we play another 3 in this block row then the last 3 only has a search space of 3 left! By doing this small change we effectively speed up our system quite a bit. Before implementing this we recorded a time of 32s for one of our test boards, with these domain adjustments we went to 14s! So we effectively made our system at least twice as fast with this.
 \mychapter{2}{Part 2: Hashiwokakero}
 \label{sec:Hashiwokakero}
 \section{ECLiPSe}
@@ -446,6 +485,6 @@ Optimization for 4 in corner, 6 at one of the sides or 8 on the board is already
 \section{Lessons learned}
 Never use this system ever again.
 \mychapter{4}{Appendix}
-We started working on this project before the easter holiday. During our start we often lost quite some time since we didn't really know how the systems worked. During the second week of the easter holiday we continued to work on the project each evening and we finished the Sudoku part at the end of the holiday. We then had to pause our work since we had an enormous deadline for an other course so sadly enough we could only continue working on the project after this deadline (10th may). As the semester was coming to an end other deadlines also started to come closer and closer so we had to manage these first, so it is only at the start of the study period that we could continue our work. From the start of the study period we tried to spend around 6 hours of work each day for this project. The work was not really divided since we were doing pair programming most of the time. Sometimes someone made some individual changes when they had time but most of our work has been made in group over hangouts by using screensharing. We could argue that by doing pair programming we lost quite some time, which is true, but by doing this we worked very closely together and we learned quite a lot. 
+We started working on this project before the easter holiday. During our start we often lost quite some time since we didn't really know how the systems worked. During the second week of the easter holiday we continued to work on the project each evening and we finished the Sudoku part at the end of the holiday. We then had to pause our work since we had an enormous deadline for an other course so sadly enough we could only continue working on the project after this deadline (10th may). As the semester was coming to an end other deadlines also started to come closer and closer so we had to manage these first, so it is only at the start of the study period that we could continue our work. From the start of the study period we tried to spend around 6 hours of work each day for this project. The work was not really divided since we were doing pair programming most of the time. Sometimes someone made some individual changes when they had time but most of our work has been made in group over hangouts by using screensharing. We could argue that by doing pair programming we lost quite some time, which is true, but by doing this we worked very closely together and we learned quite a lot.  
 
 \end{document}

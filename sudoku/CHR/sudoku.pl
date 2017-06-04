@@ -69,7 +69,10 @@ sudoku(Board) <=>
     create_likely_numbers,
     fix_domains,
     % search for values
-    enum_board,%(Board),
+    writeln("pre search"),
+    print_board(Board),
+
+    %enum_board,%(Board),
     true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
