@@ -145,11 +145,11 @@ sn(SN) \ generate_known_board_facts(Board, X, Y) <=> nth1(X, Board, Row), nth1(Y
 %                no 2 values on same block
 
 % all values in same blocks must be different, guards used to break symmetry
-do_diffs, board(Value, X1, Y1, BlockIndex1), board(Value, X2, Y2, BlockIndex2) ==> X1 < X2 |
-    diff(Y1,Y2), diff(BlockIndex1, BlockIndex2).
-
 % do_diffs, board(Value, X1, Y1, BlockIndex1), board(Value, X2, Y2, BlockIndex2) ==> X1 < X2 |
-%     smart_diff(X1, Y1, X2, Y2, BlockIndex1, BlockIndex2), diff(BlockIndex1, BlockIndex2).
+%     diff(Y1,Y2), diff(BlockIndex1, BlockIndex2).
+
+do_diffs, board(Value, X1, Y1, BlockIndex1), board(Value, X2, Y2, BlockIndex2) ==> X1 < X2 |
+    smart_diff(X1, Y1, X2, Y2, BlockIndex1, BlockIndex2), diff(BlockIndex1, BlockIndex2).
 
 do_diffs, board(Value1, X, Y1, _), board(Value2, X, Y2, _) ==> Value1 < Value2 |
     diff(Y1,Y2).
@@ -205,6 +205,8 @@ diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 enum(X)              <=> number(X) | true .
 enum(X), X in Domain <=> member(X, Domain).
 
+board(_,_,_, B) \ B in [D] <=> var(B) |
+    B is D.
 
 board(_,_,Y, _) \ Y in [D] <=> var(Y) |
     Y is D.
@@ -213,7 +215,7 @@ board(_, _, Y, _), enum_board ==>
     enum(Y).
     % enum(BlockIndex),
 
-sn(SN), board(_, X, Y, BlockIndex), enum_board ==> number(Y), var(BlockIndex) |
+sn(SN), board(_, X, Y, BlockIndex), enum_board \ BlockIndex in D <=> number(Y), var(BlockIndex) |
     XX is X-1,
 
     XXX is XX // SN,
@@ -333,7 +335,15 @@ problem(8, [ [8, _, 4, _, 5, 7, _, _, 9],
              [_, 8, 1, 9, 2, _, _, 7, 6],
              [_, _, 5, 8, 7, _, 9, 4, _] ]).
 
-
+ problem(9, [ [1, _, 2, _, _, _, _, _, _],
+              [3, 8, 7, _, _, _, _, _, _],
+              [4, 6, 5, _, _, _, _, _, _],
+              [_, _, _, _, _, _, _, _, _],
+              [_, _, _, _, _, _, _, _, _],
+              [_, _, _, _, _, _, _, _, _],
+              [_, _, _, _, _, _, _, _, _],
+              [_, _, _, _, _, _, _, _, _],
+              [_, _, _, _, _, _, _, _, _] ]).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SOLUTIONS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
