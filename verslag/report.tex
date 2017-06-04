@@ -114,7 +114,7 @@
   language            = Prolog,
   keywords            = {},      % reset all preset keywords
   showstringspaces    = false,
-  linewidth			  = 16cm,
+  linewidth			  = 15.5cm,
   numbers			   =left, 
   alsoletter          = (,
   alsoother           = @\$,
@@ -450,7 +450,7 @@ To demonstrate this let's take for example the 'lambda' board from the puzzles p
     \caption{Lambda board pre vs post heuristic}%
     \label{fig:classic_heuristic}%
 \end{figure}
-When we look at \ref{fig:classic_heuristic}(a) we for example see that in the bottom left block, at the position (9,9), the only possible number that we can play there is a 6 since it cannot be put anywhere else in the block because of the two sixes of the blocks next to us. This information is critical to be able to solve sudoku's in a smart way. This is what we tried to do with our heuristic. Our heuristic will try to let (9,9) know that it is very likely that 6 should be put there. 
+When we look at \ref{fig:classic_heuristic}(a) we for example see that in the bottom left block, at the position (9,9), the only possible number that we can play there is a 6 since it cannot be put anywhere else in the block because of the two sixes of the blocks next to us. This information is critical to be able to solve sudoku's in a smart way. This is what we tried to do with our heuristic. Our heuristic will try to let (9,9) know that it is very likely that 6 should be put there. In fact it is 100\% 'likely' that 6 should be played there.
 \newline
 \newline
 \newline
@@ -472,11 +472,22 @@ Let's say we want to play a 3 at the green square on figure \ref{fig:smart_domai
 \mychapter{2}{Part 2: Hashiwokakero}
 \label{sec:Hashiwokakero}
 \section{ECLiPSe}
+\subsection{Our basic solver}
+
 \subsection{Optimization}
-Optimization for 4 in corner, 6 at one of the sides or 8 on the board is already fixed implicitly by the
-%        [N, E, S, W] #:: 0..2,
-%            N + E + S + W #= Amount
-(see comments). Single neighbor is also already fixed.
+When one thinks about optimizing hashiwokakero there are some obvious things you could do. Like for example if there is a 4 in one of the four corners, you know that you need to have 2 bridges in the two directions that are left. The same goes for a 6 at one of the sides of the board, since one of it's directions is blocked, you know that there has to be 2 bridges in the 3 leftover directions. For an 8 the only possible thing you can do here is that you need to have 2 bridges in each direction. These seem like good improvements, but actually the eclipse system already did these implicitly for us. This is done by
+\newline
+\lstinputlisting[
+  language = Prolog-pretty,
+  caption  = {implicit improvements},
+]{hashi_eclipse_implicit.pl}
+Another thing that these constraints do is that if you only have one neighbor then you know that all your possible bridges can only be with them. So we felt like these were not really improvements anymore since they were implicitly done. This is why we decided to look for other improvements.
+
+\begin{enumerate}
+	\item The first improvement we made was noticing that a 1 and another 1 cannot be connected  directly to each other. If this would be true we would immediately have a disconnection in our board. Another thing that corresponds with this idea is a 2 and another 2. These can never have 2 bridges between each other since else you would yet again create a disconnection in the set.
+	\item 
+\end{enumerate}
+
 \section{CHR}
 \subsection{Optimization}
 \mychapter{3}{Conclusion}

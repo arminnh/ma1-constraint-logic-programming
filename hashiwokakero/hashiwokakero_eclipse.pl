@@ -30,10 +30,10 @@ solve(Number) :-
 
     % create bridges and set constraints
     hashiwokakero(Board),
-    %writeln("kk"),
+    writeln("optimize"),
     %optimize(Board),
 
-    %print_board(Board),
+    print_board(Board),
     % do search on variables
     search(naive, Board),
 
@@ -42,8 +42,8 @@ solve(Number) :-
     board_connected_set(Board),
 
     % print results
-    %writeln("Search done:"),
-    %print_board(Board),
+    writeln("Search done:"),
+    print_board(Board),
     true.
 
 % find all solutions
@@ -372,103 +372,84 @@ is_on_side_of_board(Board,X,Y):-
         false
     ).
 
-three_in_corner(Board, X, Y, Amount):-
-    (Amount =:= 3, is_in_corner(Board,X,Y) ->
-        bridge_with_one(Board,X,Y)
-        ;
-        true
-    ).
+look_for_value([], Val, 0, Length, Length).
 
-bridge_with_one(Board, X, Y):-
-    possible_island_neighbors(Board, [X,Y], Neighbors),
-    length(Neighbors, Count),
-    (Count > 1 ->
-        ( for(I, 1, Count), param(Board, X, Y, Neighbors) do
-            nth1(I, Neighbors, Neigbor),
-            nth1(3, Neigbor,Am2),
-            %writeln(Am2),
-            (Am2 =:= 1 ->
-                nth1(4,Neigbor,Dir),
-                D is Board[X,Y, Dir],
-                %writeln(Dir),
-                D = 1
+look_for_value([ [_,_,Am, _] | T], Val, Index, Counter, Length):-
+    look_for_value(T, Val, Index2, C2, Length),
+    (Am =:= Val ->
+        Index is C2
+    ;
+        Index is Index2
+    ),
+    Counter is C2 - 1.
+
+
+
+three_isolation_neighbour_for_three(Board, X, Y, Amount):-
+    (Amount =:= 3 ->
+        possible_island_neighbors(Board, [X,Y], Neighbors),
+        length(Neighbors, Count),
+        (Count =:= 3 ->
+            look_for_value(Neighbors, 1, I1, C1, 3),
+            look_for_value(Neighbors, 2, I2, C2, 3),
+
+            (I1 > 0, I2 > 0 ->
+                subtract([1,2,3], [I1,I2], [I]),
+                nth1(I, Neighbors, Neighbor),
+                nth1(4, Neighbor, D),
+                Board[X,Y,D] #\= 0
                 ;
                 true
             )
+
+            ;
+            true
         )
-    ;
+        ;
         true
     ).
 
 
-five_on_side(Board, X, Y, Amount):-
-    (Amount =:= 5, is_on_side_of_board(Board,X,Y) ->
-        bridge_with_one(Board, X, Y)
-    ;
-        true
-    )
-    .
-
-seven_in_the_middle(Board,X,Y,Amount):-
-    (Amount =:= 7, not(is_on_side_of_board(Board,X,Y)) ->
-        bridge_with_one(Board, X, Y)
-    ;
-        true
-    )
-    .
-
-% Check if a neighbor has an amount of one
-%neighbor_has_one([]):-
-%    fail.
-
-neighbor_has_one([ [X,Y, Amount, _] | Tail]):-
-    (Amount =:= 1 ->
-        true
-    ;
-        neighbor_has_one(Tail)
-    )
-    .
-
-six_in_the_middle(Board,X,Y,Amount):-
-    (Amount =:= 6, not(is_on_side_of_board(Board,X,Y)) ->
-        possible_island_neighbors(Board, [X,Y], Neighbors),
-        length(Neighbors, Count),
-        (Count =:= 4,
-        neighbor_has_one(Neighbors) ->
-
-            ( for(I, 1, Count), param(Board, X, Y, Neighbors) do
-                nth1(I, Neighbors, Neigbor),
-                nth1(3, Neigbor,Am2),
-                %writeln(Am2),
-                (Am2 > 1 ->
-                    nth1(4,Neigbor,Dir),
-                    D is Board[X,Y, Dir],
-                    %writeln(Dir),
-                    D \== 0
-                    ;
+three_isolation_neighbour_for_two(Board, X, Y, Amount):-
+        (Amount =:= 2 ->
+            possible_island_neighbors(Board, [X,Y], Neighbors),
+            length(Neighbors, Count),
+            (Count =:= 3 ->
+                look_for_value(Neighbors, 1, I1, C1,3),
+                (I1 > 0 ->
+                    nth1(I1, Neighbors, N1),
+                    delete(N1, Neighbors, R1),
+                    look_for_value(R1, 1, I2, C2,2),
+                    (I2 > 0 ->
+                        nth1(I2, R1, N2),
+                        delete(N2, R1, [Neighbor]),
+                        nth1(4, Neighbor, D),
+                        Board[X,Y,D] #\= 0
+                        ;
+                        true
+                    )
+                ;
                     true
-                )
+                    )
+                ;
+                true
             )
-        ;
+            ;
             true
-        )
-    ;
-        true
-    )
-    .
+        ).
 
 optimize(Board, X, Y, Amount) :-
     % first optimilisation
-    no_one_to_one(Board, X, Y, Amount),
-    no_two_bridges_from_two_to_two(Board, X, Y, Amount),
+    %no_one_to_one(Board, X, Y, Amount),
+    %no_two_bridges_from_two_to_two(Board, X, Y, Amount),
 
-    % second optimilisation
-    three_in_corner(Board, X, Y, Amount),
-    five_on_side(Board, X, Y, Amount),
-    seven_in_the_middle(Board,X,Y,Amount),
+    % Three isolation neighbor
+    % Board 20
+    %three_isolation_neighbour_for_three(Board, X, Y, Amount),
 
-    % Third optimilisation
-    six_in_the_middle(Board,X,Y,Amount),
+    % Board 21
+    three_isolation_neighbour_for_two(Board, X, Y, Amount),
+
     true.
 
 
@@ -798,7 +779,7 @@ board(17, [](
 [](2, 0, 0, 1, 0, 2, 0, 0, 0, 0, 6, 0, 0, 0, 0, 4, 0, 0, 0, 2, 0)
 )).
 
-board(18, (
+board(18, [](
     [](2, 0, 0, 0, 3, 0, 0, 0, 2),
     [](0, 4, 0, 5, 0, 0, 0, 3, 0),
     [](0, 0, 0, 0, 0, 2, 0, 0, 0),
@@ -808,4 +789,33 @@ board(18, (
     [](0, 0, 0, 0, 0, 0, 0, 1, 0),
     [](0, 0, 0, 0, 0, 1, 0, 0, 0),
     [](2, 0, 0, 3, 0, 0, 4, 0, 2)
+)).
+
+board(19, [](
+    [](2, 0, 3, 0, 1, 0),
+    [](0, 0, 0, 0, 0, 1),
+    [](4, 0, 6, 0, 1, 0),
+    [](0, 0, 0, 2, 0, 4),
+    [](0, 0, 3, 0, 1, 0),
+    [](2, 0, 0, 2, 0, 2)
+)).
+
+
+board(20, [](
+    [](2, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0),
+    [](3, 0, 2, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0),
+    [](1, 0, 2, 0, 0, 0)
+)).
+
+
+board(21, [](
+    [](2, 0, 2, 0, 3, 0, 2),
+    [](0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 1, 0, 4, 0, 2),
+    [](0, 0, 0, 0, 0, 0, 0),
+    [](0, 0, 0, 0, 0, 0, 0),
+    [](1, 0, 2, 0, 3, 0, 0)
 )).
