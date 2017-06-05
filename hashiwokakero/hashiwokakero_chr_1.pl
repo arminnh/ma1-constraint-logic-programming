@@ -26,6 +26,7 @@
 solve(Number) <=>
     % find the game board and load the board facts into the constraint store
     load_board(Number),
+    pick_first_island,
     writeln("Given board:"), print_board,
     % create the bridge constraint rules
     bridge_constraints,
@@ -43,7 +44,7 @@ solve(Number) <=>
 % solve a given game boad and print the time it took to solve the board.
 time(Number) <=>
     statistics(walltime, [_ | [_]]),
-    load_board(Number), bridge_constraints, make_domains, search, connected, clear_store,
+    load_board(Number), bridge_constraints, pick_first_island, make_domains, search, connected, clear_store,
     statistics(walltime, [_ | [ExecutionTimeMS]]),
     ExTimeS is ExecutionTimeMS / 1000,
     write(Number), write(': '), write(ExTimeS), write('s'), nl.
@@ -71,7 +72,7 @@ bridge_constraints, board(_, _, 0, N, E, S, W) ==> N = S, E = W.
 board(_, _, 0, N, E, _, _) ==> number(N), N > 0 | E = 0.
 board(_, _, 0, N, E, _, _) ==> number(E), E > 0 | N = 0.
 
-% bridges going one way == bridges going the other way
+% bridges going one way == bridges going the other way from the next position
 bridge_constraints, board(X, Y, _, N, _, _, _), board(X2, Y, _, _, _, S, _) ==> X > 1, X2 is X-1  | N eq S.
 bridge_constraints, board(X, Y, _, _, E, _, _), board(X, Y2, _, _, _, _, W) ==> Y2 is Y+1         | E eq W.
 
@@ -164,7 +165,6 @@ board(A, B, Am, _, E, _, _), neighbors(A, B, 'E', C, D) ==> Am > 0, number(E), E
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % put first island in reachable set
-connected ==> pick_first_island.
 island(X, Y, _) \ pick_first_island <=> reachable(X, Y).
 
 % build up reachable set
