@@ -1,50 +1,59 @@
-% boards for which wrong solutions with multiple connected sets are possible:
-%   6 (with improvement A turned off), 7 (with improvements A and B turned off), 9 (with improvement B off), 12, 15, 17
-
-% IMPACT OF IMPROVEMENTS ON PREVIOUSLY SLOW BOARDS:
-%
-%   CONNECTIVITY PROPAGATOR 1
-%       board number | time without improvements |  time with improvements
-%       1   | 0.054s | 0.047s
-%       3   | 0.03s | 0.031s
-%       4   | 0.059s | 0.06s
-%       5   | 0.057s | 0.054s
-%       6   | 0.127s | 0.117s
-%       8   | 0.004s | 0.006s
-%       9   | 0.007s | 0.006s
-%       10  | 27.567s | 1.389s
-%       11  | 0.046s | 0.046s
-%       12  | 0.055s | 0.051s
-%       13  | 0.066s | 0.058s
-%       14  | 0.092s | 0.075s
-%       15  | 1.614s | 1.533s
-%       16  | 1.186s | 1.143s
-%       17  | 2.254s | 0.229s
-%       2   | aborted after 6405s | 1001s | CHECK THIS AGAIN
-%
-%   CONNECTIVITY PROPAGATOR 2
-%       board number | time without improvements | time with improvements
-%       1   | 0.053s | 0.049s
-%       3   | 0.029s | 0.026s
-%       4   | 0.056s | 0.061s
-%       5   | 0.053s | 0.056s
-%       6   | 0.128s | 0.118s
-%       8   | 0.007s | 0.004s
-%       9   | 0.007s | 0.008s
-%       10  | 28.369s | 1.364s
-%       11  | 0.053s | 0.047s
-%       12  | 0.048s | 0.052s
-%       13  | 0.06s | 0.057s
-%       14  | 0.087s | 0.076s
-%       15  | 1.701s | 1.573s
-%       16  | 1.219s | 1.156s
-%       17  | 2.292s | 0.23s
-%       2   | unknown | 847s | CHECK THIS AGAIN
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAMPLE PROBLEMS
 % THE FIRST 4 PUZZLES ARE THE ONES GIVEN WITH THE ASSIGNMENT
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% boards for which wrong solutions with multiple connected sets are possible:
+%   6 (with improvement A turned off), 7 (with improvements A and B turned off), 9 (with improvement B off), 12, 15, 17
+
+%   CONNECTIVITY PROPAGATOR 1
+%       board number & no improvements & isolation improvements
+%       1   & 0.049s & 0.044s
+%       2   & > 1h30min & ???
+%       3   & 0.026s & 0.03s
+%       4   & 0.054s & 0.057s
+%       5   & 0.05s & 0.049s
+%       6   & 0.121s & 0.114s
+%       8   & 0.006s & 0.004s
+%       9   & 0.006s & 0.007s
+%       10  & 26.642s & 1.344s
+%       11  & 0.044s & 0.049s
+%       12  & 0.05s & 0.05s
+%       13  & 0.056s & 0.056s
+%       14  & 0.097s & 0.066s
+%       15  & 1.584s & 1.527s
+%       16  & 1.11s & 1.113s
+%       17  & 2.152s & 0.222s
+%       18  & 0.035s & 0.051s
+%       19  & 0.01s & 0.011s
+%       20  & 0.034s & 0.024s
+%       21  & 0.012s & 0.013s
+%       22  & 0.028s & 0.027s
+%
+%   CONNECTIVITY PROPAGATOR 2
+%       board number & no improvements & isolation improvements & connectivity constraint improvement & all improvements
+%       1   & 0.05s & 0.053s & 0.054s & 0.048s
+%       2   & unknown & ??? & ??? & ???
+%       3   & 0.028s & 0.028s & 0.028s & 0.026s
+%       4   & 0.065s & 0.059s & 0.057s & 0.062s
+%       5   & 0.058s & 0.052s & 0.051s & 0.051s
+%       6   & 0.125s & 0.119s & 0.127s & 0.116s
+%       8   & 0.007s & 0.004s & 0.006s & 0.006s
+%       9   & 0.007s & 0.01s & 0.007s & 0.006s
+%       10  & 27.415s & 1.356s & 50.548s & 1.34s
+%       11  & 0.046s & 0.047s & 0.048s & 0.048s
+%       12  & 0.052s & 0.048s & 0.053s & 0.052s
+%       13  & 0.059s & 0.059s & 0.06s & 0.06s
+%       14  & 0.093s & 0.077s & 0.093s & 0.076s
+%       15  & 1.587s & 1.613s & 1.604s & 1.555s
+%       16  & 1.127s & 1.226s & 1.132s & 1.143s
+%       17  & 2.221s & 0.232s & 2.585s & 0.234s
+%       18  & 0.047s & 0.049s & 0.06s & 0.039s
+%       19  & 0.01s & 0.011s & 0.012s & 0.011s
+%       20  & 0.024s & 0.023s & 0.024s & 0.029s
+%       21  & 0.012s & 0.013s & 0.014s & 0.012s
+%       22  & 0.03s & 0.037s & 0.024s & 0.026s
+
 
 % puzzle 1, easy
 % http://en.wikipedia.org/wiki/File:Val42-Bridge1n.png
@@ -302,18 +311,6 @@ board(19, [
 ]).
 
 board(20, [
-    [2, 0, 0, 0, 3, 0, 0, 0, 2],
-    [0, 4, 0, 5, 0, 0, 0, 3, 0],
-    [0, 0, 0, 0, 0, 2, 0, 0, 0],
-    [2, 0, 0, 0, 0, 0, 0, 0, 0],
-    [6, 0, 0, 6, 0, 5, 0, 0, 0],
-    [0, 2, 0, 0, 0, 0, 1, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 1, 0],
-    [0, 0, 0, 0, 0, 1, 0, 0, 0],
-    [2, 0, 0, 3, 0, 0, 4, 0, 2]
-]).
-
-board(21, [
     [2, 0, 3, 0, 1, 0],
     [0, 0, 0, 0, 0, 1],
     [4, 0, 6, 0, 1, 0],
@@ -323,7 +320,7 @@ board(21, [
 ]).
 
 
-board(22, [
+board(21, [
     [2, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0],
     [3, 0, 2, 0, 0, 0],
@@ -333,7 +330,7 @@ board(22, [
 ]).
 
 
-board(23, [
+board(22, [
     [2, 0, 2, 0, 3, 0, 2],
     [0, 0, 0, 0, 0, 0, 0],
     [0, 0, 1, 0, 4, 0, 2],

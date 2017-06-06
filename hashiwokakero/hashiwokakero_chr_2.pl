@@ -50,7 +50,8 @@ time(Number) <=>
 
 timeall <=>
     time(1), time(3), time(4), time(5), time(6), time(8), time(9), time(10),
-    time(11), time(12), time(13), time(14), time(15), time(16), time(17).
+    time(11), time(12), time(13), time(14), time(15), time(16), time(17),
+    time(18), time(19), time(20), time(21), time(22).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % BRIDGE CONSTRAINT RULES
@@ -104,13 +105,13 @@ make_domains, board(_, _, _, _, _, _, W) ==> var(W) | W in 0..2.
 %   "Isolation of a two-island segment"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% improvement A: island with 1 cannot be connected to other island with 1, so set variable to 0
-make_domains, board(X1, Y1, 1, N, _, _, _), neighbors(X1, Y1, 'N', X2, Y2), island(X2, Y2, 1) \ N in _.._ <=> var(N) | N = 0.
-make_domains, board(X1, Y1, 1, _, E, _, _), neighbors(X1, Y1, 'E', X2, Y2), island(X2, Y2, 1) \ E in _.._ <=> var(E) | E = 0.
-
-% improvement B: 2 cannot be connected to 2 by 2 bridges, so make domain A..1
-make_domains, board(X1, Y1, 2, N, _, _, _), neighbors(X1, Y1, 'N', X2, Y2), island(X2, Y2, 2) \ N in A..2 <=> var(N) | N in A..1.
-make_domains, board(X1, Y1, 2, _, E, _, _), neighbors(X1, Y1, 'E', X2, Y2), island(X2, Y2, 2) \ E in A..2 <=> var(E) | E in A..1.
+% % improvement A: island with 1 cannot be connected to other island with 1, so set variable to 0
+% make_domains, board(X1, Y1, 1, N, _, _, _), neighbors(X1, Y1, 'N', X2, Y2), island(X2, Y2, 1) \ N in _.._ <=> var(N) | N = 0.
+% make_domains, board(X1, Y1, 1, _, E, _, _), neighbors(X1, Y1, 'E', X2, Y2), island(X2, Y2, 1) \ E in _.._ <=> var(E) | E = 0.
+%
+% % improvement B: 2 cannot be connected to 2 by 2 bridges, so make domain A..1
+% make_domains, board(X1, Y1, 2, N, _, _, _), neighbors(X1, Y1, 'N', X2, Y2), island(X2, Y2, 2) \ N in A..2 <=> var(N) | N in A..1.
+% make_domains, board(X1, Y1, 2, _, E, _, _), neighbors(X1, Y1, 'E', X2, Y2), island(X2, Y2, 2) \ E in A..2 <=> var(E) | E in A..1.
 
 make_domains <=> true.
 
@@ -144,7 +145,7 @@ enum(X)            <=> number(X) | true.
 enum(X), X in A..B <=> between(A, B, X).
 
 % search for constraint variables. after a value for a variable has been tried, check that there are no isolated segments on the board.
-search, X in _.._ ==> var(X) | enum(X), no_isolated_segments.
+search, X in _.._ ==> var(X) | enum(X).
 search <=> true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -183,26 +184,26 @@ connected_sets_union(Set1, Set2) \ connected_set(X, Y, Set2), connected_set_coun
 % after merging two connected sets, decrement the sets counter
 connected_sets_union(_, _), connected_sets_counter(Count) <=> NCount is Count - 1 | connected_sets_counter(NCount).
 
-% fire rules for checking that no connected sets are isolated
-no_isolated_segments, connected_set_counter(Set, _) ==> connected_set_not_isolated(Set).
-no_isolated_segments <=> true.
-
-% if there is only one connected set left, then it can be isolated
-connected_sets_counter(1) \ connected_set_not_isolated(_) <=> true.
-% else, a connected set is not isolated if at least one island in the set can still create a bridge
-connected_set(X, Y, Set1), board(X, Y, _, N, _, _, _) \ connected_set_not_isolated(Set1) <=> var(N) | true.
-connected_set(X, Y, Set1), board(X, Y, _, _, E, _, _) \ connected_set_not_isolated(Set1) <=> var(E) | true.
-connected_set(X, Y, Set1), board(X, Y, _, _, _, S, _) \ connected_set_not_isolated(Set1) <=> var(S) | true.
-connected_set(X, Y, Set1), board(X, Y, _, _, _, _, W) \ connected_set_not_isolated(Set1) <=> var(W) | true.
-% if no such island was found, fail
-connected_set_not_isolated(_) <=> false.
+% % fire rules for checking that no connected sets are isolated
+% no_isolated_segments, connected_set_counter(Set, _) ==> connected_set_not_isolated(Set).
+% no_isolated_segments <=> true.
+%
+% % if there is only one connected set left, then it can be isolated
+% connected_sets_counter(1) \ connected_set_not_isolated(_) <=> true.
+% % else, a connected set is not isolated if at least one island in the set can still create a bridge
+% connected_set(X, Y, Set1), board(X, Y, _, N, _, _, _) \ connected_set_not_isolated(Set1) <=> var(N) | true.
+% connected_set(X, Y, Set1), board(X, Y, _, _, E, _, _) \ connected_set_not_isolated(Set1) <=> var(E) | true.
+% connected_set(X, Y, Set1), board(X, Y, _, _, _, S, _) \ connected_set_not_isolated(Set1) <=> var(S) | true.
+% connected_set(X, Y, Set1), board(X, Y, _, _, _, _, W) \ connected_set_not_isolated(Set1) <=> var(W) | true.
+% % if no such island was found, fail
+% connected_set_not_isolated(_) <=> false.
 
 % OLD METHOD USED TO CHECK THAT THE END RESULT FORMS A CONNECTED SET. this method is worse because it checks connectivity
 % at the end of the search. the improved method (no_isolated_segments) forces backtracking to happen earlier in the search
-% connected, connected_sets_counter(C) ==> C > 1 | fail.
+connected, connected_sets_counter(C) ==> C > 1 | false.
 
 % check that there are no isolated segments on the board at least once (this rule is needed in case 'search, X in _.._' never fires)
-connected ==> no_isolated_segments.
+% connected ==> no_isolated_segments.
 connected \ connected_set(_, _, _) <=> true.
 connected \ connected_set_counter(_, _) <=> true.
 connected \ connected_sets_counter(_) <=> true.
@@ -221,6 +222,14 @@ load_board(Number) <=> puzzle(Number, Size, Islands) |
     connected_sets_counter(0),
     create_empty_board(1, 1),
     create_islands(Islands).
+% load the board from a matrix fact
+load_board(Number) <=> board(Number, Matrix), length(Matrix, XMax), nth1(1, Matrix, Row), length(Row, YMax) |
+    xmax(XMax),
+    ymax(YMax),
+    connected_sets_counter(0),
+    board_facts_from_matrix(Matrix, 1).
+% board not found
+load_board(_) <=> writeln('Board not found.'), false.
 
 % create board facts for an empty board
 xmax(XMax) \ create_empty_board(_, Y) <=> Y > XMax               | true.
@@ -232,7 +241,7 @@ xmax(XMax) \ create_empty_board(X, Y) <=> X =< XMax, X2 is X + 1 |
 % create board facts from an array of Islands
 %   each island takes the form (X, Y, N) where X is the row number, Y is the column
 %   number and N the number of bridges that should arrive in this island.
-create_islands([ [X, Y, Amount] | Islands ]), board(X, Y, _, N, E, S, W), connected_sets_counter(Count) <=> NCount is Count + 1 |
+create_islands([ (X, Y, Amount) | Islands ]), board(X, Y, _, N, E, S, W), connected_sets_counter(Count) <=> NCount is Count + 1 |
     board(X, Y, Amount, N, E, S, W),
     island(X, Y, Amount),
     connected_set(X, Y, NCount),
@@ -240,13 +249,6 @@ create_islands([ [X, Y, Amount] | Islands ]), board(X, Y, _, N, E, S, W), conne
     connected_sets_counter(NCount),
     create_islands(Islands).
 create_islands([]) <=> true.
-
-% load the board from a matrix fact
-load_board(Number) <=> board(Number, Matrix), length(Matrix, XMax), nth1(1, Matrix, Row), length(Row, YMax) |
-    xmax(XMax),
-    ymax(YMax),
-    connected_sets_counter(0),
-    board_facts_from_matrix(Matrix, 1).
 
 % create board facts from a matrix that contains the board
 board_facts_from_matrix([ Row | Rows ], X) <=> XN is X + 1 |

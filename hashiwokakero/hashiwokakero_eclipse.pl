@@ -179,7 +179,7 @@ no_two_to_two_isolation(Board, X, Y, 2):-
     ).
 no_two_to_two_isolation(_, _, _, _).
 
-% Board 23
+% Board 21
 % If an island with 2 has 3 neighbors, of which two are a 1,
 % then the amount of bridges going to the third neighbor must be larger than zero (#\= 0).
 no_two_with_three_neighbors_isolation(Board, X, Y, 2):-
@@ -208,7 +208,7 @@ no_two_with_three_neighbors_isolation(Board, X, Y, 2):-
     ).
 no_two_with_three_neighbors_isolation(_, _, _, _).
 
-% Board 22
+% Board 21
 % If an island with 3 has 3 neighbors, of which one is a 1 and another is a 2,
 % then the amount of bridges going to the third neighbor must be larger than zero (#\= 0)
 no_three_with_three_neighbors_isolation(Board, X, Y, 3):-

@@ -51,7 +51,8 @@ time(Number) <=>
 
 timeall <=>
     time(1), time(3), time(4), time(5), time(6), time(8), time(9), time(10),
-    time(11), time(12), time(13), time(14), time(15), time(16), time(17).
+    time(11), time(12), time(13), time(14), time(15), time(16), time(17),
+    time(18), time(19), time(20), time(21), time(22).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % BRIDGE CONSTRAINT RULES
@@ -189,6 +190,13 @@ load_board(Number) <=> puzzle(Number, Size, Islands) |
     xmax(Size),
     create_empty_board(1, 1),
     create_islands(Islands).
+% load the board from a matrix fact
+load_board(Number) <=> board(Number, Matrix), length(Matrix, XMax), nth1(1, Matrix, Row), length(Row, YMax) |
+    xmax(XMax),
+    ymax(YMax),
+    board_facts_from_matrix(Matrix, 1).
+% board not found
+load_board(_) <=> writeln('Board not found.'), false.
 
 % create board facts for an empty board
 xmax(XMax) \ create_empty_board(_, Y) <=> Y > XMax               | true.
@@ -205,12 +213,6 @@ create_islands([ (X, Y, Amount) | Islands ]), board(X, Y, _, N, E, S, W) <=>
     island(X, Y, Amount),
     create_islands(Islands).
 create_islands([]) <=> true.
-
-% load the board from a matrix fact
-load_board(Number) <=> board(Number, Matrix), length(Matrix, XMax), nth1(1, Matrix, Row), length(Row, YMax) |
-    xmax(XMax),
-    ymax(YMax),
-    board_facts_from_matrix(Matrix, 1).
 
 % create board facts from a matrix that contains the board
 board_facts_from_matrix([ Row | Rows ], X) <=> XN is X + 1 |
