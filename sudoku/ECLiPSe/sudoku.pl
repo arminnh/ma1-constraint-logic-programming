@@ -77,7 +77,9 @@ experiments :-
 	writeln("Finished all"),
 	close(Stream).
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% TRIVIAL SUDOKU VIEWPOINT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 solve(ProblemName, Back) :-
 	(problem(ProblemName, Board); translate(ProblemName, Board)),
@@ -89,7 +91,6 @@ solve(ProblemName, Back) :-
 	%writeln(["Backtracks: ", Back])
 	true
 	.
-
 
 sudoku(Board) :-
 	dim(Board, [N2,N2]),
@@ -111,31 +112,8 @@ sudoku(Board) :-
 	).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% OUR SUDOKU SOLUTION AND TESTING WITH ANOTHER VIEWPOINT
-% Viewpoint(X, D)
-% Variables X: sets of tupple positions
-% Domain D: set of values 1..N
-%
-% Values:
-%     array of N arrays of N values
-%     each possible number in the sudoku problem gets an array
-%     each array for a number contains positions of the sudoku board that that number lies on
-%     all of the numbers appear an equal amount of times, so each array has equal length
+% SOLVE WITH CHANNELING
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% TODO: change construction of NumbersPositions again:
-%       do not need to keep X coords as it will always be the same as the Position index
-%       so dimensions can become [N, N] again and only the Y coords need to be kept explicitly
-
-% findall(_, solve2(13), Sols), length(Sols, N), writeln(["amount of solutions: ", N]).
-channel(NumbersPositions, Board):-
-	dim(Board, [N, N]),
-	dim(NumbersPositions, [N, N, 2]),
-	( multifor([Number, Position, Y], 1, N), param(NumbersPositions, Board, N) do
-		#=(Board[Position, Y], Number, B),
-		#=(NumbersPositions[Number, Position, 2], Y, B)
-    )
-	.
 
 solve3(ProblemName, Back):-
 	(problem(ProblemName, Board); translate(ProblemName, Board)),
@@ -151,21 +129,29 @@ solve3(ProblemName, Back):-
 
     % do search on variables
 	search(naive, NumbersPositions, Back),
-	%writeln("Channeling"),
-	%print_board(Board),
-
-    % print results
-    %writeln("Sudoku2 done:"),
-    %print_positions(NumbersPositions),
-
-    % writeln("Converted back to sudoku board:"),
-    % numbers_positions_to_board(NumbersPositions, Board2),
-    % print_board(Board2),
-	%writeln(["Backtracks: ", Back]),
-
-    %writeln("Given board again for checking:"),
-	%print_board(Board).
 	true.
+
+channel(NumbersPositions, Board):-
+	dim(Board, [N, N]),
+	dim(NumbersPositions, [N, N, 2]),
+	( multifor([Number, Position, Y], 1, N), param(NumbersPositions, Board, N) do
+		#=(Board[Position, Y], Number, B),
+		#=(NumbersPositions[Number, Position, 2], Y, B)
+    )
+	.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% OUR SUDOKU SOLUTION AND TESTING WITH ANOTHER VIEWPOINT
+% Viewpoint(X, D)
+% Variables X: sets of tupple positions
+% Domain D: set of values 1..N
+%
+% Values:
+%     array of N arrays of N values
+%     each possible number in the sudoku problem gets an array
+%     each array for a number contains positions of the sudoku board that that number lies on
+%     all of the numbers appear an equal amount of times, so each array has equal length
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 solve2(ProblemName, Back) :-
     (problem(ProblemName, Board); translate(ProblemName, Board)),
@@ -211,6 +197,7 @@ sudoku2(Board, NumbersPositions) :-
     sudoku_constraints(NumbersPositions, N).
 
 % should give true if the problem and solution exist
+% just for testing purposes
 test2(Number) :-
     writeln('Problem:'),
     problem(Number, Board),
@@ -231,7 +218,7 @@ test2(Number) :-
     writeln('Sudoku2:'),
     sudoku2(Board, NumbersPositions),
 
-    writeln("OK").
+    true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HELPER PROCEDURES
@@ -306,6 +293,7 @@ numbers_positions_to_board(NumbersPositions, Board) :-
         Number #= Board[X, Y]
     ).
 
+% Calculates the block index number for a given X,Y pair.
 block_index(X, Y, SN, BlockIndex):-
 	XX #= X-1,
     XXX #= XX // SN,
@@ -318,6 +306,7 @@ block_index(X, Y, SN, BlockIndex):-
     BlockIndex #= (BlockRow-1) * SN + BlockCol
 	.
 
+% The constraints used for the search
 sudoku_constraints(NumbersPositions, N) :-
     % for each number, it's positions are on different rows and columns
     ( for(Number, 1, N), param(NumbersPositions, N) do
@@ -364,6 +353,7 @@ sudoku_constraints(NumbersPositions, N) :-
 					X2 is NumbersPositions[Number, Index2, 1],
 					Y2 is NumbersPositions[Number, Index2, 2],
 					block_index(X2, Y2, SN, BlockIndex2),
+					% The same item can't appear in the same block
 					BlockIndex1 #\= BlockIndex2
 				)
 			)
