@@ -37,8 +37,7 @@ solve(Number) <=>
     % all islands need to be in the reachable set
     connected,
     writeln("Board after search:"), print_board,
-    clear_store,
-    true.
+    clear_store.
 
 % solve a given game boad and print the time it took to solve the board.
 time(Number) <=>
@@ -184,26 +183,26 @@ connected_sets_union(Set1, Set2) \ connected_set(X, Y, Set2), connected_set_coun
 % after merging two connected sets, decrement the sets counter
 connected_sets_union(_, _), connected_sets_counter(Count) <=> NCount is Count - 1 | connected_sets_counter(NCount).
 
-% % fire rules for checking that no connected sets are isolated
-% no_isolated_segments, connected_set_counter(Set, _) ==> connected_set_not_isolated(Set).
-% no_isolated_segments <=> true.
-%
-% % if there is only one connected set left, then it can be isolated
-% connected_sets_counter(1) \ connected_set_not_isolated(_) <=> true.
-% % else, a connected set is not isolated if at least one island in the set can still create a bridge
-% connected_set(X, Y, Set1), board(X, Y, _, N, _, _, _) \ connected_set_not_isolated(Set1) <=> var(N) | true.
-% connected_set(X, Y, Set1), board(X, Y, _, _, E, _, _) \ connected_set_not_isolated(Set1) <=> var(E) | true.
-% connected_set(X, Y, Set1), board(X, Y, _, _, _, S, _) \ connected_set_not_isolated(Set1) <=> var(S) | true.
-% connected_set(X, Y, Set1), board(X, Y, _, _, _, _, W) \ connected_set_not_isolated(Set1) <=> var(W) | true.
-% % if no such island was found, fail
-% connected_set_not_isolated(_) <=> false.
+% fire rules for checking that no connected sets are isolated
+no_isolated_segments, connected_set_counter(Set, _) ==> connected_set_not_isolated(Set).
+no_isolated_segments <=> true.
+
+% if there is only one connected set left, then it can be isolated
+connected_sets_counter(1) \ connected_set_not_isolated(_) <=> true.
+% else, a connected set is not isolated if at least one island in the set can still create a bridge
+connected_set(X, Y, Set1), board(X, Y, _, N, _, _, _) \ connected_set_not_isolated(Set1) <=> var(N) | true.
+connected_set(X, Y, Set1), board(X, Y, _, _, E, _, _) \ connected_set_not_isolated(Set1) <=> var(E) | true.
+connected_set(X, Y, Set1), board(X, Y, _, _, _, S, _) \ connected_set_not_isolated(Set1) <=> var(S) | true.
+connected_set(X, Y, Set1), board(X, Y, _, _, _, _, W) \ connected_set_not_isolated(Set1) <=> var(W) | true.
+% if no such island was found, fail
+connected_set_not_isolated(_) <=> false.
 
 % OLD METHOD USED TO CHECK THAT THE END RESULT FORMS A CONNECTED SET. this method is worse because it checks connectivity
 % at the end of the search. the improved method (no_isolated_segments) forces backtracking to happen earlier in the search
 connected, connected_sets_counter(C) ==> C > 1 | false.
 
 % check that there are no isolated segments on the board at least once (this rule is needed in case 'search, X in _.._' never fires)
-% connected ==> no_isolated_segments.
+connected ==> no_isolated_segments.
 connected \ connected_set(_, _, _) <=> true.
 connected \ connected_set_counter(_, _) <=> true.
 connected \ connected_sets_counter(_) <=> true.

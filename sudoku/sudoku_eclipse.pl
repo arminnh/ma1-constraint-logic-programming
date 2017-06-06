@@ -81,6 +81,8 @@ experiments :-
 % TRIVIAL SUDOKU VIEWPOINT
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+translate?
+
 solve(ProblemName, Back) :-
 	(problem(ProblemName, Board); translate(ProblemName, Board)),
 	%print_board(Board),

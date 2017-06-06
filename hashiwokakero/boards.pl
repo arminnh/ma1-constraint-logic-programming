@@ -9,7 +9,7 @@
 %   CONNECTIVITY PROPAGATOR 1
 %       board number & no improvements & isolation improvements
 %       1   & 0.049s & 0.044s
-%       2   & > 1h30min & ???
+%       2   & > 1h30m & 497.33s (8.3m)
 %       3   & 0.026s & 0.03s
 %       4   & 0.054s & 0.057s
 %       5   & 0.05s & 0.049s
@@ -33,7 +33,7 @@
 %   CONNECTIVITY PROPAGATOR 2
 %       board number & no improvements & isolation improvements & connectivity constraint improvement & all improvements
 %       1   & 0.05s & 0.053s & 0.054s & 0.048s
-%       2   & unknown & ??? & ??? & ???
+%       2   & unknown & 515.92 (8.6m) & ??? & 316.37s (5.3m)
 %       3   & 0.028s & 0.028s & 0.028s & 0.026s
 %       4   & 0.065s & 0.059s & 0.057s & 0.062s
 %       5   & 0.058s & 0.052s & 0.051s & 0.051s
