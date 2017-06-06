@@ -25,7 +25,7 @@
 :- chr_option(debug,off).
 :- chr_option(optimize,full).
 :- chr_constraint do_board/2.
-:- consult(sudex_toledo).
+:- consult(boards).
 :- chr_constraint clear_constraints/0.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -108,10 +108,13 @@ do_board(Name, Stream) <=>
 
     % Classic viewpoint
     solve(Name, Time1),
+	writeln(["Classic", Time1]),
 	clear_constraints,
     solve_viewpoint2(Name, Time2),
+	writeln(["other viewpoint", Time2]),
 	clear_constraints,
     solve_channel(Name,Time3),
+	writeln(["channel", Time3]),
 	clear_constraints,
     %writeln('Execution took '), write(ExTimeS), write(' s.'), nl,
 
