@@ -171,6 +171,8 @@ make_domain([], _) <=> true.
 % make_domains(L): L is an list of N elements, make_domains creates 'X in [1..N]' constraints
 domain_list(DomainList) \ make_domains([ Row | Tail ]) <=>
     list_remove_vars(Row, NewRow),
+    writeln('backtrack to here'),
+    !, % cut to remove backtracking back into list_remove_vars (it will only find a different premutation of NewRow?)
     % Domain list is 1..N, NewRow are the values on a specific Row
     subtract(DomainList, NewRow, SmallerDomainList),
     make_domain(Row, SmallerDomainList),
