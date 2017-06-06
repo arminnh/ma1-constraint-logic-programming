@@ -66,7 +66,11 @@ sudoku(Board) <=>
     % generate (X, Y, BlockIndex, Value) facts
     % those facts will later be used for insertion of diff(A, B) rules
     generate_board_facts(Board, 1, 1),
+
+    % Heuristic: create likely numbers
     create_likely_numbers,
+
+    % Fix the domains after this heuristic is finished
     fix_domains,
     % search for values
     writeln("pre search"),
@@ -116,7 +120,6 @@ sn(SN) \ generate_board_facts(Board, X, Y) <=>
 % 9x9 board: 1458 diff rules -> 972 rules = sum([1..8]) * 9 * 2 + 5 * 9
 %                                         = sum([1..N-1]) * N * SN
 
-% All these symmetry breaking things should go into the report
 %all values in same columns must be different, guards used to break symmetry
 board(X1, Y, _, Value1), board(X2, Y, _, Value2) ==> X1 < X2 |
     diff(Value1, Value2).
@@ -135,7 +138,6 @@ board(X1, Y1, BlockIndex, Value1), board(X2, Y2, BlockIndex, Value2) ==> X1 \== 
 
 % X and Y are instantiated and are different
 diff(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
-% Put improvement into report!
 diff(Y, X) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 
@@ -153,22 +155,23 @@ diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 %     domain_counter(V,X,Y, H, 1),
 %     add_counters(V,X,Y,T).
 
-
 % Put domain in likely number
-% the likely number needs to be something from the domain
+% the likely number needs to be something from the original domain
 create_likely_numbers, board(X,Y, _, V1), V1 in D1 ==> var(V1)|
      %add_counters(V1,X,Y, D1).
      likely_number(V1,X,Y,D1).
 
+% Count all the occurrences in list
+% Thus the list [3,3,1] returns [[3,2], [1,1]]
 count_occurrences(List, Occ):-
      findall([X,L], (bagof(true,member(X,List),Xs), length(Xs,L)), Occ).
 
-% If there are two likely_numbers, take union of the both and check interesection
+% If there are two likely_numbers, take both lists and put into one bigger list
 create_likely_numbers, V1 in D \ likely_number(V1,X,Y, R1), likely_number(V1,X,Y, R2)
     <=> flatten([R1|R2], R) |
     likely_number(V1,X,Y,R).
-%
-% %likely_number(V, []) <=> true.
+
+
 % % For all the elems in a block, take the difference in their domains
 % % Create likely numbers with this
 % % The idea is that if one number is not in the domain of the other one,
@@ -186,10 +189,13 @@ enum(X)              <=> number(X) | true .
 enum(X), X in Domain <=> member(X, Domain).
 
 
+% Takes first elements of tupples
+% For the list [[3,2], [1,1], [2,1]] this predicate returns [3,1,2]
+% One exception though, if we have a count of 9 then the probability that this
+% number should be here is 100%, so we return this number
 take_first([] , []).
 take_first( [ [V,C] | T ] , Result):-
     (C == 9 ->
-        %writeln("99999999999"),
         Result = [V]
     ;
         take_first(T, Result2),
@@ -197,9 +203,10 @@ take_first( [ [V,C] | T ] , Result):-
     )
     .
 
-
+% Remove create_likely_numbers
 fix_domains \ create_likely_numbers <=> true.
 
+% Fixes the domains of the positions, sort the list according to likelihood
 fix_domains \ likely_number(V,X,Y,D), V in Dom <=>
     count_occurrences(D, Occ),
     sort(2, @>=, Occ, S),
@@ -214,19 +221,6 @@ board(_,_,_, Value) \ Value in [X] <=> var(Value) |
 
 board(_,_, _, Value), enum_board ==>
     enum(Value).
-    % enum(BlockIndex),
-
-
-% % enum(L): assigns values to variables X in L
-% enum([])                        <=> true.
-% enum([ X | Tail ])              <=> number(X) | enum(Tail).
-% enum([ X | Tail ]), X in Domain <=> member(X, Domain), enum(Tail).
-%
-% % enum_board(Board): fills Board with values
-% enum_board([]) <=> true.
-% enum_board([ Row | Rows ]) <=>
-%     enum(Row),
-%     enum_board(Rows).
 
 % upto(N, L): L = [1..N]
 upto([], 0).
@@ -264,19 +258,6 @@ list_remove_vars([ Head | Tail1 ], FilteredList) :-
     list_remove_vars(Tail1, FilteredList).
 list_remove_vars([ Head | Tail1 ], [ Head | Tail2 ]) :-
     list_remove_vars(Tail1, Tail2).
-
-
-% filter_list(DomainList, Row) :- filter_list(DomainList, Row, []).
-%
-%
-% :- chr_constraint filter_list/3.
-%
-%
-% filter_list(_, [], _) <=> true.
-% filter_list(List, [ _ | Tail ], FilteredList) <=> nonvar(Head), select(Head, List, FilteredList) ,
-%     filter_list(List, Tail, FilteredList).
-% filter_list(List, [ _ | Tail ], FilteredList) <=>
-%     filter_list(List, Tail, FilteredList).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HELPER RULES

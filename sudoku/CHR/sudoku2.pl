@@ -80,6 +80,7 @@ sudoku_viewpoint2(Board) <=>
 % RULES USED FOR CONSTRAINTS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Generates the board facts thus board(Number, X, Y, Blockindex)
 generate_board_value_facts_viewpoint2(_, 0) <=>
     true.
 
@@ -88,6 +89,7 @@ board_viewpoint2(Value, Index, _, _) \ generate_board_value_facts_viewpoint2(Val
     Index2 is Index - 1,
     generate_board_value_facts_viewpoint2(Value, Index2).
 
+% Fact doesn't exist yet, create it
 domain_list_viewpoint2(Domain) \ generate_board_value_facts_viewpoint2(Value, Index) <=> Index > 0 |
     board_viewpoint2(Value, Index, Y, BlockIndex),
     Y in Domain,
@@ -99,7 +101,6 @@ generate_remaining_board_facts_viewpoint2(0) <=>
     true.
 
 n_viewpoint2(N) \ generate_remaining_board_facts_viewpoint2(Value) <=>
-
     generate_board_value_facts_viewpoint2(Value, N),
     Value2 is Value - 1,
     generate_remaining_board_facts_viewpoint2(Value2).
@@ -148,9 +149,12 @@ sn_viewpoint2(SN) \ generate_known_board_facts_viewpoint2(Board, X, Y) <=> nth1(
 %                no 2 values on same block
 
 % all values in same blocks must be different, guards used to break symmetry
+
+%% UNCOMMENT THIS FOR VERSION WITHOUT SMARTDIFFS
 % do_diffs_viewpoint2, board_viewpoint2(Value, X1, Y1, BlockIndex1), board_viewpoint2(Value, X2, Y2, BlockIndex2) ==> X1 < X2 |
 %     diff_viewpoint2(Y1,Y2), diff_viewpoint2(BlockIndex1, BlockIndex2).
 
+% Do diffs between board facts in a smart way
 do_diffs_viewpoint2, board_viewpoint2(Value, X1, Y1, BlockIndex1), board_viewpoint2(Value, X2, Y2, BlockIndex2) ==> X1 < X2 |
     smart_diff_viewpoint2(X1, Y1, X2, Y2, BlockIndex1, BlockIndex2), diff_viewpoint2(BlockIndex1, BlockIndex2).
 
@@ -165,6 +169,7 @@ do_diffs_viewpoint2, board_viewpoint2(Value1, X, Y1, _), board_viewpoint2(Value2
 % RULES USED FOR DOMAIN SOLVING
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Checks if two block indices are on the same block row
 same_block_row(Block1, Block2, SN):-
     B1 is Block1 - 1,
     B2 is Block2 - 1,
@@ -172,12 +177,15 @@ same_block_row(Block1, Block2, SN):-
     R2 is div(B2, SN),
     R1 == R2.
 
+% Create all the values in a certain interval
+% So Start 1 and N 3 then we get [1,2,3]
 interval([Start|_], Start, Start).
 interval([N|T], Start, N):-
     N > Start,
     N1 is N - 1,
     interval(T, Start, N1).
 
+% Creates the y values of a block
 block_y_vals(Block, SN, L):-
     B is Block -1,
     R is mod(B, SN),
@@ -186,20 +194,34 @@ block_y_vals(Block, SN, L):-
     interval(L,Start,End),
     length(L, SN).
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% SMART DIFF RULES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 % X and Y are instantiated and are different
 smart_diff_viewpoint2(_,Y1, _,  Y2, _, _) <=> nonvar(Y1), nonvar(Y2) | Y1 \== Y2.
+
+% Okay so we know one Y value, this means that we also know it's Block number
+% So we can remove all these Y values from the other boards with the same number
+% in this block row
 sn_viewpoint2(SN), smart_diff_viewpoint2(X1, Y1, X2, Y2, _, Block2) \ Y1 in L <=>
     nonvar(Y2), nonvar(Block2), same_block_row(X1, X2, SN),
     block_y_vals(Block2, SN, Columns), subtract(L, Columns, NL), L \== NL, length(NL,C1), C1 > 0 | Y1 in NL.
 
+% Okay so we know one Y value, this means that we also know it's Block number
+% So we can remove all these Y values from the other boards with the same number
+% in this block row
 sn_viewpoint2(SN), smart_diff_viewpoint2(X1, Y1, X2, Y2, Block1, _) \ Y2 in L <=>
     nonvar(Y1), nonvar(Block1), same_block_row(X1, X2, SN),
     block_y_vals(Block1, SN, Columns), subtract(L, Columns, NL), L \== NL,length(NL,C1), C1 > 0  | Y2 in NL.
 
+% If we're not on the same block row the only thing we can do is just remove this
+% value from our domain
 smart_diff_viewpoint2(_, Y, _,  X, _, _) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 smart_diff_viewpoint2(_,X,_, Y,_,_) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 
-
+% Normal diffs
 diff_viewpoint2(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
 diff_viewpoint2(Y, X) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 diff_viewpoint2(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
@@ -218,6 +240,7 @@ board_viewpoint2(_, _, Y, _), enum_board_viewpoint2 ==>
     enum_viewpoint2(Y).
     % enum_viewpoint2(BlockIndex),
 
+% Fixes the blockindex value
 sn_viewpoint2(SN), board_viewpoint2(_, X, Y, BlockIndex), enum_board_viewpoint2 \ BlockIndex in D <=> number(Y), var(BlockIndex) |
     XX is X-1,
 
