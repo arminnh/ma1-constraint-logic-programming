@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%	This is a puzzle, originating from Japan, where you have a
+%	Sudoku is a puzzle, originating from Japan, where you have a
 %	9x9 grid, consisting of 9 3x3 sub-grids. The challenge is
 %	to fill the grid with numbers from 1 to 9 such that every row,
 %	every column, and every 3x3 sub-grid contains the digits 1 to 9.
@@ -7,78 +7,19 @@
 %	instances of the problem are made. The solution is usually unique.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+:- lib(ic).
+:- import alldifferent/1, sorted/2 from ic_global.
+:- coroutine.
+:- import nth1/3 from listut.
+:- [boards].
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% GIVEN SUDOKU SOLUTION WITH TRIVIAL VIEWPOINT
+% GIVEN SUDOKU SOLVER WITH TRIVIAL VIEWPOINT
 % Author: Joachim Schimpf, IC-Parc --- ECLiPSe sample code - Sudoku problem
 %
 % Viewpoint(X, D)
 % Variables X: sets of rows, sets of columns, sets of blocks
 % Domain D: sets of values 1..N2
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-:- lib(ic).
-:- import alldifferent/1, sorted/2 from ic_global.
-:- coroutine.
-% :- lib(lists).
-:- import nth1/3 from listut.
-:- [sudex_toledo].
-
-experiments :-
-	open('experiments.txt', write, Stream),
-	write(Stream, "\\begin{table}[h!]
-  \\begin{tabular}{|c|c|c|c|c|c|c|}
-    \\hline
-    \\multirow{2}{*}{Puzzle} &
-      \\multicolumn{2}{L|}{Classical Viewpoint (ifirst fail)} &
-      \\multicolumn{2}{L|}{Our Viewpoint (first fail)} &
-      \\multicolumn{2}{L|}{ Channeling (first fail)} \\\\
-    & ms & backracks & ms & backracks & ms & backracks \\\\
-    \\hline\n"),
-	(   puzzles(P, X),
-		writeln(X),
-
-		% Classic viewpoint
-		statistics(runtime, [_ | [_]]),
-		solve(X, B1),
-		statistics(runtime, [_ | [ExecutionTimeMS1]]),
-		ExTimeS1 is ExecutionTimeMS1 / 1000,
-		statistics(runtime, [_ | [_]]),
-		solve2(X, B2),
-		statistics(runtime, [_ | [ExecutionTimeMS2]]),
-		ExTimeS2 is ExecutionTimeMS2 / 1000,
-		statistics(runtime, [_ | [_]]),
-		solve3(X, B3),
-		statistics(runtime, [_ | [ExecutionTimeMS3]]),
-		ExTimeS3 is ExecutionTimeMS3 / 1000,
-	    %writeln('Execution took '), write(ExTimeS), write(' s.'), nl,
-
-	 	write(Stream, X),
-		write(Stream, " & "),
-		write(Stream, ExTimeS1),
-		write(Stream, "s & "),
-		write(Stream, B1),
-		write(Stream, " & "),
-		write(Stream, ExTimeS2),
-		write(Stream, "s & "),
-		write(Stream, B2),
-		write(Stream, " & "),
-		write(Stream, ExTimeS3),
-		write(Stream, "s & "),
-		write(Stream, B3),
-		write(Stream, '\\\\'),
-		write(Stream, "\n"),
-		writeln(["finished", X]),
-		fail
-    ;   true
-    ),
-	write(Stream," \\hline
-  \\end{tabular}
-\\end{table}"),
-	writeln("Finished all"),
-	close(Stream).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% TRIVIAL SUDOKU VIEWPOINT
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 translate?
@@ -143,7 +84,7 @@ channel(NumbersPositions, Board):-
 	.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% OUR SUDOKU SOLUTION AND TESTING WITH ANOTHER VIEWPOINT
+% OUR SUDOKU SOLVER WITH ANOTHER VIEWPOINT
 % Viewpoint(X, D)
 % Variables X: sets of tupple positions
 % Domain D: set of values 1..N
@@ -198,29 +139,27 @@ sudoku2(Board, NumbersPositions) :-
     % set sudoku constraints
     sudoku_constraints(NumbersPositions, N).
 
-% should give true if the problem and solution exist
-% just for testing purposes
-test2(Number) :-
-    writeln('Problem:'),
-    problem(Number, Board),
-    print_board(Board),
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% SOME SEARCH STRATEGIES TAKEN FROM SLIDES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    writeln('Solution:'),
-    solution(Number, Solution),
-    print_board(Solution),
+search(naive,List, Back) :-
+    search(List,0,input_order,indomain,complete, [backtrack(Back)]).
 
-    writeln('Solution with other viewpoint:'),
-    solution2(Number, NumbersPositions),
-    print_positions(NumbersPositions),
+search(middle_out,List, Back) :-
+    middle_out(List,MOList),
+    search(MOList,0,input_order,indomain,complete, [backtrack(Back)]).
 
-    writeln("Solution with other viewpoint converted back to sudoku board:"),
-    numbers_positions_to_board(NumbersPositions, Board2),
-    print_board(Board2),
+search(first_fail,List, Back) :-
+    search(List,0,first_fail,indomain,complete, [backtrack(Back)]).
 
-    writeln('Sudoku2:'),
-    sudoku2(Board, NumbersPositions),
+search(moff,List, Back) :-
+    middle_out(List,MOList),
+    search(MOList,0,first_fail,indomain,complete, [backtrack(Back)]).
 
-    true.
+search(moffmo,List, Back) :-
+    middle_out(List,MOList),
+    search(MOList,0,first_fail, indomain_middle,complete, [backtrack(Back)]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HELPER PROCEDURES
@@ -362,251 +301,57 @@ sudoku_constraints(NumbersPositions, N) :-
 		)
 	).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% SOME SEARCH STRATEGIES TAKEN FROM SLIDES
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-search(naive,List, Back) :-
-    search(List,0,input_order,indomain,complete, [backtrack(Back)]).
+experiments :-
+	open('experiments.txt', write, Stream),
+	write(Stream, "\\begin{table}[h!]
+  \\begin{tabular}{|c|c|c|c|c|c|c|}
+    \\hline
+    \\multirow{2}{*}{Puzzle} &
+      \\multicolumn{2}{L|}{Classical Viewpoint (ifirst fail)} &
+      \\multicolumn{2}{L|}{Our Viewpoint (first fail)} &
+      \\multicolumn{2}{L|}{ Channeling (first fail)} \\\\
+    & ms & backracks & ms & backracks & ms & backracks \\\\
+    \\hline\n"),
+	(   puzzles(P, X),
+		writeln(X),
 
-search(middle_out,List, Back) :-
-    middle_out(List,MOList),
-    search(MOList,0,input_order,indomain,complete, [backtrack(Back)]).
+		% Classic viewpoint
+		statistics(runtime, [_ | [_]]),
+		solve(X, B1),
+		statistics(runtime, [_ | [ExecutionTimeMS1]]),
+		ExTimeS1 is ExecutionTimeMS1 / 1000,
+		statistics(runtime, [_ | [_]]),
+		solve2(X, B2),
+		statistics(runtime, [_ | [ExecutionTimeMS2]]),
+		ExTimeS2 is ExecutionTimeMS2 / 1000,
+		statistics(runtime, [_ | [_]]),
+		solve3(X, B3),
+		statistics(runtime, [_ | [ExecutionTimeMS3]]),
+		ExTimeS3 is ExecutionTimeMS3 / 1000,
+	    %writeln('Execution took '), write(ExTimeS), write(' s.'), nl,
 
-search(first_fail,List, Back) :-
-    search(List,0,first_fail,indomain,complete, [backtrack(Back)]).
-
-search(moff,List, Back) :-
-    middle_out(List,MOList),
-    search(MOList,0,first_fail,indomain,complete, [backtrack(Back)]).
-
-search(moffmo,List, Back) :-
-    middle_out(List,MOList),
-    search(MOList,0,first_fail, indomain_middle,complete, [backtrack(Back)]).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% SAMPLE PROBLEMS
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-problem(1, [](
-    [](_, _, 2, _, _, 5, _, 7, 9),
-    [](1, _, 5, _, _, 3, _, _, _),
-    [](_, _, _, _, _, _, 6, _, _),
-    [](_, 1, _, 4, _, _, 9, _, _),
-    [](_, 9, _, _, _, _, _, 8, _),
-    [](_, _, 4, _, _, 9, _, 1, _),
-    [](_, _, 9, _, _, _, _, _, _),
-    [](_, _, _, 1, _, _, 3, _, 6),
-    [](6, 8, _, 3, _, _, 4, _, _))).
-
-problem(2, [](
-    [](_, _, 3, _, _, 8, _, _, 6),
-    [](_, _, _, 4, 6, _, _, _, _),
-    [](_, _, _, 1, _, _, 5, 9, _),
-    [](_, 9, 8, _, _, _, 6, 4, _),
-    [](_, _, _, _, 7, _, _, _, _),
-    [](_, 1, 7, _, _, _, 9, 5, _),
-    [](_, 2, 4, _, _, 1, _, _, _),
-    [](_, _, _, _, 4, 6, _, _, _),
-    [](6, _, _, 5, _, _, 8, _, _))).
-
-problem(3, [](
-    [](_, _, _, 9, _, _, _, _, _),
-    [](_, _, 7, _, 6, _, 5, _, _),
-    [](_, _, 3, 5, _, _, _, 7, 9),
-    [](4, _, 5, _, _, 9, _, _, 1),
-    [](8, _, _, _, _, _, _, _, 7),
-    [](1, _, _, 6, _, _, 9, _, 8),
-    [](6, 4, _, _, _, 8, 7, _, _),
-    [](_, _, 9, _, 1, _, 2, _, _),
-    [](_, _, _, _, _, 7, _, _, _))).
-
-problem(4, [](
-    [](_, 5, _, _, _, 1, 4, _, _),
-    [](2, _, 3, _, _, _, 7, _, _),
-    [](_, 7, _, 3, _, _, 1, 8, 2),
-    [](_, _, 4, _, 5, _, _, _, 7),
-    [](_, _, _, 1, _, 3, _, _, _),
-    [](8, _, _, _, 2, _, 6, _, _),
-    [](1, 8, 5, _, _, 6, _, 9, _),
-    [](_, _, 2, _, _, _, 8, _, 3),
-    [](_, _, 6, 4, _, _, _, 7, _))).
-
-% Problems 5-8 are harder, taken from
-% http://www2.ic-net.or.jp/~takaken/auto/guest/bbs46.html
-problem(5, [](
-    [](_, 9, 8, _, _, _, _, _, _),
-    [](_, _, _, _, 7, _, _, _, _),
-    [](_, _, _, _, 1, 5, _, _, _),
-    [](1, _, _, _, _, _, _, _, _),
-    [](_, _, _, 2, _, _, _, _, 9),
-    [](_, _, _, 9, _, 6, _, 8, 2),
-    [](_, _, _, _, _, _, _, 3, _),
-    [](5, _, 1, _, _, _, _, _, _),
-    [](_, _, _, 4, _, _, _, 2, _))).
-
-problem(6, [](
-    [](_, _, 1, _, 2, _, 7, _, _),
-    [](_, 5, _, _, _, _, _, 9, _),
-    [](_, _, _, 4, _, _, _, _, _),
-    [](_, 8, _, _, _, 5, _, _, _),
-    [](_, 9, _, _, _, _, _, _, _),
-    [](_, _, _, _, 6, _, _, _, 2),
-    [](_, _, 2, _, _, _, _, _, _),
-    [](_, _, 6, _, _, _, _, _, 5),
-    [](_, _, _, _, _, 9, _, 8, 3))).
-
-problem(7, [](
-    [](1, _, _, _, _, _, _, _, _),
-    [](_, _, 2, 7, 4, _, _, _, _),
-    [](_, _, _, 5, _, _, _, _, 4),
-    [](_, 3, _, _, _, _, _, _, _),
-    [](7, 5, _, _, _, _, _, _, _),
-    [](_, _, _, _, _, 9, 6, _, _),
-    [](_, 4, _, _, _, 6, _, _, _),
-    [](_, _, _, _, _, _, _, 7, 1),
-    [](_, _, _, _, _, 1, _, 3, _))).
-
-problem(8, [](
-    [](1, _, 4, _, _, _, _, _, _),
-    [](_, _, 2, 7, 4, _, _, _, _),
-    [](_, _, _, 5, _, _, _, _, _),
-    [](_, 3, _, _, _, _, _, _, _),
-    [](7, 5, _, _, _, _, _, _, _),
-    [](_, _, _, _, _, 9, 6, _, _),
-    [](_, 4, _, _, _, 6, _, _, _),
-    [](_, _, _, _, _, _, _, 7, 1),
-    [](_, _, _, _, _, 1, _, 3, _))).
-
-% this one is from http://www.skyone.co.uk/programme/pgefeature.aspx?pid=48&fid=129
-problem(9, [](
-    [](5, _, 6, _, 2, _, 9, _, 3),
-    [](_, _, 8, _, _, _, 5, _, _),
-    [](_, _, _, _, _, _, _, _, _),
-    [](6, _, _, 2, 8, 5, _, _, 9),
-    [](_, _, _, 9, _, 3, _, _, _),
-    [](8, _, _, 7, 6, 1, _, _, 4),
-    [](_, _, _, _, _, _, _, _, _),
-    [](_, _, 4, _, _, _, 3, _, _),
-    [](2, _, 1, _, 5, _, 6, _, 7))).
-
-% BBC Focus magazine October 2005
-problem(10, [](
-    [](_, 6, _, 3, 2, _, _, 7, _),
-    [](4, 7, _, _, _, _, _, 3, 2),
-    [](_, _, _, 9, _, _, 1, 4, 6),
-    [](2, 4, _, 8, _, _, _, _, _),
-    [](_, _, 8, _, _, _, 2, _, 1),
-    [](1, _, _, _, _, 2, _, _, _),
-    [](_, _, 2, 4, 7, 6, 8, _, _),
-    [](6, 8, 9, _, _, _, _, 5, 4),
-    [](_, _, _, _, 8, _, _, _, _))).
-
-problem(11, [](
-    [](1, 8, 2, 7, 5, _, 3, _, 9),
-    [](9, 5, 6, _, 3, _, _, 8, _),
-    [](3, 4, 7, _, _, 9, _, 5, _),
-    [](2, _, 3, _, 4, _, _, 9, 8),
-    [](4, _, 8, 9, _, 2, 5, _, 3),
-    [](5, 7, 9, 3, 6, 8, 1, 2, 4),
-    [](_, 2, _, 4, 9, _, 8, 3, _),
-    [](_, 3, _, _, 2, _, 9, _, 5),
-    [](_, 9, _, _, _, 3, _, 1, _))).
-
-problem(12, [](
-	[](_))).
-
-problem(13, [](
-	[](2, 1),
-	[](_, _))).
-
-problem(14, [](
-	[](1, _, 3),
-	[](3, _, _),
-	[](2, _, _))).
-
-problem(15, [](
-	[](1, _, 3, _),
-	[](3, _, _, 4),
-	[](2, _, _, _),
-	[](4, _, 2, _))).
-
-problem(16, [](
-		[](_, _, _, _),
-		[](_, _, _, _),
-		[](_, _, _, _),
-		[](_, _, _, _))).
-
-problem(17, [](
-	[](1, _, 3, _, _, 5, 4, 8),
-	[](3, 5, 2, 4, _, 6, 7, _),
-	[](2, _, 6, 3, _, 4, _, _),
-	[](4, 2, 5, _, 7, _, 1, _),
-	[](5, 3, 7, _, 6, 2, _, 4),
-	[](6, _, _, 5, _, 7, _, _),
-    [](7, 4, _, 6, _, _, 3, _),
-    [](8, _, _, _, _, _, 6, _))).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% SOLUTIONS
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%  Solution for problem 1 in the trivial viewpoint:
-solution(1, [](
-    [](3,  6,  2,  8,  4,  5,  1,  7,  9),
-    [](1,  7,  5,  9,  6,  3,  2,  4,  8),
-    [](9,  4,  8,  2,  1,  7,  6,  3,  5),
-    [](7,  1,  3,  4,  5,  8,  9,  6,  2),
-    [](2,  9,  6,  7,  3,  1,  5,  8,  4),
-    [](8,  5,  4,  6,  2,  9,  7,  1,  3),
-    [](4,  3,  9,  5,  7,  6,  8,  2,  1),
-    [](5,  2,  7,  1,  8,  4,  3,  9,  6),
-    [](6,  8,  1,  3,  9,  2,  4,  5,  7))).
-
-solution(12, [](
-	[](1))).
-
-solution(13, [](
-	[](2, 1),
-	[](1, 2))).
-
-solution(14, [](
-	[](1, 2, 3),
-	[](3, 1, 2),
-	[](2, 3, 1))).
-
-
-sulution(15, [](
-		[](1, 4, 3, 2),
-		[](3, 2, 1, 4),
-		[](2, 1, 4, 3),
-		[](4, 3, 2, 1))).
-
-% Solution for problem 1 in our other viewpoint (where positions are represented in a 1D way):
-solution2_old(1, [](
-    [](7, 10, 23, 29, 42, 53, 63, 67, 75),
-    [](3, 16, 22, 36, 37, 50, 62, 65, 78),
-    [](1, 15, 23, 30, 41, 54, 56, 70, 76),
-    [](5, 17, 20, 31, 45, 48, 55, 69, 79),
-    [](6, 12, 27, 32, 43, 47, 58, 64, 80),
-    [](2, 14, 25, 35, 39, 49, 60, 72, 73),
-    [](8, 11, 24, 27, 40, 52, 59, 66, 81),
-    [](4, 18, 21, 33, 44, 46, 61, 68, 74),
-    [](9, 13, 19, 34, 38, 51, 57, 71, 77))).
-
-solution2_old(14, [](
-	[](1, 5, 9),
-	[](2, 6, 7),
-	[](3, 4, 8))).
-
-solution2(12, [](
-	[]([](1, 1)))).
-
-solution2(13, [](
-	[]([](1, 2), [](2, 1)),
-	[]([](1, 1), [](2, 2)))).
-
-solution2(14, [](
-	[]([](1, 1), [](2, 2), [](3, 3)),
-	[]([](1, 2), [](2, 3), [](3, 1)),
-	[]([](1, 3), [](2, 1), [](3, 2)))).
+	 	write(Stream, X),
+		write(Stream, " & "),
+		write(Stream, ExTimeS1),
+		write(Stream, "s & "),
+		write(Stream, B1),
+		write(Stream, " & "),
+		write(Stream, ExTimeS2),
+		write(Stream, "s & "),
+		write(Stream, B2),
+		write(Stream, " & "),
+		write(Stream, ExTimeS3),
+		write(Stream, "s & "),
+		write(Stream, B3),
+		write(Stream, '\\\\'),
+		write(Stream, "\n"),
+		writeln(["finished", X]),
+		fail
+    ;   true
+    ),
+	write(Stream," \\hline
+  \\end{tabular}
+\\end{table}"),
+	writeln("Finished all"),
+	close(Stream).

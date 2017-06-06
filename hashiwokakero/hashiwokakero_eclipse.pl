@@ -1,10 +1,3 @@
-:- lib(ic).
-% :- import alldifferent/1, sorted/2 from ic_global.
-% :- coroutine.
-:- lib(lists).
-:- import nth1/3 from listut.
-:- [boards].
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Hashiwokakero, also called Bridges is a logic puzzle in which different islands
 % have to be connected by bridges. A bridges puzzle consists of a square grid
@@ -18,8 +11,13 @@
 %     The number of bridges connected to each island must match the number on that island.
 %     The bridges must connect the islands into a single connected group.
 %
-% Solution started from http://stackoverflow.com/questions/20337029/hashi-puzzle-representation-to-solve-all-solutions-with-prolog-restrictions/20364306#20364306
+% Solver was started from http://stackoverflow.com/questions/20337029/hashi-puzzle-representation-to-solve-all-solutions-with-prolog-restrictions/20364306#20364306
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+:- lib(ic).
+:- lib(lists).
+:- import nth1/3 from listut.
+:- [boards].
 
 % solve a given game board
 solve(Number) :-

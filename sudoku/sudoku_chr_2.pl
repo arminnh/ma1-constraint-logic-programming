@@ -14,7 +14,7 @@
 :- chr_option(optimize,full).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% SUDOKU SOLUTION USING ALTERNATIVE VIEWPOINT
+% SUDOKU SOLVER USING ALTERNATIVE VIEWPOINT
 %   In the alternative viewpoint, we keep track of lists of postions for
 %   sudoku values (e.g. Number 1 is on positions (1, 1), (2, 3), ...)
 %   the Y values of the positions and the BlockIndex values are the search

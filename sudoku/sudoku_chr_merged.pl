@@ -528,7 +528,7 @@ print_board([ Row | Tail ]) <=>
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% SUDOKU SOLUTION USING NUMBERS HAVE POSITION VIEWPOINT
+% SUDOKU SOLVER USING NUMBERS HAVE POSITION VIEWPOINT
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 sudoku_viewpoint2(Board) <=>
