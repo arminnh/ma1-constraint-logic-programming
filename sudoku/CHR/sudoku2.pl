@@ -1,11 +1,13 @@
 :- use_module(library(chr)).
 
-:- chr_constraint solve/1, sudoku/1, print_board/2.
-:- chr_constraint diff/2, smart_diff/6, enum/1, enum_board/0, upto/2, domain_list/1.
-:- chr_constraint board/4, generate_known_board_facts/3.
-:- chr_constraint sn/1, n/1.
-:- chr_constraint generate_remaining_board_facts/1, generate_board_value_facts/2.
-:- chr_constraint do_diffs/0.
+:- chr_constraint solve_viewpoint2/1, sudoku_viewpoint2/1, print_board_viewpoint2/2.
+:- chr_constraint diff_viewpoint2/2, smart_diff_viewpoint2/6, enum_viewpoint2/1,
+                enum_board_viewpoint2/0, upto_viewpoint2/2, domain_list_viewpoint2/1.
+:- chr_constraint board_viewpoint2/4, generate_known_board_facts_viewpoint2/3.
+:- chr_constraint sn_viewpoint2/1, n_viewpoint2/1.
+:- chr_constraint generate_remaining_board_facts_viewpoint2/1, generate_board_value_facts_viewpoint2/2.
+:- chr_constraint do_diffs_viewpoint2/0.
+
 
 :- op(700, xfx, in).
 :- op(700, xfx, le).
@@ -14,23 +16,24 @@
 :- chr_constraint le/2, eq/2, in/2, add/3.
 :- chr_option(debug,off).
 :- chr_option(optimize,full).
+:- consult(sudex_toledo).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% SUDOKU SOLUTION USING TRIVIAL VIEWPOINT
+% SUDOKU SOLUTION USING NUMBERS HAVE POSITION VIEWPOINT
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-solve(ProblemName) <=>
+solve_viewpoint2(ProblemName) <=>
     % statistics(walltime, [TimeSinceStart | [TimeSinceLastCall]]),
     statistics(walltime, [_ | [_]]),
 
-    % get the sudoku board
-    problem(ProblemName, Board),
+    % get the sudoku_viewpoint2 board_viewpoint2
+    (problem(ProblemName, Board) ; puzzles(Board, ProblemName)),
 
-    % fill the sudoku board
-    sudoku(Board),
+    % fill the sudoku_viewpoint2 board_viewpoint2
+    sudoku_viewpoint2(Board),
 
     writeln("\nResult:"),
-    print_board(1,1),
+    print_board_viewpoint2(1,1),
 
     % statistics(walltime, [NewTimeSinceStart | [ExecutionTime]]),
     statistics(walltime, [_ | [ExecutionTimeMS]]),
@@ -43,83 +46,83 @@ solve(ProblemName) <=>
     write('Execution took '), write(ExTimeM), write(' min.'), nl,
     true.
 
-sudoku(Board) <=>
-    % store N for later reuse = size of N*N board
+sudoku_viewpoint2(Board) <=>
+    % store N for later reuse = size of N*N board_viewpoint2
     length(Board, N),
-    n(N),
+    n_viewpoint2(N),
 
-    % store SN for later reuse = sqrt(N) = amount of sudoku blocks
+    % store SN for later reuse = sqrt(N) = amount of sudoku_viewpoint2 blocks
     sqrt(N, NN),
     SN is round(NN),
-    sn(SN),
+    sn_viewpoint2(SN),
 
-    % create and store a list that contains the domain of the possible values on the board
-    upto(DomainList, N),
-    domain_list(DomainList),
+    % create and store a list that contains the domain of the possible values on the board_viewpoint2
+    upto_viewpoint2(DomainList, N),
+    domain_list_viewpoint2(DomainList),
 
     % generate (X, Y, BlockIndex, Value) facts
-    % those facts will later be used for insertion of diff(A, B) rules
-    generate_known_board_facts(Board, 1, 1),
+    % those facts will later be used for insertion of diff_viewpoint2(A, B) rules
+    generate_known_board_facts_viewpoint2(Board, 1, 1),
 
-    % set the domains of the possible values on the board
-    generate_remaining_board_facts(N),
+    % set the domains of the possible values on the board_viewpoint2
+    generate_remaining_board_facts_viewpoint2(N),
 
     % start generation of diffs
-    do_diffs,
+    do_diffs_viewpoint2,
 
-    print_board(1,1),
+    print_board_viewpoint2(1,1),
 
     % start search for values
-    enum_board,
+    enum_board_viewpoint2,
     true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR CONSTRAINTS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-generate_board_value_facts(_, 0) <=>
+generate_board_value_facts_viewpoint2(_, 0) <=>
     true.
 
 % if fact already exists on this X value for the Value, don't generate another one
-board(Value, Index, _, _) \ generate_board_value_facts(Value, Index)<=>
+board_viewpoint2(Value, Index, _, _) \ generate_board_value_facts_viewpoint2(Value, Index)<=>
     Index2 is Index - 1,
-    generate_board_value_facts(Value, Index2).
+    generate_board_value_facts_viewpoint2(Value, Index2).
 
-domain_list(Domain) \ generate_board_value_facts(Value, Index) <=> Index > 0 |
-    board(Value, Index, Y, BlockIndex),
+domain_list_viewpoint2(Domain) \ generate_board_value_facts_viewpoint2(Value, Index) <=> Index > 0 |
+    board_viewpoint2(Value, Index, Y, BlockIndex),
     Y in Domain,
     BlockIndex in Domain,
     Index2 is Index - 1,
-    generate_board_value_facts(Value, Index2).
+    generate_board_value_facts_viewpoint2(Value, Index2).
 
-generate_remaining_board_facts(0) <=>
+generate_remaining_board_facts_viewpoint2(0) <=>
     true.
 
-n(N) \ generate_remaining_board_facts(Value) <=>
+n_viewpoint2(N) \ generate_remaining_board_facts_viewpoint2(Value) <=>
 
-    generate_board_value_facts(Value, N),
+    generate_board_value_facts_viewpoint2(Value, N),
     Value2 is Value - 1,
-    generate_remaining_board_facts(Value2).
+    generate_remaining_board_facts_viewpoint2(Value2).
 
 
-% generate_known_board_facts(Board, X, Y) will generate board(X,Y, BlockIndex, Value)
-% facts which will later be used to instert diff rules into the constraint store
+% generate_known_board_facts_viewpoint2(Board, X, Y) will generate board_viewpoint2(X,Y, BlockIndex, Value)
+% facts which will later be used to instert diff_viewpoint2 rules into the constraint store
 
-% got all values on the board
-n(N) \ generate_known_board_facts(_, X, _) <=> N2 is N+1, X == N2 |
+% got all values on the board_viewpoint2
+n_viewpoint2(N) \ generate_known_board_facts_viewpoint2(_, X, _) <=> N2 is N+1, X == N2 |
     true.
 
 % after going over all columns, go to next row and start from column 1 again
-n(N) \ generate_known_board_facts(Board, X, Y) <=> N2 is N+1, Y == N2 |
+n_viewpoint2(N) \ generate_known_board_facts_viewpoint2(Board, X, Y) <=> N2 is N+1, Y == N2 |
     X2 is X + 1,
-    generate_known_board_facts(Board, X2, 1).
+    generate_known_board_facts_viewpoint2(Board, X2, 1).
 
-generate_known_board_facts(Board, X, Y) <=>  nth1(X, Board, Row), nth1(Y, Row, Value), var(Value) |
+generate_known_board_facts_viewpoint2(Board, X, Y) <=>  nth1(X, Board, Row), nth1(Y, Row, Value), var(Value) |
     Y2 is Y + 1,
-    generate_known_board_facts(Board, X, Y2).
+    generate_known_board_facts_viewpoint2(Board, X, Y2).
 
-sn(SN) \ generate_known_board_facts(Board, X, Y) <=> nth1(X, Board, Row), nth1(Y, Row, Value), nonvar(Value) |
-    % get the value on position (X, Y) on the board
+sn_viewpoint2(SN) \ generate_known_board_facts_viewpoint2(Board, X, Y) <=> nth1(X, Board, Row), nth1(Y, Row, Value), nonvar(Value) |
+    % get the value on position (X, Y) on the board_viewpoint2
 
     % calculate block index
     XX is X-1,
@@ -132,11 +135,11 @@ sn(SN) \ generate_known_board_facts(Board, X, Y) <=> nth1(X, Board, Row), nth1(Y
     BlockIndex is (BlockRow-1) * SN + BlockCol,
 
     % save this data for later use
-    board(Value, X,Y, BlockIndex),
+    board_viewpoint2(Value, X,Y, BlockIndex),
 
     % go to the next case
     Y2 is Y + 1,
-    generate_known_board_facts(Board, X, Y2).
+    generate_known_board_facts_viewpoint2(Board, X, Y2).
 
 
 % amount of diffs: sum([1..N-1]) * N * 3
@@ -145,18 +148,18 @@ sn(SN) \ generate_known_board_facts(Board, X, Y) <=> nth1(X, Board, Row), nth1(Y
 %                no 2 values on same block
 
 % all values in same blocks must be different, guards used to break symmetry
-% do_diffs, board(Value, X1, Y1, BlockIndex1), board(Value, X2, Y2, BlockIndex2) ==> X1 < X2 |
-%     diff(Y1,Y2), diff(BlockIndex1, BlockIndex2).
+% do_diffs_viewpoint2, board_viewpoint2(Value, X1, Y1, BlockIndex1), board_viewpoint2(Value, X2, Y2, BlockIndex2) ==> X1 < X2 |
+%     diff_viewpoint2(Y1,Y2), diff_viewpoint2(BlockIndex1, BlockIndex2).
 
-do_diffs, board(Value, X1, Y1, BlockIndex1), board(Value, X2, Y2, BlockIndex2) ==> X1 < X2 |
-    smart_diff(X1, Y1, X2, Y2, BlockIndex1, BlockIndex2), diff(BlockIndex1, BlockIndex2).
+do_diffs_viewpoint2, board_viewpoint2(Value, X1, Y1, BlockIndex1), board_viewpoint2(Value, X2, Y2, BlockIndex2) ==> X1 < X2 |
+    smart_diff_viewpoint2(X1, Y1, X2, Y2, BlockIndex1, BlockIndex2), diff_viewpoint2(BlockIndex1, BlockIndex2).
 
-do_diffs, board(Value1, X, Y1, _), board(Value2, X, Y2, _) ==> Value1 < Value2 |
-    diff(Y1,Y2).
+do_diffs_viewpoint2, board_viewpoint2(Value1, X, Y1, _), board_viewpoint2(Value2, X, Y2, _) ==> Value1 < Value2 |
+    diff_viewpoint2(Y1,Y2).
 
 % no need for symmetry breaking here as it's been done during construction
-% diff(X, Y), diff(X, Y) <=> diff(X, Y).
-% diff(Y, X), diff(X, Y) <=> diff(X, Y).
+% diff_viewpoint2(X, Y), diff_viewpoint2(X, Y) <=> diff_viewpoint2(X, Y).
+% diff_viewpoint2(Y, X), diff_viewpoint2(X, Y) <=> diff_viewpoint2(X, Y).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RULES USED FOR DOMAIN SOLVING
@@ -184,38 +187,38 @@ block_y_vals(Block, SN, L):-
     length(L, SN).
 
 % X and Y are instantiated and are different
-smart_diff(_,Y1, _,  Y2, _, _) <=> nonvar(Y1), nonvar(Y2) | Y1 \== Y2.
-sn(SN), smart_diff(X1, Y1, X2, Y2, _, Block2) \ Y1 in L <=>
+smart_diff_viewpoint2(_,Y1, _,  Y2, _, _) <=> nonvar(Y1), nonvar(Y2) | Y1 \== Y2.
+sn_viewpoint2(SN), smart_diff_viewpoint2(X1, Y1, X2, Y2, _, Block2) \ Y1 in L <=>
     nonvar(Y2), nonvar(Block2), same_block_row(X1, X2, SN),
     block_y_vals(Block2, SN, Columns), subtract(L, Columns, NL), L \== NL, length(NL,C1), C1 > 0 | Y1 in NL.
 
-sn(SN), smart_diff(X1, Y1, X2, Y2, Block1, _) \ Y2 in L <=>
+sn_viewpoint2(SN), smart_diff_viewpoint2(X1, Y1, X2, Y2, Block1, _) \ Y2 in L <=>
     nonvar(Y1), nonvar(Block1), same_block_row(X1, X2, SN),
     block_y_vals(Block1, SN, Columns), subtract(L, Columns, NL), L \== NL,length(NL,C1), C1 > 0  | Y2 in NL.
 
-smart_diff(_, Y, _,  X, _, _) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
-smart_diff(_,X,_, Y,_,_) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
+smart_diff_viewpoint2(_, Y, _,  X, _, _) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
+smart_diff_viewpoint2(_,X,_, Y,_,_) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 
 
-diff(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
-diff(Y, X) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
-diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
+diff_viewpoint2(X, Y) <=> nonvar(X), nonvar(Y) | X \== Y.
+diff_viewpoint2(Y, X) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
+diff_viewpoint2(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 
-% enum(L): assigns values to variables X in L
-enum(X)              <=> number(X) | true .
-enum(X), X in Domain <=> member(X, Domain).
+% enum_viewpoint2(L): assigns values to variables X in L
+enum_viewpoint2(X)              <=> number(X) | true .
+enum_viewpoint2(X), X in Domain <=> member(X, Domain).
 
-board(_,_,_, B) \ B in [D] <=> var(B) |
+board_viewpoint2(_,_,_, B) \ B in [D] <=> var(B) |
     B is D.
 
-board(_,_,Y, _) \ Y in [D] <=> var(Y) |
+board_viewpoint2(_,_,Y, _) \ Y in [D] <=> var(Y) |
     Y is D.
 
-board(_, _, Y, _), enum_board ==>
-    enum(Y).
-    % enum(BlockIndex),
+board_viewpoint2(_, _, Y, _), enum_board_viewpoint2 ==>
+    enum_viewpoint2(Y).
+    % enum_viewpoint2(BlockIndex),
 
-sn(SN), board(_, X, Y, BlockIndex), enum_board \ BlockIndex in D <=> number(Y), var(BlockIndex) |
+sn_viewpoint2(SN), board_viewpoint2(_, X, Y, BlockIndex), enum_board_viewpoint2 \ BlockIndex in D <=> number(Y), var(BlockIndex) |
     XX is X-1,
 
     XXX is XX // SN,
@@ -229,51 +232,51 @@ sn(SN), board(_, X, Y, BlockIndex), enum_board \ BlockIndex in D <=> number(Y),
 
     BlockIndex is (BlockRow-1) * SN + BlockCol.
 
-% upto(N, L): L = [1..N]
-upto([], 0).
-upto([ N | L ], N) :-
+% upto_viewpoint2(N, L): L = [1..N]
+upto_viewpoint2([], 0).
+upto_viewpoint2([ N | L ], N) :-
     N > 0,
     N1 is N-1,
-    upto(L, N1).
+    upto_viewpoint2(L, N1).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HELPER RULES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-n(N) \ print_board(X,_) <=> X > N |
+n_viewpoint2(N) \ print_board_viewpoint2(X,_) <=> X > N |
         true.
 
-n(N) \ print_board(X,Y) <=> Y > N |
+n_viewpoint2(N) \ print_board_viewpoint2(X,Y) <=> Y > N |
     X2 is X + 1,
     writeln(""),
-    print_board(X2, 1).
+    print_board_viewpoint2(X2, 1).
 
 
-board(Value, X, Y, _) \ print_board(X,Y) <=>  nonvar(Value) |
+board_viewpoint2(Value, X, Y, _) \ print_board_viewpoint2(X,Y) <=>  nonvar(Value) |
     write(" "),
     write(Value),
     Y2 is Y + 1,
-    print_board(X,Y2).
+    print_board_viewpoint2(X,Y2).
 
- board(Value, X, Y, _) \ print_board(X,Y) <=> var(Value) |
+ board_viewpoint2(Value, X, Y, _) \ print_board_viewpoint2(X,Y) <=> var(Value) |
     write(" _"),
     Y2 is Y + 1,
-    print_board(X,Y2).
+    print_board_viewpoint2(X,Y2).
 
-% If board on this position doesn't exist.
-print_board(X,Y2) <=>
+% If board_viewpoint2 on this position doesn't exist.
+print_board_viewpoint2(X,Y2) <=>
     write(" _"),
     Y3 is Y2 + 1,
-    print_board(X,Y3).
+    print_board_viewpoint2(X,Y3).
 
-solve1() :- solve(1).
-solve2() :- solve(2).
-solve3() :- solve(3).
-solve4() :- solve(4).
-solve5() :- solve(5).
-solve6() :- solve(6).
-solve7() :- solve(7).
-solve8() :- solve(8).
+solve1() :- solve_viewpoint2(1).
+solve2() :- solve_viewpoint2(2).
+solve3() :- solve_viewpoint2(3).
+solve4() :- solve_viewpoint2(4).
+solve5() :- solve_viewpoint2(5).
+solve6() :- solve_viewpoint2(6).
+solve7() :- solve_viewpoint2(7).
+solve8() :- solve_viewpoint2(8).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAMPLE PROBLEMS
@@ -324,7 +327,7 @@ problem(7, [ [1, _, 3, _, _, 5, 4, 8],
              [7, 4, _, 6, _, _, 3, _],
              [8, _, _, _, _, _, 6, _] ]).
 
-% very easy sudoku from http://www.sudokukingdom.com/very-easy-sudoku.php
+% very easy sudoku_viewpoint2 from http://www.sudokukingdom.com/very-easy-sudoku_viewpoint2.php
 problem(8, [ [8, _, 4, _, 5, 7, _, _, 9],
              [5, 7, _, _, _, _, 5, _, 1],
              [1, _, _, 4, 8, 2, 7, 3, _],

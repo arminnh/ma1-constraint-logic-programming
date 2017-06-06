@@ -457,7 +457,7 @@ When we look at \ref{fig:classic_heuristic}(a) we for example see that in the bo
 The way we do this is we check the domain of (9,9) and we compare it with the domains of all the other squares in the block. When doing this comparison we check for the numbers that is in our domain but not in the domain of the square we're comparing. If a number is not present in the domain of the comparing square, let's say 6 for example, then we know that the likelihood that this 6 is at our position increases. So what we do is we keep track of all the differences between the other squares and we count how many times we've seen a number. We then sort our domain according to this in a descending order. Obviously we want to try things that are very likely first and things that are less likely at a later moment. One important observation to this is that if the count of a number is equals to 9 you know that we are the only position that can play this number else we would never see this number appear 8 times from the differences. We get to 9 because we use our domain as a starting point, so this means that each number in our domain immediately gets a count of 1. We do this because it is not certain that when checking all the differences with the other squares, you will get all the values from your domain. So if we would only use the numbers from the differences we might for example never see a 2 while actually 2 was the only answer that could be played at that position in the end. 
 \newline
 \newline
-This scenario happens when for example all the other squares had also a 2 in their domain so you will never see 2 in the difference set and since we reset the current domain to the likelihood domain this would mean that the 2 would be forever gone which might mean that the system keeps on backtracking to try everything until it sees that nothing is left anymore just to fail. This is obviously something that we want to prevent, this is why we start from our original domain. When we look at figure \ref{fig:classic_heuristic}(b), we can see the effect of our likelihood heuristic just before the start of the search. We see that already 5 different squares are filled in (the green and red ones). The green ones are some obvious plays but we were actually surprised when it played the red one. The other green ones are 'easy' because for example for the (9,9) example you see that this position is obviously the only place 6 can be played because of the other sixes. But for the red one we don't see a single other 8 on the board and yet it knew that it had to play an 8 there. We have to admit though that our system is a bit flawed since this heuristic cannot be used during the search since too many calculations are made. For example with everything we have filled in we could deduct that for the yellow square, 5 is the only possible play. But this is not feasible since it is way to slow to calculate this. This is why we ordered the domain according to likelihood. If we look at the domain of (2,1) sorted with likelihood, we see that the domain is [5, 3, 6, 8, 9]. So even though we're not fully sure that the 5 had to come there before we filled in the 4 in our block, our system captures the likelihood of a 5 at (2,1) still quite well. Sadly enough this heuristic doesn't really improve the search a lot.
+This scenario happens when for example all the other squares had also a 2 in their domain so you will never see 2 in the difference set and since we reset the current domain to the likelihood domain this would mean that the 2 would be forever gone which might mean that the system keeps on backtracking to try everything until it sees that nothing is left anymore just to fail. This is obviously something that we want to prevent, this is why we start from our original domain. When we look at figure \ref{fig:classic_heuristic}(b), we can see the effect of our likelihood heuristic just before the start of the search. We see that already 5 different squares are filled in (the green and red ones). The green ones are some obvious plays but we were actually surprised when it played the red one. The other green ones are 'easy' because for example for the (9,9) example you see that this position is obviously the only place 6 can be played because of the other sixes. But for the red one we don't see a single other 8 on the board and yet it knew that it had to play an 8 there. We have to admit though that our system is a bit flawed since this heuristic cannot be used during the search since too many calculations are made. For example with everything we have filled in we could deduct that for the yellow square, 5 is the only possible play. But this is not feasible since it is way to slow to calculate this. This is why we ordered the domain according to likelihood. If we look at the domain of (2,1) sorted with likelihood, we see that the domain is [5, 3, 6, 8, 9]. So even though we're not fully sure that the 5 had to come there before we filled in the 4 in our block, our system captures the likelihood of a 5 at (2,1) still quite well.
 
 \newpage
 \subsubsection{Heuristics our viewpoint}
@@ -474,31 +474,102 @@ Let's say we want to play a 3 at the green square on figure \ref{fig:smart_domai
 \section{ECLiPSe}
 \subsection{Our basic solver}
 \subsubsection{Constraints}
-Our Hashiwokakero solver in ECLiPSe is based on the stackoverflow post\footnote{\url{https://stackoverflow.com/questions/20337029/hashi-puzzle-representation-to-solve-all-solutions-with-prolog-restrictions}} given in the assignment. Therefore we use the constraints mentioned in the post but we also add constraints for connectivity. All our constraints are thus:
+Our Hashiwokakero solver in ECLiPSe is based on the stackoverflow post\footnote{\url{https://stackoverflow.com/questions/20337029/hashi-puzzle-representation\_-to-solve-all-solutions-with-prolog-restrictions}} given in the assignment. Therefore we use the constraints mentioned in the post but we also add constraints for connectivity. All our constraints are thus:
 
 \begin{itemize}
 	\item If the islands is not at any of the borders of the board then a bridge that comes from a certain direction, needs to go out on the opposite direction. This means that any bridge coming from the North also leaves from the South or vice versa. Any bridge coming from the West leaves from the East or vice versa. If following one of the directions would mean that we would leave the board, put a 0 on that direction.
-	\item The sum of all bridges coming in/going out from the islands must be equal to the number of the islands.
-	\item Bridges cannot cross each other
-	\item 
-	
-\end{itemize}
-\subsection{Optimization}
-When one thinks about optimizing hashiwokakero there are some obvious things you could do. Like for example if there is a 4 in one of the four corners, you know that you need to have 2 bridges in the two directions that are left. The same goes for a 6 at one of the sides of the board, since one of it's directions is blocked, you know that there has to be 2 bridges in the 3 leftover directions. For an 8 the only possible thing you can do here is that you need to have 2 bridges in each direction. These seem like good improvements, but actually the eclipse system already did these implicitly for us. This is done by
-\newline
 \lstinputlisting[
   language = Prolog-pretty,
-  caption  = {implicit improvements},
-]{hashi_eclipse_implicit.pl}
-Another thing that these constraints do is that if you only have one neighbor then you know that all your possible bridges can only be with them. So we felt like these were not really improvements anymore since they were implicitly done. This is why we decided to look for other improvements.
+  caption  = {pass through constraints},
+]{pass_through.pl}
+	\item The sum of all bridges coming in/going out from the islands must be equal to the number of the islands.	\lstinputlisting[
+  language = Prolog-pretty,
+  caption  = {sum constraints},
+]{sum.pl}
+	\item Bridges cannot cross each other. 
+	\lstinputlisting[
+  language = Prolog-pretty,
+  caption  = {no crossing bridges},
+]{no_crossing.pl}
+	\item The connectivity constraint is done by checking that all islands can be visited starting from a certain islands. This is done after the search.
+	\lstinputlisting[
+  language = Prolog-pretty,
+  caption  = {islands connected code},
+]{connected.pl}
+\end{itemize}
+All the constraints are active except for the connectivity constraints. The connectivity constraint does not directly make any changes to any of the domains so it a passive constraint. The other constraints make changes to the actual variables. 
+\subsection{Optimization}
+When one thinks about optimizing hashiwokakero there are some obvious things you could do. Like for example if there is a 4 in one of the four corners, you know that you need to have 2 bridges in the two directions that are left. The same goes for a 6 at one of the sides of the board, since one of it's directions is blocked, you know that there has to be 2 bridges in the 3 leftover directions. For an 8 the only possible thing you can do here is that you need to have 2 bridges in each direction. These seem like good improvements, but actually the eclipse system already did these implicitly for us. This is done by eclipse's domain solving.
+\newline
+
+So we felt like these were not really improvements anymore since they were implicitly done. This is why we decided to look for other improvements. These improvements are inspired by \url{http://www.conceptispuzzles.com/index.aspx?uri=puzzle/hashi/techniques}.
 
 \begin{enumerate}
-	\item The first improvement we made was noticing that a 1 and another 1 cannot be connected  directly to each other. If this would be true we would immediately have a disconnection in our board. Another thing that corresponds with this idea is a 2 and another 2. These can never have 2 bridges between each other since else you would yet again create a disconnection in the set.
-	\item 
+	\item The first improvement we made was noticing that a 1 and another 1 cannot be connected directly to each other. If this would be true we would immediately have a disconnection in our board. Another thing that corresponds with this idea is a 2 and another 2. These can never have 2 bridges between each other since else you would yet again create a disconnection in the set.
+	\begin{figure}[h]
+    \centering
+    \subfloat[board without improvement]{{\includegraphics[width=2cm]{one_to_one_imprv}}}%
+    \qquad
+    \subfloat[board with improvement]{{\includegraphics[width=2cm]{one_to_one_improv2} }}%
+    \caption{boards without and with improvement}%
+    \label{fig:classic_heuristic}%
+\end{figure}
+	\item When there is a 3 with three neighbors, under which one neighbor has a 1 and the other neighbor has a two then obviously if you connect one bridge with your 1 neighbor and 2 bridges with the 2 neighbor, you get a isolated set. To prevent this we wrote code so that it automatically connects at least one bridge with the remaining neighbor. The same reasoning can be made for a 2 with two 1's as his neighbor and one other neighbor. If the 2 is connected with both ones we get another isolated set. To prevent this we made sure that the 2 sets at least one bridge to its other neighbor.
+	\item Sadly enough we did not find a third improvement, as mentioned before our system already does several improvements implicitly, we looked at the site and we implemented the improvements that we thought were still possible. TODO
 \end{enumerate}
 
+As mentioned before the connectivity constraint is done after the search. We select one islands from our islands and then we do a traversal of all it's outgoing bridges to it's neighbors. At the neighbors we check which of their neighbors are still unvisited and we visit them. We continue until we either find that the set is connected or unconnected. The set is connected if we could visit all the islands. Our improvements make sure that some easy cases of isolated sets will never occur. This means that we need to backtrack less. 
+
 \section{CHR}
+\subsection{Solver}
+\subsubsection{Data representation}
+We used the same data representation as for the ECLiPSe solution. The data is stored in board/7 facts with variables representing X,Y, Am, N, E, S, W.  Where Am represents the amount of bridges connected to position (X,Y). N,E,S,W represents the amount of bridges in a certain direction from position (X,Y). 
+
+\subsubsection{Constraints representation}
+\begin{itemize}
+
+	\item 
+		\lstinputlisting[
+  language = Prolog-pretty,
+  caption  = {INSERT CAPTION},
+]{chr_bridges_bothways_hashi.pl}
+	\item 
+		\lstinputlisting[
+  language = Prolog-pretty,
+  caption  = {INSERT CAPTION},
+]{chr_bridges_crossing_hashi.pl}
+	\item 
+\lstinputlisting[
+  language = Prolog-pretty,
+  caption  = {INSERT CAPTION},
+]{chr_bridges_inside_hashi.pl}
+	\item 
+\lstinputlisting[
+  language = Prolog-pretty,
+  caption  = {INSERT CAPTION},
+]{chr_directions_equal_hashi.pl}
+
+	\item 
+\lstinputlisting[
+  language = Prolog-pretty,
+  caption  = {INSERT CAPTION},
+]{chr_sum_hashi.pl}
+\end{itemize}
+
+\subsection{Propagation}
+
+\subsection{Connected constraints}
+\subsubsection{Version 1}
+\subsubsection{Version 2}
+
+\subsection{Search}
+Enum and between
+
 \subsection{Optimization}
+\subsubsection{Improvement 1}
+\subsubsection{Improvement 2}
+\subsubsection{Impact of improvements}
+
 \begin{table}[h]
 \centering
 \begin{tabular}{|c|c|c|}
