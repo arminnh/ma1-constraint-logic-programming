@@ -84,6 +84,7 @@ experiments <=>
 	writeln("Finished all"),
 	close(Stream).
 
+% Clear all the constraints from the constraint store
 clear_constraints\ board(_,_,_,_) <=> true.
 clear_constraints\ board_viewpoint2(_,_,_,_) <=> true.
 clear_constraints\ diff(_,_) <=> true.
@@ -126,7 +127,7 @@ do_board(Name, Stream) <=>
     writeln(["finished", Name]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% SOLVES
+% SOLVES for experiments
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 solve(ProblemName, ExTimeS) <=>
@@ -231,11 +232,12 @@ sudoku_channeling(Board) <=>
 
     % set the domains of the possible values on the board
     generate_remaining_board_facts_viewpoint2(N),
+	% Create heuristics
     create_likely_numbers,
     fix_domains,
     % start generation of diffs
     do_diffs_viewpoint2,
-    %writeln("channel"),
+	% Insert channel fact for channeling constraints
     channel,
     % search for values
     enum_board,
@@ -247,17 +249,21 @@ sudoku_channeling(Board) <=>
 % CHANNELING CONSTRAINTS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% If the value is known from first viewpoint
+% We can insert this into our other viewpoint
 channel, board(X,Y, BlockIndex, Value)
     , board_viewpoint2(Value, X, Y2, B2) ==> number(Value), var(Y2), var(B2) |
         Y2 is Y,
         B2 is BlockIndex.
 
 % The search variable for board_viewpoint2 is the Y index
+% If the value is known from the other viewpoint
+% We can insert this into our classical viewpoint
 channel,board_viewpoint2(Value, X, Y, BlockIndex),
     board(X,Y, BlockIndex, V2) ==> var(V2), number(Y), number(BlockIndex) |
         V2 is Value.
 
-
+% IF MORE COMMENTS IS NEEDED CHECK INDIVDUAL FILES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % VIEWPOINT 1
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
