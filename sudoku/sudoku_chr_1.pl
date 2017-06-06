@@ -1,11 +1,11 @@
 :- use_module(library(chr)).
 :- consult(boards).
 
-:- chr_constraint solve/1, sudoku/1, board/4, generate_board_facts/3, clear_store/0.
-:- chr_constraint sn/1, n/1, print_board/1, print_numbers/1.
-:- chr_constraint enum/1, search/0, domain_list/1, make_domain/2, make_domains/1.
+:- chr_constraint solve/1, board/4, generate_board_facts/3, clear_store/0.
+:- chr_constraint sn/1, n/1, domain_list/1, print_board/1, print_numbers/1.
+:- chr_constraint search/0, enum/1, make_domain/2, make_domains/1.
 :- chr_constraint likely_number/4, create_likely_numbers/0, fix_domains/0.
-:- chr_constraint diff/2, in/2.
+:- chr_constraint in/2, diff/2.
 
 :- op(700, xfx, in).
 
@@ -68,7 +68,7 @@ solve(Problem) <=>
 % CONSTRAINT RULES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% amount of diff rules for an N*N board: sum([1..N-1]) * N * SN
+% amount of diffs for an N*N board: sum([1..N-1]) * N * SN
 % all values in same columns must be different, guards used to break symmetry
 board(X1, Y, _, Value1), board(X2, Y, _, Value2) ==> X1 < X2 |
     diff(Value1, Value2).
@@ -120,7 +120,8 @@ diff(X, Y) \ X in L <=> nonvar(Y), select(Y, L, NL) | X in NL.
 enum(X)              <=> number(X) | true.
 enum(X), X in Domain <=> member(X, Domain).
 
-Value in [X] <=> var(Value) | Value = X.
+X in [D] <=> var(X) | X = D.
+
 search, board(_,_, _, Value) ==> enum(Value).
 search <=> true.
 
@@ -136,12 +137,10 @@ load_board(ProblemName, Board) :-
 
 % generate_board_facts(Board, X, Y) generates board(X,Y, BlockIndex, Value)
 % facts which will be used to insert diff rules into the constraint store
-
 % got all values on the board
 n(N) \ generate_board_facts(_, N2, _) <=> N2 is N+1 | true.
 % after going over all columns, go to next row and start from column 1 again
-n(N) \ generate_board_facts(Board, X, N2) <=> N2 is N+1 |
-    X2 is X + 1,
+n(N) \ generate_board_facts(Board, X, N2) <=> N2 is N+1, X2 is X + 1 |
     generate_board_facts(Board, X2, 1).
 sn(SN) \ generate_board_facts(Board, X, Y) <=> Y2 is Y + 1 |
     % get the value on position (X, Y) on the board
