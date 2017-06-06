@@ -400,7 +400,10 @@ count_nonzero_nonvars([_ | T], Count):-
     count_nonzero_nonvars(T, C2),
     Count is C2.
 
-% TODO comment: Index is .... Index2 is ...
+% Index is the position of the value we looked for
+% Index2 is the index passed from a smaller part of the list
+% Counter is to count which index we are now
+% Length is the length of the list
 look_for_value([], _, 0, Length, Length).
 look_for_value([ [_, _, Am, _] | T ], Val, Index, Counter, Length):-
     look_for_value(T, Val, Index2, C2, Length),
