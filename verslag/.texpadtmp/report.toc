@@ -23,11 +23,23 @@
 \contentsline {chapter}{Part 2: Hashiwokakero}{12}{chapter*.24}
 \contentsline {section}{\numberline {2.1}ECLiPSe}{12}{section.2.1}
 \contentsline {subsection}{\numberline {2.1.1}Our basic solver}{12}{subsection.2.1.1}
-\contentsline {subsection}{\numberline {2.1.2}Optimization}{12}{subsection.2.1.2}
-\contentsline {section}{\numberline {2.2}CHR}{13}{section.2.2}
-\contentsline {subsection}{\numberline {2.2.1}Optimization}{13}{subsection.2.2.1}
-\contentsline {chapter}{Conclusion}{14}{chapter*.25}
-\contentsline {section}{\numberline {3.1}Weak points}{14}{section.3.1}
-\contentsline {section}{\numberline {3.2}Strong points}{14}{section.3.2}
-\contentsline {section}{\numberline {3.3}Lessons learned}{14}{section.3.3}
-\contentsline {chapter}{Appendix}{15}{chapter*.26}
+\contentsline {subsubsection}{Constraints}{12}{subsubsection*.25}
+\contentsline {subsection}{\numberline {2.1.2}Optimization}{13}{subsection.2.1.2}
+\contentsline {section}{\numberline {2.2}CHR}{14}{section.2.2}
+\contentsline {subsection}{\numberline {2.2.1}Solver}{14}{subsection.2.2.1}
+\contentsline {subsubsection}{Data representation}{14}{subsubsection*.27}
+\contentsline {subsubsection}{Constraints representation}{14}{subsubsection*.28}
+\contentsline {subsection}{\numberline {2.2.2}Propagation}{15}{subsection.2.2.2}
+\contentsline {subsection}{\numberline {2.2.3}Connected constraints}{15}{subsection.2.2.3}
+\contentsline {subsubsection}{Version 1}{15}{subsubsection*.29}
+\contentsline {subsubsection}{Version 2}{15}{subsubsection*.30}
+\contentsline {subsection}{\numberline {2.2.4}Search}{15}{subsection.2.2.4}
+\contentsline {subsection}{\numberline {2.2.5}Optimization}{16}{subsection.2.2.5}
+\contentsline {subsubsection}{Improvement 1}{16}{subsubsection*.31}
+\contentsline {subsubsection}{Improvement 2}{16}{subsubsection*.32}
+\contentsline {subsubsection}{Impact of improvements}{16}{subsubsection*.33}
+\contentsline {chapter}{Conclusion}{17}{chapter*.36}
+\contentsline {section}{\numberline {3.1}Weak points}{17}{section.3.1}
+\contentsline {section}{\numberline {3.2}Strong points}{17}{section.3.2}
+\contentsline {section}{\numberline {3.3}Lessons learned}{17}{section.3.3}
+\contentsline {chapter}{Appendix}{18}{chapter*.37}

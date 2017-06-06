@@ -72,7 +72,7 @@ sudoku(Board) <=>
     writeln("pre search"),
     print_board(Board),
 
-    %enum_board,%(Board),
+    enum_board,%(Board),
     true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

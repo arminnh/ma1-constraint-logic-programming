@@ -230,8 +230,8 @@ sudoku_channeling(Board) <=>
     %writeln("channel"),
     channel,
     % search for values
-    %enum_board,
-    enum_board_other_viewpoint,
+    enum_board,
+    %enum_board_other_viewpoint,
 
     true.
 
