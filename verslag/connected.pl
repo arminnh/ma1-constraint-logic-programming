@@ -3,7 +3,7 @@
 % Visited is used to prevent visiting islands multiple times.
 % This predicate is called recursively for each islands that
 % has not been visited yet
-% Take it's neighbors and check if they are visited or not.
+% Take its neighbors and check if they are visited or not.
 fill_set_visit(Board, X, Y, Islands, Visited) :-
     island_neighbors(Board, X,Y, Neighbors),
     length(Neighbors, N),

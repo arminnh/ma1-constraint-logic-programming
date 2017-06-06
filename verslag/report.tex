@@ -273,7 +273,7 @@ The block constraints can be expressed with a bit of maths thank to this represe
 This is really difficult in our opinion since we had some problems at first to find a good other viewpoint. We think that a good criteria to judge if a viewpoint is good or not is how easy is it to express what you need with this viewpoint, obviously if you lose a lot of time with implementing an other viewpoint then it may be worth it to look for an other viewpoint. Another criteria is how easy is it to use this different viewpoint? In other words, is it a logical representation for the problem? Our final criteria for a good viewpoint is to think about the amount of constraints you need with this viewpoint. Is it really the lowest amount possible?
 
 \section{Channeling}
-The channeling constraint for the two viewpoints we are using, the classical one and the one explained above, are in fact not that hard to express. If for the classical viewpoint you know which value there has to be in a certain cell, you also immediately know it's (X,Y) values. For the other viewpoint, if you know the (X,Y) values of a number then obviously you can enter the number at that position.
+The channeling constraint for the two viewpoints we are using, the classical one and the one explained above, are in fact not that hard to express. If for the classical viewpoint you know which value there has to be in a certain cell, you also immediately know its (X,Y) values. For the other viewpoint, if you know the (X,Y) values of a number then obviously you can enter the number at that position.
 
 \subsubsection{ECLiPSe channeling constraints}
 \lstinputlisting[ language = Prolog-pretty, caption  = {Channel constraints in ECLiPSe} ]{eclipse_channel.pl}
@@ -512,7 +512,7 @@ board_connected_set(Board) :-
 \end{itemize}
 All the constraints are active, except for the connectivity constraints. The connectivity constraint does not directly make changes to domains of variables so it a passive constraint. The other constraints do make changes to domains.
 \subsection{Improvements}
-When one thinks about improvements for solving Hashiwokakero there are a couple of obvious ones that pop up. For example, if there is a 4 in one of the four corners, the only way to get 4 bridges is by placing 2 bridges in the two possible directions. The same idea goes for a 6 at one of the edges of the board. Because one of it's directions is blocked, the only way to get 6 briges is by placing 2 bridges in all 3 of the possible directions. For an island with an 8, the only option is to place 2 bridges in every direction. These seem like good improvements, but actually they were already done implicitly by ECLiPSe's domain solving.
+When one thinks about improvements for solving Hashiwokakero there are a couple of obvious ones that pop up. For example, if there is a 4 in one of the four corners, the only way to get 4 bridges is by placing 2 bridges in the two possible directions. The same idea goes for a 6 at one of the edges of the board. Because one of its directions is blocked, the only way to get 6 briges is by placing 2 bridges in all 3 of the possible directions. For an island with an 8, the only option is to place 2 bridges in every direction. These seem like good improvements, but actually they were already done implicitly by ECLiPSe's domain solving.
 \newline
 
 Since these were not really improvements to our solver, we had to look for other improvements. The following improvements are inspired by \url{http://www.conceptispuzzles.com/index.aspx?uri=puzzle/hashi/techniques}.
