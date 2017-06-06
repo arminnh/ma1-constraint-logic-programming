@@ -393,7 +393,7 @@ sudowiki\_nb49 & 0.21s & 58 & 23.021s & 24536 & 0.219s & 38\\
       \multicolumn{2}{L|}{Classical Viewpoint (first fail)} &
       \multicolumn{2}{L|}{Our Viewpoint (first fail)} &
       \multicolumn{2}{L|}{ Channeling (first fail)} \\
-    & ms & backracks & ms & backracks & ms & backracks \\
+    & ms & backtracks & ms & backtracks & ms & backtracks \\
     \hline
 lambda & 0.091s & 977 & 10.42s & 36846 & 1.2s & 1961\\
 hard17 & 0.031s & 419 & 7.06s & 23036 & 0.139s & 386\\
@@ -432,14 +432,8 @@ The difference with the alldifferent is due to the fact that the alldifferent fr
 \newpage
 \subsection{CHR}
 \label{sub:CHR}
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.5\textwidth]{classicvsour}
-\caption{Classic (red) vs our viewpoint (green). Figure shows only one block row.}
-\label{fig:classic_vs_own}
-\end{figure}
 
-For the CHR implementation of the two viewpoints we had a lot of troubles getting something performant. When we run the two viewpoints on harder boards it takes easily a couple of minutes. Obviously this isn't good so we tried to improve the performance of both our implementations. The first classical viewpoint has some advantages over our other viewpoint since when you look at a block and there is only one spot left you know that whatever number is missing you should input it there. This can be seen on figure \ref{fig:classic_vs_own}. The red colored box is the only box left where 9 can be inputted from the classical point of view. By seeing this, we made our system quite faster! For the other viewpoint however, the only thing it sees are the squares bounded by the two green rectangles. The correct place is still available but it also sees unnecessary other spaces at this time.
+For the CHR implementation of the two viewpoints we had a lot of troubles getting something performant. When we run the two viewpoints on harder boards it takes easily a couple of minutes. Obviously this isn't good so we tried to improve the performance of both our implementations.
 
 \subsubsection{Heuristics classical viewpoint}
 For the classical viewpoint we found that there was one obvious heuristic that we could use to try to improve the search.
@@ -463,8 +457,7 @@ The way we do this is we check the domain of (9,9) and we compare it with the do
  When we look at figure \ref{fig:classic_heuristic}(b), we can see the effect of our likelihood heuristic just before the start of the search. We see that already 5 different squares are filled in (the green and red ones). The green ones are some obvious plays but we were actually surprised when it played the red one. The other green ones are 'easy' because for example for the (9,9) example you see that this position is obviously the only place 6 can be played because of the other sixes. But for the red one we don't see a single other 8 on the board and yet it knew that it had to play an 8 there. We have to admit though that our system is a bit flawed since this heuristic cannot be used during the search since too many calculations are made. For example with everything we have filled in we could deduct that for the yellow square, 5 is the only possible play. But this is not feasible since it is way to slow to calculate this. This is why we ordered the domain according to likelihood. If we look at the domain of (2,1) sorted with likelihood, we see that the domain is [5, 3, 6, 8, 9]. So even though we're not fully sure that the 5 had to come there before we filled in the 4 in our block, our system captures the likelihood of a 5 at (2,1) still quite well.
 
 \subsubsection{Heuristics our viewpoint}
-Although we mentioned it in the intro of \ref{sub:CHR}, finding out that you should play in that one particular spot was not feasible with our implementation. We did find something else we could do to improve our system.
-
+To increase the search speed for our viewpoint we decided to do something about the search space itself. Consider the following example:
 \begin{figure}[h!]
 \centering
 \includegraphics[width=0.8\textwidth]{smartremoval}
@@ -484,7 +477,7 @@ Let's say we want to play a 3 at the green square on figure \ref{fig:smart_domai
     \hline
 lambda & 340.04s & 118.72 & 218.44s \\
 hard17 & 2003.50s & 463.11s & 413.61s \\
-eastermonster & 3.69s & 235.10s & 3.76s \\
+eastermonster & 63.57s & 235.10s & 32.77s \\
 tarek\_052 & 13.58s & 170.76s & 26.12s \\
 goldennugget & 18.151s & 155.49s & 21.42s \\
 coloin & 132.72s & 74.82s & 69.82s \\
@@ -595,6 +588,78 @@ When one thinks about improvements for solving Hashiwokakero there are a couple 
 \end{enumerate}
 
 All three of the improvements have an impact on the connectivity constraint. Because the improvements avoid isolated segments before the search starts, the amount of backtracks (in the wost case) caused to satisfy the connectivity constraint will be reduced.
+
+\subsection{Experiments}
+
+\begin{table}[h!]
+  \begin{tabular}{|c|c|c|c|c|}
+    \hline
+    \multirow{2}{*}{Puzzle} &
+    \multicolumn{2}{L|}{Without improvements} &
+    \multicolumn{2}{L|}{With improvements}\\
+      & ms & backtracks & ms & backtracks \\
+    \hline
+    1 & 0 & 1 & 0 & 1 \\
+    2 & 130 & 60 & 81 & 42 \\
+    3 & 0 & 0 & 0 & 0 \\
+    4 & 0 & 0 & 0 & 0 \\
+    5 & 0 & 0 & 0 & 0 \\
+    6 & 10 & 1 & 10 & 1 \\
+    7 & 0 & 0 & 0 & 0 \\
+    8 & 0 & 0 & 0 & 0 \\
+    9 & 0 & 1 & 0 & 1 \\
+    10 & 49 & 160 & 61 & 160 \\
+    11 & 0 & 0 & 0 & 0 \\
+    12 & 0 & 1 & 0 & 1 \\
+    13 & 10 & 0 & 0 & 0 \\
+    14 & 0 & 1 & 0 & 1 \\
+    15 & 20 & 4 & 20 & 4 \\
+    16 & 21 & 28 & 20 & 28 \\
+    17 & 10 & 1 & 9 & 0 \\
+    18 & 0 & 1 & 0 & 1 \\
+    19 & 0 & 0 & 0 & 0 \\
+    20 & 0 & 2 & 0 & 1 \\
+    21 & 0 & 1 & 0 & 0 \\
+    22 & 10 & 9 & 10 & 9 \\
+    \hline
+  \end{tabular}
+  \caption{ECLiPSe Hashiwokakero solutions using input order}
+\end{table}
+
+\begin{table}[h!]
+  \begin{tabular}{|c|c|c|c|c|}
+    \hline
+    \multirow{2}{*}{Puzzle} &
+    \multicolumn{2}{L|}{Without improvements} &
+    \multicolumn{2}{L|}{With improvements}\\
+    & ms & backtracks & ms & backtracks \\
+    \hline
+    1 & 0 & 1 & 0 & 1 \\
+    2 & 170 & 61 & 20 & 61 \\
+    3 & 0 & 0 &  & 0 \\
+    4 & 0 & 0 & 0 & 0 \\
+    5 & 0 & 0 &  & 0 \\
+    6 & 10 & 1 &  & 1 \\
+    7 & 0 & 0 &  & 0 \\
+    8 & 0 & 0 &  & 0 \\
+    9 & 0 & 1 & 0 & 1 \\
+    10 & 110 & 152 & 69 & 152 \\
+    11 & 0 & 0 & 0 & 0 \\
+    12 & 0 & 1 & 10 & 1 \\
+    13 & 0 & 0 & 0 & 0 \\
+    14 & 10 & 1 & 0 & 1 \\
+    15 & 80 & 4 & 90 & 4 \\
+    16 & 50 & 28 & 61 & 28 \\
+    17 & 0 & 1 & 10 & 0 \\
+    18 & 0 & 1 & 0 & 1 \\
+    19 & 0 & 0 & 0 & 0 \\
+    20 & 0 & 2 & 0 & 1 \\
+    21 & 0 & 1 & 0 & 0 \\
+    22 & 10 & 9 & 10 & 9 \\
+    \hline
+  \end{tabular}
+  \caption{ECLiPSe Hashiwokakero solutions using first fail}
+\end{table}
 
 \newpage
 \section{CHR}

@@ -23,27 +23,35 @@
 solve(Number) :-
     % find the game board
     puzzle_board(Number, Board),
-    writeln("Given board:"),
-    print_board(Board),
+    writeln("Given board:"), print_board(Board),
 
     % create constraints
     hashiwokakero(Board),
-    writeln("Board before search:"),
-    print_board(Board),
+    writeln("Board before search:"), print_board(Board),
 
     % do search on variables
-    search(naive, Board),
+    search(naive, Board, _),
     % Check that the islands form a connected set
     board_connected_set(Board),
-    writeln("Board after search:"),
-    print_board(Board).
+    writeln("Board after search:"), print_board(Board).
 
-% find all solutions for a given game board
+% solve a given game board. Backtracks is the amount of backtracks
+% that were made during the search
+solve(Number, Backtracks) :-
+    puzzle_board(Number, Board),
+    hashiwokakero(Board),
+    search(naive, Board, Backtracks),
+    board_connected_set(Board).
+
 findall(Number) :-
     findall(_, solve(Number), Sols),
     length(Sols, N),
-    write(N),
-    writeln(" solution(s).").
+    write(N), writeln(" solution(s).").
+
+% find all solutions for a given game board
+findall(Number, TotalBacktracks) :-
+    findall(Backtracks, solve(Number, Backtracks), Sols),
+    sumlist(Sols, TotalBacktracks).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MAIN CONSTRAINTS
@@ -83,8 +91,7 @@ hashiwokakero(Board) :-
         ),
 
         % add some improvements
-        improve(Board, X, Y, Amount),
-        true
+        improve(Board, X, Y, Amount)
     ).
 
 % verifies whether the islands on the Board form a connected set. Done by stating that
@@ -115,7 +122,7 @@ improve(Board, X, Y, Amount) :-
     no_two_to_two_isolation(Board, X, Y, Amount),
     no_two_with_three_neighbors_isolation(Board, X, Y, Amount),
     no_three_with_three_neighbors_isolation(Board, X, Y, Amount),
-    true.
+    !.
 
 % There cannot be a bridge between two islands with 1.
 no_one_to_one_isolation(Board, X, Y, 1):-
@@ -134,13 +141,6 @@ no_one_to_one_isolation(Board, X, Y, 1):-
             ;
                 true
             )
-
-            %% % if the amount of the neighbor equals 1,
-            %% %then the amount of bridges going to that neighbor must be zero
-            %% nth1(3, Neigbor, 1),
-            %% nth1(4, Neigbor, Dir),
-            %% D is Board[X, Y, Dir],
-            %% D = 0
         )
     ;
         true
@@ -164,13 +164,6 @@ no_two_to_two_isolation(Board, X, Y, 2):-
             ;
                 true
             )
-
-            %% % if the amount of the neighbor equals 2,
-            %% %then the amount of bridges going to that neighbor cannot be 2
-            %% nth1(3, Neigbor, 2),
-            %% nth1(4, Neigbor, Dir),
-            %% D is Board[X, Y, Dir],
-            %% D \== 2
         )
     ;
         true
@@ -400,14 +393,13 @@ count_nonzero_nonvars([_ | T], Count):-
     count_nonzero_nonvars(T, C2),
     Count is C2.
 
-% Index is the position of the value we looked for
-% Index2 is the index passed from a smaller part of the list
-% Counter is to count which index we are now
-% Length is the length of the list
+% look_for_value(List, Val, Index, Counter, Length),
+% Index is the position of Val in List
+% Counter is to count the current index
+% Length is the length of List
 look_for_value([], _, 0, Length, Length).
 look_for_value([ [_, _, Am, _] | T ], Val, Index, Counter, Length):-
     look_for_value(T, Val, Index2, C2, Length),
-
     (Am =:= Val -> Index is C2 ; Index is Index2 ),
     Counter is C2 - 1.
 
@@ -452,20 +444,51 @@ direction(5, "West").
 % SOME SEARCH STRATEGIES TAKEN FROM SLIDES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-search(naive, List) :-
-    search(List, 0, input_order, indomain, complete,  []).
+search(naive, List, Backtracks) :-
+    search(List, 0, input_order, indomain, complete, [backtrack(Backtracks)]).
 
-search(middle_out, List) :-
+search(middle_out, List, Backtracks) :-
     middle_out(List, MOList),
-    search(MOList, 0, input_order, indomain, complete, []).
+    search(MOList, 0, input_order, indomain, complete, [backtrack(Backtracks)]).
 
-search(first_fail, List) :-
-    search(List, 0, first_fail, indomain, complete, []).
+search(first_fail, List, Backtracks) :-
+    search(List, 0, first_fail, indomain, complete, [backtrack(Backtracks)]).
 
-search(moff, List) :-
+search(moff, List, Backtracks) :-
     middle_out(List, MOList),
-    search(MOList, 0, first_fail, indomain, complete, []).
+    search(MOList, 0, first_fail, indomain, complete, [backtrack(Backtracks)]).
 
-search(moffmo, List) :-
+search(moffmo, List, Backtracks) :-
     middle_out(List, MOList),
-    search(MOList, 0, first_fail,  indomain_middle, complete, []).
+    search(MOList, 0, first_fail,  indomain_middle, complete, [backtrack(Backtracks)]).
+
+experiments :-
+	writeln("\\begin{table}[h!]"),
+    writeln("  \\begin{tabular}{|c|c|c|c|c|c|c|}"),
+    writeln("    \\hline"),
+    writeln("    \\multirow{2}{*}{Puzzle} &"),
+    writeln("    \\multicolumn{2}{L|}{Without improvements} &"),
+    writeln("    \\multicolumn{2}{L|}{With improvements}\\\\"),
+    writeln("      & ms & backtracks & ms & backtracks \\\\"),
+    writeln("    \\hline"),
+
+	(   (puzzle(X, _, _) ; board(X, _)),
+
+		statistics(runtime, [_ | [_]]),
+		findall(X, B1),
+		statistics(runtime, [_ | [ExecutionTimeMS1]]),
+
+        write("        "),
+	 	write(X),
+		write(" & "),
+		write(ExecutionTimeMS1),
+		write(" & "),
+		write(B1),
+		writeln(' \\\\'),
+		fail
+    ;
+        true
+    ),
+	writeln(" \\hline"),
+    writeln("  \\end{tabular}"),
+    writeln("\\end{table}").

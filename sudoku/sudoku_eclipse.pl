@@ -218,23 +218,23 @@ channel(NumbersPositions, Board):-
 % SOME SEARCH STRATEGIES TAKEN FROM THE COURSE MATERIAL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-search(naive,List, Back) :-
-    search(List,0,input_order,indomain,complete, [backtrack(Back)]).
+search(naive, List, Backtracks) :-
+    search(List, 0, input_order, indomain, complete, [backtrack(Backtracks)]).
 
-search(middle_out,List, Back) :-
-    middle_out(List,MOList),
-    search(MOList,0,input_order,indomain,complete, [backtrack(Back)]).
+search(middle_out, List, Backtracks) :-
+    middle_out(List, MOList),
+    search(MOList, 0, input_order, indomain, complete, [backtrack(Backtracks)]).
 
-search(first_fail,List, Back) :-
-    search(List,0,first_fail,indomain,complete, [backtrack(Back)]).
+search(first_fail, List, Backtracks) :-
+    search(List, 0, first_fail, indomain, complete, [backtrack(Backtracks)]).
 
-search(moff,List, Back) :-
-    middle_out(List,MOList),
-    search(MOList,0,first_fail,indomain,complete, [backtrack(Back)]).
+search(moff, List, Backtracks) :-
+    middle_out(List, MOList),
+    search(MOList, 0, first_fail, indomain, complete, [backtrack(Backtracks)]).
 
-search(moffmo,List, Back) :-
-    middle_out(List,MOList),
-    search(MOList,0,first_fail, indomain_middle,complete, [backtrack(Back)]).
+search(moffmo, List, Backtracks) :-
+    middle_out(List, MOList),
+    search(MOList, 0, first_fail,  indomain_middle, complete, [backtrack(Backtracks)]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HELPER PROCEDURES
@@ -309,7 +309,7 @@ experiments :-
       \\multicolumn{2}{L|}{Classical Viewpoint (ifirst fail)} &
       \\multicolumn{2}{L|}{Our Viewpoint (first fail)} &
       \\multicolumn{2}{L|}{ Channeling (first fail)} \\\\
-    & ms & backracks & ms & backracks & ms & backracks \\\\
+    & ms & backtracks & ms & backtracks & ms & backtracks \\\\
     \\hline\n"),
 	(   puzzles(_, X),
 		writeln(X),
