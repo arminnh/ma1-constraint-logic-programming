@@ -200,7 +200,7 @@ xmax(XMax) \ create_empty_board(X, Y) <=> X =< XMax, X2 is X + 1 |
 % create board facts from an array of Islands
 %   each island takes the form (X, Y, N) where X is the row number, Y is the column
 %   number and N the number of bridges that should arrive in this island.
-create_islands([ [X, Y, Amount] | Islands ]), board(X, Y, _, N, E, S, W) <=>
+create_islands([ (X, Y, Amount) | Islands ]), board(X, Y, _, N, E, S, W) <=>
     board(X, Y, Amount, N, E, S, W),
     island(X, Y, Amount),
     create_islands(Islands).

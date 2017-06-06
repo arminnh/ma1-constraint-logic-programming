@@ -3,6 +3,7 @@
 % :- coroutine.
 :- lib(lists).
 :- import nth1/3 from listut.
+:- [boards].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Hashiwokakero, also called Bridges is a logic puzzle in which different islands
@@ -24,40 +25,38 @@
 solve(Number) :-
     % find the game board
     puzzle_board(Number, Board),
-
     writeln("Given board:"),
     print_board(Board),
 
-    % create bridges and set constraints
+    % create constraints
     hashiwokakero(Board),
-    writeln("optimize"),
-    %optimize(Board),
-
+    writeln("Board before search:"),
     print_board(Board),
+
     % do search on variables
     search(naive, Board),
-
-    % Check that everything is connected
-    %writeln("connected"),
+    % Check that the islands form a connected set
     board_connected_set(Board),
+    writeln("Board after search:"),
+    print_board(Board).
 
-    % print results
-    writeln("Search done:"),
-    print_board(Board),
-    true.
-
-% find all solutions
+% find all solutions for a given game board
 findall(Number) :-
     findall(_, solve(Number), Sols),
     length(Sols, N),
     write(N),
     writeln(" solution(s).").
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MAIN CONSTRAINTS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 % The board can be viewed as a matrix in which each position contains an array
 % of 5 variables: The amount of bridges that need to be connected to the position,
 % and the amounts of briges going North, East, South, or West from the position
 hashiwokakero(Board) :-
-    dim(Board, [XMax, YMax, 5]), % 5 variables: Amount, N, E, S, W, visited for each position
+    % 5 variables: Amount, N, E, S, W, visited for each position
+    dim(Board, [XMax, YMax, 5]),
 
     ( multifor([X, Y], 1, [XMax, YMax]), param(Board, XMax, YMax) do
         Amount is Board[X, Y, 1],
@@ -65,107 +64,175 @@ hashiwokakero(Board) :-
         E is Board[X, Y, 3],
         S is Board[X, Y, 4],
         W is Board[X, Y, 5],
-        % if this position is not on the edges of the board, then the amount of bridges
-        % going in one direction needs to equals the amount in the other direction
+
+        % the amount of bridges going in one direction equals the amount of bridges going in the
+        % opposite directio from the next position in the original direction. If the position is on an
+        % edge of the board, the amount of bridges in the direction that would go outside of the board is zero.
         ( X > 1    -> N #= Board[X-1,   Y, 4] ; N = 0 ),
         ( Y < YMax -> E #= Board[  X, Y+1, 5] ; E = 0 ),
         ( X < XMax -> S #= Board[X+1,   Y, 2] ; S = 0 ),
         ( Y > 1    -> W #= Board[  X, Y-1, 3] ; W = 0 ),
 
-        % if this position requires an amount of bridges,
-        % make the sum of all bridges equal this amount
+        % if the current position requires an amount of bridges, make the sum of all bridges equal this amount
         ( Amount > 0 ->
-            % (Amount == 8 ->
-            % Not needed since if the amount is 8
-            % Eclipse knows that everything needs to be 2
             [N, E, S, W] #:: 0..2,
             N + E + S + W #= Amount
-        ; % else make sure bridges don't cross each other
+        ;
+            % else make sure that bridges going in one directoin equals the amount of
+            % bridges going in the opposite direction and that bridges don't cross each other
             N = S, E = W,
             (N #= 0) or (E #= 0)
         ),
 
-        optimize(Board, X,Y, Amount),
+        % add some improvements
+        improve(Board, X, Y, Amount),
         true
     ).
 
-% verifies whether the islands on the Board form a connected set. Done by stating that from a certain island 
-% all other islands on the board can be visited.
+% verifies whether the islands on the Board form a connected set. Done by stating that
+% from a certain island all other islands on the board can be visited.
 board_connected_set(Board) :-
     board_islands(Board, Islands),
     length(Islands, N),
+    % Visited is a list of free variables, a bound variable in the list means that a certain island has been visited
     length(Visited, N),
 
-    % make the island be member of current set
+    % get the first island in Islands
     nth1(1, Islands, [X, Y]),
-
     % set position to visited
     nth1(1, Visited, 1),
 
-    % travel to the neighbors of the current position and fill the Islands/Visited set
-    fill_set_visit(Board, X, Y, Islands, Visited),
+    % travel to the neighbors of the selected island and update the Visited set.
+    visit_islands(Board, X, Y, Islands, Visited),
 
     % if all free variables in Visited have been bound, then all islands form a connected set
     count_nonvars(Visited, N).
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% LOADING BOARDS
+% ADDITIONAL IMPROVEMENT CONSTRAINTS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+improve(Board, X, Y, Amount) :-
+    no_one_to_one_isolation(Board, X, Y, Amount),
+    no_two_to_two_isolation(Board, X, Y, Amount),
+    no_two_with_three_neighbors_isolation(Board, X, Y, Amount),
+    no_three_with_three_neighbors_isolation(Board, X, Y, Amount),
+    true.
 
-% load the Board from a puzzle fact
-puzzle_board(Number, Board) :-
-    % Each puzzle(Id, S, Islands) fact defines the input of one problem:
-    % its identifier Id, the size S (width and height), and the list of islands Islands.
-    puzzle(Number, Size, Islands),
+% There cannot be a bridge between two islands with 1.
+no_one_to_one_isolation(Board, X, Y, 1):-
+    possible_island_neighbors(Board, [X, Y], Neighbors),
+    length(Neighbors, Count),
 
-    % create a board with the islands on it
-    islands_board(Islands, Size, Board).
+    (Count > 1 ->
+        ( for(I, 1, Count), param(Board, X, Y, Neighbors) do
+            nth1(I, Neighbors, Neigbor),
+            nth1(3, Neigbor, NeighborAmount),
 
-% load the board from a matrix fact
-puzzle_board(Number, Board) :-
-    % create a board from a matrix that contains the islands
-    board(Number, Matrix),
-    matrix_board(Matrix, Board).
+            (NeighborAmount =:= 1 ->
+                nth1(4, Neigbor, Dir),
+                D is Board[X, Y, Dir],
+                D = 0
+            ;
+                true
+            )
 
-% create a usable Board from an array of Islands
-% each island takes the form (X, Y, N) where X is the row number, Y is the column
-% number and N the number of bridges that should arrive in this island.
-islands_board(Islands, Size, Board) :-
-    dim(Board, [Size, Size, 5]),
-
-    % fill in the island bridge amounts first
-    ( foreacharg(Island, Islands), param(Board) do
-        X is Island[1],
-        Y is Island[2],
-        Amount is Island[3],
-        Board[X, Y, 1] #= Amount
-    ),
-
-    % then fill in zeros
-    ( foreacharg(Row, Board) do
-        ( foreacharg(Position, Row) do
-            Amount is Position[1],
-            ( var(Amount) -> Position[1] #= 0 ; true )
+            %% % if the amount of the neighbor equals 1,
+            %% %then the amount of bridges going to that neighbor must be zero
+            %% nth1(3, Neigbor, 1),
+            %% nth1(4, Neigbor, Dir),
+            %% D is Board[X, Y, Dir],
+            %% D = 0
         )
+    ;
+        true
     ).
+no_one_to_one_isolation(_, _, _, _).
 
-% create a usable Board from a matrix that contains the islands
-matrix_board(Matrix, Board) :-
-    dim(Matrix, [XMax, YMax]),
-    dim(Board, [XMax, YMax, 5]),
+% There cannot be two bridges between two islands with 2.
+no_two_to_two_isolation(Board, X, Y, 2):-
+    possible_island_neighbors(Board, [X, Y], Neighbors),
+    length(Neighbors, Count),
 
-    % fill in the island bridge amounts first
-    ( multifor([X, Y], 1, [XMax, YMax]), param(Matrix, Board) do
-        Board[X, Y, 1] #= Matrix[X, Y]
+    (Count > 1 ->
+        ( for(I, 1, Count), param(Board, X, Y, Neighbors) do
+            nth1(I, Neighbors, Neigbor),
+            nth1(3, Neigbor, NeighborAmount),
+
+            (NeighborAmount =:= 2 ->
+                nth1(4,Neigbor,Dir),
+                D is Board[X,Y, Dir],
+                D \== 2
+            ;
+                true
+            )
+
+            %% % if the amount of the neighbor equals 2,
+            %% %then the amount of bridges going to that neighbor cannot be 2
+            %% nth1(3, Neigbor, 2),
+            %% nth1(4, Neigbor, Dir),
+            %% D is Board[X, Y, Dir],
+            %% D \== 2
+        )
+    ;
+        true
     ).
+no_two_to_two_isolation(_, _, _, _).
 
+% Board 23
+% If an island with 2 has 3 neighbors, of which two are a 1,
+% then the amount of bridges going to the third neighbor must be larger than zero (#\= 0).
+no_two_with_three_neighbors_isolation(Board, X, Y, 2):-
+    possible_island_neighbors(Board, [X, Y], Neighbors),
+    length(Neighbors, 3),
+
+    look_for_value(Neighbors, 1, I1, _, 3),
+    writeln('pls1'),
+    (I1 > 0 ->
+        writeln('pls1111'),
+        nth1(I1, Neighbors, N1),
+        delete(N1, Neighbors, R1),
+        look_for_value(R1, 1, I2, _, 2),
+
+        (I2 > 0 ->
+            writeln('pls1111111'),
+            nth1(I2, R1, N2),
+            delete(N2, R1, [Neighbor]),
+            nth1(4, Neighbor, D),
+            Board[X, Y, D] #\= 0
+        ;
+            true
+        )
+    ;
+        true
+    ).
+no_two_with_three_neighbors_isolation(_, _, _, _).
+
+% Board 22
+% If an island with 3 has 3 neighbors, of which one is a 1 and another is a 2,
+% then the amount of bridges going to the third neighbor must be larger than zero (#\= 0)
+no_three_with_three_neighbors_isolation(Board, X, Y, 3):-
+    possible_island_neighbors(Board, [X, Y], Neighbors),
+    length(Neighbors, 3),
+
+    look_for_value(Neighbors, 1, I1, _, 3),
+    look_for_value(Neighbors, 2, I2, _, 3),
+
+    writeln('pls2'),
+    (I1 > 0, I2 > 0 ->
+        writeln('pls2222'),
+        subtract([1, 2, 3], [I1, I2], [I]),
+        nth1(I, Neighbors, Neighbor),
+        nth1(4, Neighbor, D),
+        Board[X, Y, D] #\= 0
+    ;
+        true
+    ).
+no_three_with_three_neighbors_isolation(_, _, _, _).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ISLANDS PROCEDURES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 % Count is the amount of islands on the Board
 board_islands_count(Board, Count) :-
@@ -180,23 +247,17 @@ board_islands_count(Board, Count) :-
     ),
     length(List, Count).
 
-% Islands is a list of islands that are on the given Board. Done by passing over the entire board. nth1 is used to prevent permutations causing many solutions. TODO: try with 1 simple procedure using cuts instead?
+% Islands is a list of islands that are on the given Board. Done by passing over the entire board.
+% nth1 is used to prevent permutations causing many solutions. Maybe this could have been done in a
+% much simpler way using cuts instead, but no time left to try that approach.
 board_islands(Board, Islands) :-
     dim(Board, [XMax, YMax, 5]),
     board_islands(Board, 1, 1, XMax, YMax, 1, Islands),
     board_islands_count(Board, Count),
     length(Islands, Count).
-
-% Islands is a list of islands that are on the given Board. Done by passing over the entire board. nth1 is used to prevent permutations causing many solutions. TODO: try with 1 simple procedure using cuts instead?
 board_islands(Board, X, Y, X, Y, Count, Islands):-
     Amount is Board[X, Y, 1],
-    ( Amount > 0 ->
-        nth1(Count, Islands, [X, Y])
-    ;
-        true
-    ).
-
-% Islands is a list of islands that are on the given Board. Done by passing over the entire board. nth1 is used to prevent permutations causing many solutions. TODO: try with 1 simple procedure using cuts instead?
+    ( Amount > 0 -> nth1(Count, Islands, [X, Y]) ; true ).
 board_islands(Board, XNext, YNext, XMax, YMax, Count, Islands) :-
     XNext =< XMax,
     YNext =< YMax,
@@ -217,45 +278,21 @@ board_islands(Board, XNext, YNext, XMax, YMax, Count, Islands) :-
     ),
     board_islands(Board, XNext2, YNext2, XMax, YMax, CountNext, Islands).
 
-% Islands is a list of islands on the Board that form a connected set starting from a certain island. Visited is used to prevent visiting islands multiple times.
-fill_set_visit(Board, X, Y, Islands, Visited) :-
-    island_neighbors(Board, X,Y, Neighbors),
-    %writeln(Neighbors),
+% Visited is a list which represents which of the islands in the Islands list can be visited
+% if the N-th variable in Visited is a 1, then the N-th island in Islands can be visited
+visit_islands(Board, X, Y, Islands, Visited) :-
+    island_neighbors(Board, X, Y, Neighbors),
     length(Neighbors, N),
-    % writeln(["         fill_set_visit --- getting position: ", [X, Y], " --- ", Neighbors]),
 
     ( for(I,1,N), param(Board, Islands, Visited, Neighbors) do
-        %writeln(["I", I]),
-        nth1(I, Neighbors, [X1,Y1, _, _]),
-
-        nth1(Pos, Islands, [X1,Y1]),
+        nth1(I, Neighbors, [X1, Y1, _, _]),
+        nth1(Pos, Islands, [X1, Y1]),
         nth1(Pos, Visited, HasVisited),
-        % member([X1,Y1], Neighbors),
-        % writeln(["Checking neighbor: ", X1, Y1, "Which has Index: ", Pos, " in visited and has been visited: ", HasVisited, "Visited set: ", Visited ]),
-        % writeln(["Neighbors ",Neighbors]),
 
-        % If it is still a var, we haven't visited this islands yet so let's go and visit it :D yaayyyy :D :D :D i agree!
-        (var(HasVisited) ->
-            HasVisited is 1,
-            fill_set_visit(Board, X1, Y1, Islands, Visited)
-        ;
-            true
-        )
+        % if HasVisited is a var, the neighbor has not been visited yet, so it can be visited now
+        (var(HasVisited) -> HasVisited is 1, visit_islands(Board, X1, Y1, Islands, Visited) ; true )
     ),
     !.
-
-% counts the nonzero nonvars
-count_nonzero_nonvars([], 0).
-
-count_nonzero_nonvars([H | T], Count):-
-    nonvar(H),
-    H > 0,
-    count_nonzero_nonvars(T, C2),
-    Count is C2 + 1.
-
-count_nonzero_nonvars([_ | T], Count):-
-    count_nonzero_nonvars(T, C2),
-    Count is C2.
 
 % Neighbors is a list of neighboring islands (not just positions) of position (X, Y) on the Board
 island_neighbors(Board, X, Y, Neighbors) :-
@@ -270,11 +307,13 @@ island_neighbors(Board, X, Y, Neighbors) :-
             next_pos([X,Y], Direction, NextPos),
             find_neighbor(Board, NextPos, Direction, Neighbor),
             member(Neighbor, Neighbors)
-            ;
+        ;
             true
         )
     ).
 
+% Neighbors is a list a list of possible neighbors of position Pos on the board
+% a neighbor is a possible neighbor when it is an island which can be connected by a bridge
 possible_island_neighbors(Board, Pos, Neighbors) :-
     ( foreachelem(Direction, [](2, 3, 4, 5)), param(Board, Pos, Neighbors) do
         next_pos(Pos, Direction, NextPos),
@@ -287,11 +326,8 @@ possible_island_neighbors(Board, Pos, Neighbors) :-
 % Neighbor is a possible neighbor in a certain direction from position (X, Y) on the Board
 find_neighbor(Board, [X, Y], Direction, Neighbor) :-
     dim(Board, [XMax, YMax, _]),
-
-    X > 0,
-    X =< XMax,
-    Y > 0,
-    Y =< YMax,
+    X > 0, X =< XMax,
+    Y > 0, Y =< YMax,
 
     Amount is Board[X, Y, 1],
     ( Amount > 0 ->
@@ -300,163 +336,56 @@ find_neighbor(Board, [X, Y], Direction, Neighbor) :-
         next_pos([X, Y], Direction, NextPos),
         find_neighbor(Board, NextPos, Direction, Neighbor)
     ).
-
 find_neighbor(_, _, _, _).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Optimize
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-no_one_to_one(Board, X, Y, Amount):-
-    (Amount =:= 1->
-        possible_island_neighbors(Board, [X,Y], Neighbors),
-        length(Neighbors, Count),
-        (Count > 1 ->
-            ( for(I, 1, Count), param(Board, X, Y, Neighbors) do
-                % 3 is value of neighbor
-                nth1(I, Neighbors, Neigbor),
-                nth1(3, Neigbor,Am2),
-                (Am2 =:= 1 ->
-                    nth1(4,Neigbor,Dir),
-                    D is Board[X,Y, Dir],
-                    D = 0
-                ;
-                    true
-                )
-            )
-        ;
-            true
-        )
-    ;
-        true
-    ).
-
-no_two_bridges_from_two_to_two(Board, X, Y, Amount):-
-    (Amount =:= 2 ->
-        possible_island_neighbors(Board, [X,Y], Neighbors),
-        length(Neighbors, Count),
-        (Count > 1 ->
-            ( for(I, 1, Count), param(Board, X, Y, Neighbors) do
-                % 3 is value of neighbor
-                nth1(I, Neighbors, Neigbor),
-                nth1(3, Neigbor,Am2),
-                (Am2 =:= 2 ->
-                    nth1(4,Neigbor,Dir),
-                    D is Board[X,Y, Dir],
-                    D \== 2
-                ;
-                    true
-                )
-            )
-        ;
-            true
-        )
-    ;
-        true
-    ).
-
-
-% Checks if a Pos [X,Y] is in one of the corners of the board
-is_in_corner(Board, X,Y):-
-    dim(Board, [XMax, YMax, 5]),
-    ( (X =:= 1 ; X =:= XMax), (Y =:= 1 ; Y =:= YMax) ->
-        true
-        ;
-        false
-    ).
-
-% Checks if a Pos [X,Y] is at one of sides of the board
-is_on_side_of_board(Board,X,Y):-
-    dim(Board, [XMax, YMax, 5]),
-    ( X =:= 1 ; X =:= XMax ; Y =:= 1 ; Y =:= YMax ->
-        true
-        ;
-        false
-    ).
-
-look_for_value([], Val, 0, Length, Length).
-
-look_for_value([ [_,_,Am, _] | T], Val, Index, Counter, Length):-
-    look_for_value(T, Val, Index2, C2, Length),
-    (Am =:= Val ->
-        Index is C2
-    ;
-        Index is Index2
-    ),
-    Counter is C2 - 1.
-
-
-
-three_isolation_neighbour_for_three(Board, X, Y, Amount):-
-    (Amount =:= 3 ->
-        possible_island_neighbors(Board, [X,Y], Neighbors),
-        length(Neighbors, Count),
-        (Count =:= 3 ->
-            look_for_value(Neighbors, 1, I1, C1, 3),
-            look_for_value(Neighbors, 2, I2, C2, 3),
-
-            (I1 > 0, I2 > 0 ->
-                subtract([1,2,3], [I1,I2], [I]),
-                nth1(I, Neighbors, Neighbor),
-                nth1(4, Neighbor, D),
-                Board[X,Y,D] #\= 0
-                ;
-                true
-            )
-
-            ;
-            true
-        )
-        ;
-        true
-    ).
-
-
-three_isolation_neighbour_for_two(Board, X, Y, Amount):-
-        (Amount =:= 2 ->
-            possible_island_neighbors(Board, [X,Y], Neighbors),
-            length(Neighbors, Count),
-            (Count =:= 3 ->
-                look_for_value(Neighbors, 1, I1, C1,3),
-                (I1 > 0 ->
-                    nth1(I1, Neighbors, N1),
-                    delete(N1, Neighbors, R1),
-                    look_for_value(R1, 1, I2, C2,2),
-                    (I2 > 0 ->
-                        nth1(I2, R1, N2),
-                        delete(N2, R1, [Neighbor]),
-                        nth1(4, Neighbor, D),
-                        Board[X,Y,D] #\= 0
-                        ;
-                        true
-                    )
-                ;
-                    true
-                    )
-                ;
-                true
-            )
-            ;
-            true
-        ).
-
-optimize(Board, X, Y, Amount) :-
-    % first optimilisation
-    %no_one_to_one(Board, X, Y, Amount),
-    %no_two_bridges_from_two_to_two(Board, X, Y, Amount),
-
-    % Three isolation neighbor
-    % Board 20
-    %three_isolation_neighbour_for_three(Board, X, Y, Amount),
-
-    % Board 21
-    three_isolation_neighbour_for_two(Board, X, Y, Amount),
-
-    true.
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HELPER PROCEDURES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% load the Board from a puzzle fact
+% Each puzzle(Id, S, Islands) fact defines the input of one problem:
+% its identifier Id, the size S (width and height), and the list of islands Islands.
+puzzle_board(Number, Board) :-
+    puzzle(Number, Size, Islands),
+
+    % create the board array
+    dim(Board, [Size, Size, 5]),
+
+    % put the islands on the board
+    islands_board(Islands, Board),
+
+    % then fill in zeros for the rest of the board
+    ( foreacharg(Row, Board) do
+        ( foreacharg(Position, Row) do
+            Amount is Position[1],
+            ( var(Amount) -> Position[1] #= 0 ; true )
+        )
+    ).
+
+% load the board from a matrix (prolog list of lists) fact that contains the islands
+puzzle_board(Number, Board) :-
+    board(Number, Matrix),
+    matrix_board(Matrix, Board).
+
+% fill in a list of islands on a Board array
+islands_board([], _).
+islands_board([ (X, Y, Amount) | Islands ], Board) :-
+    Board[X, Y, 1] #= Amount,
+    islands_board(Islands, Board).
+
+% create a usable Board from a matrix (prolog list of lists) that contains the islands
+matrix_board(Matrix, Board) :-
+    length(Matrix, XMax),
+    nth1(1, Matrix, FirstRow),
+    length(FirstRow, YMax),
+    dim(Board, [XMax, YMax, 5]),
+
+    % fill in the island bridge amounts first
+    ( multifor([X, Y], 1, [XMax, YMax]), param(Matrix, Board) do
+        nth1(X, Matrix, Row),
+        nth1(Y, Row, Amount),
+        Board[X, Y, 1] #= Amount
+    ).
 
 % count the nonvars of a list, assuming that all of the nonvars are at the end of the list
 count_nonvars([], 0).
@@ -466,6 +395,25 @@ count_nonvars([ Head | Tail ], Count) :-
     nonvar(Head),
     count_nonvars(Tail, Count2),
     Count is Count2 + 1.
+
+% counts the nonzero nonvars in a list
+count_nonzero_nonvars([], 0).
+count_nonzero_nonvars([H | T], Count):-
+    nonvar(H),
+    H > 0,
+    count_nonzero_nonvars(T, C2),
+    Count is C2 + 1.
+count_nonzero_nonvars([_ | T], Count):-
+    count_nonzero_nonvars(T, C2),
+    Count is C2.
+
+% TODO comment: Index is .... Index2 is ...
+look_for_value([], _, 0, Length, Length).
+look_for_value([ [_, _, Am, _] | T ], Val, Index, Counter, Length):-
+    look_for_value(T, Val, Index2, C2, Length),
+
+    (Am =:= Val -> Index is C2 ; Index is Index2 ),
+    Counter is C2 - 1.
 
 print_board(Board) :-
     ( foreacharg(Row, Board) do
@@ -525,298 +473,3 @@ search(moff, List) :-
 search(moffmo, List) :-
     middle_out(List, MOList),
     search(MOList, 0, first_fail,  indomain_middle, complete, []).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% SAMPLE PROBLEMS
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% puzzle 1, easy
-% http://en.wikipedia.org/wiki/File:Val42-Bridge1n.png
-% solution: http://en.wikipedia.org/wiki/File:Val42-Bridge1.png
-puzzle(1, 7, [](
-    [](1,1,2),  [](1,2,3), [](1,4,4), [](1,6,2),
-    [](2,7,2),
-    [](3,1,1), [](3,2,1), [](3,5,1), [](3,6,3), [](3,7,3),
-    [](4,1,2), [](4,4,8), [](4,6,5), [](4,7,2),
-    [](5,1,3), [](5,3,3), [](5,7,1),
-    [](6,3,2), [](6,6,3), [](6,7,4),
-    [](7,1,3), [](7,4,3), [](7,5,1), [](7,7,2)
-)).
-
-% puzzle 2, moderate
-% http://en.wikipedia.org/wiki/File:Bridges-example.png
-% solution: http://upload.wikimedia.org/wikipedia/en/1/10/Bridges-answer.PNG
-
-puzzle(2, 13, [](
-    [](1,1,2),  [](1,3,4),  [](1,5,3),   [](1,7,1),   [](1,9,2),   [](1,12,1),
-    [](2,10,3), [](2,13,1),
-    [](3,5,2),  [](3,7,3),  [](3,9,2),
-    [](4,1,2),  [](4,3,3),  [](4,6,2),   [](4,10,3),  [](4,12,1),
-    [](5,5,2),  [](5,7,5),  [](5,9,3),   [](5,11,4),
-    [](6,1,1),  [](6,3,5),  [](6,6,2),   [](6,8,1),   [](6,12,2),
-    [](7,7,2),  [](7,9,2),  [](7,11,4),  [](7,13,2),
-    [](8,3,4),  [](8,5,4),  [](8,8,3),   [](8,12,3),
-    [](10,1,2), [](10,3,2), [](10,5,3),  [](10,9,3),  [](10,11,2), [](10,13,3),
-    [](11,6,2), [](11,8,4), [](11,10,4), [](11,12,3),
-    [](12,3,1), [](12,5,2),
-    [](13,1,3), [](13,6,3), [](13,8,1),  [](13,10,2), [](13,13,2)
-)).
-
-% puzzle 3
-% http://www.conceptispuzzles.com/index.aspx?uri=puzzle/hashi/techniques
-puzzle(3, 6, [](
-    [](1,1,1), [](1,3,4), [](1,5,2),
-    [](2,4,2), [](2,6,3),
-    [](3,1,4), [](3,3,7), [](3,5,1),
-    [](4,4,2), [](4,6,5),
-    [](5,3,3), [](5,5,1),
-    [](6,1,3), [](6,4,3), [](6,6,3)
-)).
-
-% puzzle 4
-% http://www.conceptispuzzles.com/index.aspx?uri=puzzle/euid/010000008973f050f28ceb4b11c74e73d34e1c47d885e0d8449ab61297e5da2ec85ea0804f0c5a024fbf51b5a0bd8f573565bc1b/play
-puzzle(4, 8, [](
-    [](1,1,2), [](1,3,2), [](1,5,5), [](1,7,2),
-    [](2,6,1), [](2,8,3),
-    [](3,1,6), [](3,3,3),
-    [](4,2,2), [](4,5,6), [](4,7,1),
-    [](5,1,3), [](5,3,1), [](5,6,2), [](5,8,6),
-    [](6,2,2),
-    [](7,1,1), [](7,3,3), [](7,5,5), [](7,8,3),
-    [](8,2,2), [](8,4,3), [](8,7,2)
-)).
-
-% http://stackoverflow.com/questions/20337029/hashi-puzzle-representation-to-solve-all-solutions-with-prolog-restrictions/20364306#20364306
-board(5, [](
-    [](3, 0, 6, 0, 0, 0, 6, 0, 3),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 1, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](2, 0, 0, 0, 0, 1, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](1, 0, 3, 0, 0, 2, 0, 0, 0),
-    [](0, 3, 0, 0, 0, 0, 4, 0, 1)
-)).
-
-% same as puzzle 2
-% https://en.wikipedia.org/wiki/Hashiwokakero#/media/File:Bridges-example.png
-board(6, [](
-    [](2, 0, 4, 0, 3, 0, 1, 0, 2, 0, 0, 1, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 1),
-    [](0, 0, 0, 0, 2, 0, 3, 0, 2, 0, 0, 0, 0),
-    [](2, 0, 3, 0, 0, 2, 0, 0, 0, 3, 0, 1, 0),
-    [](0, 0, 0, 0, 2, 0, 5, 0, 3, 0, 4, 0, 0),
-    [](1, 0, 5, 0, 0, 2, 0, 1, 0, 0, 0, 2, 0),
-    [](0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 4, 0, 2),
-    [](0, 0, 4, 0, 4, 0, 0, 3, 0, 0, 0, 3, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](2, 0, 2, 0, 3, 0, 0, 0, 3, 0, 2, 0, 3),
-    [](0, 0, 0, 0, 0, 2, 0, 4, 0, 4, 0, 3, 0),
-    [](0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](3, 0, 0, 0, 0, 3, 0, 1, 0, 2, 0, 0, 2)
-)).
-
-% board that cannot be solved
-board(7, [](
-    [](1, 0, 1, 0, 2),
-    [](0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 2)
-)).
-
-
-board(8, [](
-    [](1, 0, 2, 0, 3),
-    [](0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 2)
-)).
-
-board(9, [](
-    [](2, 0, 0, 0, 2),
-    [](0, 0, 0, 0, 0),
-    [](2, 0, 0, 0, 2)
-)).
-
-board(10, [](
-    [](2, 0, 3, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 3, 0, 3),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](2, 0, 0, 0, 0, 0, 8, 0, 0, 0, 5, 0, 2),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](3, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 1),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 3, 0, 4),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](3, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 2)
-)).
-
-board(11, [](
-    [](0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 3, 0, 2, 0),
-    [](4, 0, 0, 0, 4, 0, 0, 3, 0, 0, 0, 4, 0, 4, 0, 0, 2, 0, 0, 0, 1),
-    [](0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 4, 0),
-    [](4, 0, 0, 0, 0, 0, 0, 0, 2, 0, 3, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0),
-    [](0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0),
-    [](0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 3, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0),
-    [](0, 4, 0, 0, 0, 0, 0, 0, 2, 0, 0, 3, 0, 0, 0, 0, 0, 4, 0, 1, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 3, 0, 1, 0, 0, 0, 0, 0),
-    [](0, 0, 3, 0, 6, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 2, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 4, 0, 6, 0, 0, 0, 0, 0, 0, 5),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 2, 0, 4, 0, 1, 0, 2, 0, 0, 3, 0, 4, 0, 0, 0, 0, 2, 0, 0),
-    [](0, 5, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 4, 0, 0, 0, 0, 0, 0, 1, 0),
-    [](3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 3, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 5),
-    [](0, 0, 0, 1, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 3, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 2),
-    [](1, 0, 2, 0, 3, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 4, 0, 2, 0)
-)).
-board(12, [](
-    [](0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 2, 0, 1, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0),
-    [](1, 0, 4, 0, 6, 0, 2, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 4, 0, 5, 0, 2, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0),
-    [](2, 0, 6, 0, 2, 0, 1, 0)
-)).
-
-board(13, [](
-    [](4, 0, 3, 0, 4, 3, 0, 4),
-    [](0, 0, 0, 0, 0, 0, 0, 0),
-    [](2, 0, 0, 0, 0, 0, 0, 2),
-    [](0, 0, 2, 0, 8, 0, 2, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 4, 0, 5, 0, 1, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0),
-    [](2, 0, 6, 0, 2, 0, 0, 0)
-)).
-
-board(14, [](
-    [](0, 0, 2, 0, 0,1 ),
-    [](0, 0, 0, 0, 0,0 ),
-    [](0, 0, 2, 0, 0,0 ),
-    [](0, 0, 0, 0, 0,0 ),
-    [](1, 0, 3, 0, 1,0 )
-)).
-
-board(15, [](
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-)).
-
-
-board(16, [](
-[](0, 2, 0, 2, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1, 0),
-[](0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 3, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0),
-[](0, 0, 4, 0, 4, 0, 8, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 3, 0, 0, 2),
-[](0, 0, 0, 1, 0, 2, 0, 4, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0),
-[](0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 2, 0, 0),
-[](0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-[](0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0),
-[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 3, 0, 0, 0, 0, 0, 3, 0, 1),
-[](0, 0, 6, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-[](0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 6, 0, 4, 0, 1, 0, 0, 0, 3, 0, 4),
-[](0, 0, 3, 0, 0, 3, 0, 0, 0, 0, 0, 2, 0, 4, 0, 0, 2, 0, 0, 0, 0),
-[](0, 0, 0, 0, 2, 0, 0, 4, 0, 0, 4, 0, 0, 0, 0, 0, 0, 6, 0, 0, 3),
-[](0, 0, 0, 0, 0, 3, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0),
-[](0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 3, 0, 0, 1),
-[](0, 0, 3, 0, 0, 3, 0, 4, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0),
-[](0, 3, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3),
-[](0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 5, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0),
-[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-[](0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 5, 0, 0, 0, 0, 0, 6, 0, 0, 0, 3),
-[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-[](0, 4, 0, 0, 0, 0, 2, 0, 1, 0, 4, 0, 4, 0, 2, 0, 2, 0, 1, 0, 2)
-)).
-
-board(17, [](
-[](1, 0, 5, 0, 3, 0, 0, 0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0, 6, 0, 4),
-[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-[](1, 0, 4, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0),
-[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0),
-[](3, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 3, 0, 5, 0, 0, 2, 0, 0, 0),
-[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-[](3, 0, 6, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0),
-[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 2, 0, 0),
-[](0, 0, 3, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3),
-[](3, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2),
-[](0, 3, 0, 4, 0, 0, 8, 0, 0, 3, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 0),
-[](0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 2, 0, 0, 0, 0, 0),
-[](0, 0, 0, 0, 0, 0, 0, 3, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-[](0, 0, 0, 0, 2, 0, 6, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-[](0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
-[](4, 0, 0, 5, 0, 0, 0, 0, 0, 0, 7, 0, 0, 4, 0, 0, 3, 0, 0, 2, 0),
-[](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3),
-[](2, 0, 0, 1, 0, 2, 0, 0, 0, 0, 6, 0, 0, 0, 0, 4, 0, 0, 0, 2, 0)
-)).
-
-board(18, [](
-    [](2, 0, 0, 0, 3, 0, 0, 0, 2),
-    [](0, 4, 0, 5, 0, 0, 0, 3, 0),
-    [](0, 0, 0, 0, 0, 2, 0, 0, 0),
-    [](2, 0, 0, 0, 0, 0, 0, 0, 0),
-    [](6, 0, 0, 6, 0, 5, 0, 0, 0),
-    [](0, 2, 0, 0, 0, 0, 1, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0, 1, 0),
-    [](0, 0, 0, 0, 0, 1, 0, 0, 0),
-    [](2, 0, 0, 3, 0, 0, 4, 0, 2)
-)).
-
-board(19, [](
-    [](2, 0, 3, 0, 1, 0),
-    [](0, 0, 0, 0, 0, 1),
-    [](4, 0, 6, 0, 1, 0),
-    [](0, 0, 0, 2, 0, 4),
-    [](0, 0, 3, 0, 1, 0),
-    [](2, 0, 0, 2, 0, 2)
-)).
-
-
-board(20, [](
-    [](2, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0),
-    [](3, 0, 2, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0),
-    [](1, 0, 2, 0, 0, 0)
-)).
-
-
-board(21, [](
-    [](2, 0, 2, 0, 3, 0, 2),
-    [](0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 1, 0, 4, 0, 2),
-    [](0, 0, 0, 0, 0, 0, 0),
-    [](0, 0, 0, 0, 0, 0, 0),
-    [](1, 0, 2, 0, 3, 0, 0)
-)).
