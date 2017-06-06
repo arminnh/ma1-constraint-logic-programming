@@ -89,7 +89,8 @@ hashiwokakero(Board) :-
         true
     ).
 
-% checks whether the islands on the Board form a connected set. Done by starting on an island and visiting all of its neighbors and checking whether all islands have been visited.
+% verifies whether the islands on the Board form a connected set. Done by stating that from a certain island 
+% all other islands on the board can be visited.
 board_connected_set(Board) :-
     board_islands(Board, Islands),
     length(Islands, N),
