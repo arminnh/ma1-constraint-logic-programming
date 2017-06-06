@@ -103,7 +103,9 @@ fix_domains \ create_likely_numbers <=> true.
 % Fixes the domains of the positions, sort the list according to likelihood
 fix_domains \ likely_number(V,_, _, D), V in _
     <=> count_occurrences(D, Occ), sort(2, @>=, Occ, S), take_first(S,Result) |
+    %writeln([Occ,S, Result]),
     V in Result.
+
 fix_domains <=> true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -211,7 +213,7 @@ count_occurrences(List, Occ):-
 % One exception though, if there is a count of 9, then the probability that this
 % number should be here is 100%, so we return this number
 take_first([], []).
-take_first([ [V, _] | _ ], Result):-
+take_first([ [V, 9] | _ ], Result):-
     Result = [V].
 take_first([ [V, _] | T ], Result):-
     take_first(T, Result2),
