@@ -35,21 +35,14 @@ solve(Problem) <=>
     numlist(1, N, DL),
     reverse(DL, DomainList),
     domain_list(DomainList),
-
     % set the domains of the possible values on the board
     make_domains(Board),
-    writeln("make domains"),
-
     % generate board(X, Y, BlockIndex, Value) facts to put constraints on
     generate_board_facts(Board, 1, 1),
-
-    writeln("generate_board_facts:"),
     % Heuristic: create likely numbers
     create_likely_numbers,
-    writeln("create_likely_numbers"),
     % Fix the domains after this heuristic is finished
     fix_domains,
-    writeln("fix_domains:"),
 
     % search for values
     writeln("Board before search:"), print_board(Board),
@@ -103,7 +96,6 @@ fix_domains \ create_likely_numbers <=> true.
 % Fixes the domains of the positions, sort the list according to likelihood
 fix_domains \ likely_number(V,_, _, D), V in _
     <=> count_occurrences(D, Occ), sort(2, @>=, Occ, S), take_first(S,Result) |
-    %writeln([Occ,S, Result]),
     V in Result.
 
 fix_domains <=> true.
@@ -124,7 +116,7 @@ enum(X), X in Domain <=> member(X, Domain).
 
 X in [D] <=> var(X) | X = D.
 
-search, board(_,_, _, Value) ==> enum(Value).
+search, board(_, _, _, Value) ==> enum(Value).
 search <=> true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -171,7 +163,6 @@ make_domain([], _) <=> true.
 % make_domains(L): L is an list of N elements, make_domains creates 'X in [1..N]' constraints
 domain_list(DomainList) \ make_domains([ Row | Tail ]) <=>
     list_remove_vars(Row, NewRow),
-    writeln('backtrack to here'),
     !, % cut to remove backtracking back into list_remove_vars (it will only find a different premutation of NewRow?)
     % Domain list is 1..N, NewRow are the values on a specific Row
     subtract(DomainList, NewRow, SmallerDomainList),

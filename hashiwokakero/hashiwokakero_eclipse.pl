@@ -185,15 +185,12 @@ no_two_with_three_neighbors_isolation(Board, X, Y, 2):-
     length(Neighbors, 3),
 
     look_for_value(Neighbors, 1, I1, _, 3),
-    writeln('pls1'),
     (I1 > 0 ->
-        writeln('pls1111'),
         nth1(I1, Neighbors, N1),
         delete(N1, Neighbors, R1),
         look_for_value(R1, 1, I2, _, 2),
 
         (I2 > 0 ->
-            writeln('pls1111111'),
             nth1(I2, R1, N2),
             delete(N2, R1, [Neighbor]),
             nth1(4, Neighbor, D),
@@ -216,9 +213,7 @@ no_three_with_three_neighbors_isolation(Board, X, Y, 3):-
     look_for_value(Neighbors, 1, I1, _, 3),
     look_for_value(Neighbors, 2, I2, _, 3),
 
-    writeln('pls2'),
     (I1 > 0, I2 > 0 ->
-        writeln('pls2222'),
         subtract([1, 2, 3], [I1, I2], [I]),
         nth1(I, Neighbors, Neighbor),
         nth1(4, Neighbor, D),
