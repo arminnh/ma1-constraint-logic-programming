@@ -144,7 +144,7 @@ enum(X)            <=> number(X) | true.
 enum(X), X in A..B <=> between(A, B, X).
 
 % search for constraint variables. after a value for a variable has been tried, check that there are no isolated segments on the board.
-search, X in _.._ ==> var(X) | enum(X).
+search, X in _.._ ==> var(X) | enum(X), no_isolated_segments.
 search <=> true.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
