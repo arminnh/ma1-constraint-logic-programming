@@ -252,7 +252,7 @@ In this report we discuss different solvers we have created for Sudoku and Hashi
 \mychapter{1}{Task 1: Sudoku}
 \section{Alternative Viewpoint}
 \label{sec:other_viewpoint}
-For the alternative viewpoint in Sudoku we decided to use the following representation. Each possible sudoku number number must occur in N positions which are represented as tuples (X,Y) (with N the size of the sudoku board). Therefore, we keep track of arrays of length N for each possible sudoku number. The arrays hold positions on which the numbers occur. Each of these positions (X,Y) can only be used once by any of the numbers. Within one such array, all of the X's and all of the Y's must be different, so that a number does not occur multiple times on a row or column on the board. In the arrays, we use the indices to represent the different X values. The values at those indices represent the Y values of positions. These values are the search variables in this viewpoint.
+For the alternative viewpoint in Sudoku we decided to use the following representation. Each possible sudoku number must occur in N positions which are represented as tuples (X,Y) (with N the size of the sudoku board). Therefore, we keep track of arrays of length N for each possible sudoku number. The arrays hold positions on which the numbers occur. Each of these positions (X,Y) can only be used once by any of the numbers. Within one such array, all of the X's and all of the Y's must be different, so that a number does not occur multiple times on a row or column on the board. In the arrays, we use the indices to represent the different X values. The values at those indices represent the Y values of positions. These values are the search variables in this viewpoint.
 \newline
 \newline
 
@@ -422,7 +422,7 @@ When we compare the alldifferent from ic\_global vs ic we see that the version f
 
 \subsection{Analysis of differences}
 \subsubsection{input order vs first fail}
-To be able to explain these behaviors, we first have to know the exact difference between the two search strategies. \texttt{Input order} takes the first domains that have been created, while \texttt{first fail} starts from the smallest domain. We think that the difference for 'extra4' can explained as follows: As you always take the smallest domain, if you make a wrong decision early on, you will need to do a lot of backtracks in a wrong branch of the tree. Since you always took the smallest ones first you get a tree branch that is very wide. If your first choice was a mistake you need to traverse this whole subtree first before you can backtrack to your first choice. We believe that the extra hint resulted in this situation. It has probably reduced a domain which creates these problems. \texttt{Input order} doesn't suffer from this since it just takes the first entered domains. On the other hand, sometimes taking the smallest domain gives you the best result because you have less choices to make here, which would explain the behavior for 'extra2'.
+To be able to explain these behaviors, we first have to know the exact difference between the two search strategies. \texttt{Input order} takes the first domains that has been created, while \texttt{first fail} starts from the smallest domain. We think that the difference for 'extra4' can explained as follows: As you always take the smallest domain, if you make a wrong decision early on, you will need to do a lot of backtracks in a wrong branch of the tree. Since you always took the smallest ones first you get a tree branch that is very wide. If your first choice was a mistake you need to traverse this whole subtree first before you can backtrack to your first choice. We believe that the extra hint resulted in this situation. It has probably reduced a domain which creates these problems. \texttt{Input order} doesn't suffer from this since it just takes the first entered domains. On the other hand, sometimes taking the smallest domain gives you the best result because you have less choices to make here, which would explain the behavior for 'extra2'.
 
 \subsubsection{alldifferent}
 The difference with the alldifferent versions is due to the fact that the alldifferent from ic\_global has been programmed with stronger propagation behavior \footnote{\url{http://eclipseclp.org/doc/bips/lib/ic\_global/alldifferent-1.html}} than the alldifferent from the ic library as explained in class. The ic\_global implementation has a global view of the constraints and can thus make smarter decisions about it.
@@ -431,27 +431,26 @@ The difference with the alldifferent versions is due to the fact that the alldif
 \subsection{CHR}
 \label{sub:CHR}
 
-For the CHR implementation of the two viewpoints we had a lot of trouble getting something that performs well. When we run the two viewpoints on harder boards it takes easily a couple of minutes. Obviously this isn't good, so improved the performance of both our implementations using the heuristics explained below.
+For the CHR implementation of the two viewpoints we had a lot of trouble getting something that performs well. When we run the two viewpoints on harder boards it takes easily a couple of minutes. Obviously this isn't good, so we improved the performance of both our implementations using the heuristics explained below.
 
 \subsubsection{Heuristic classical viewpoint}
 For the classical viewpoint we found that there was one obvious heuristic that we could use to try to improve the search. To demonstrate this let's take, for example, the 'lambda' board from the puzzles provided in the assignment.
 
 \begin{figure}[h]
     \centering
-    \subfloat[Lambda board]{{\includegraphics[width=5cm]{lambda1}}}%
+    \subfloat[Lambda board]{\label{fig:classic_heuristic_a}{\includegraphics[width=5cm]{lambda1}}}%
     \qquad
-    \subfloat[Lambda board after heuristic]{{\includegraphics[width=5cm]{lambda2} }}%
+    \subfloat[Lambda board after heuristic]{\label{fig:classic_heuristic_b}{\includegraphics[width=5cm]{lambda2} }}%
     \caption{Lambda board pre vs post heuristic}%
-    \label{fig:classic_heuristic}%
 \end{figure}
-If we look at \ref{fig:classic_heuristic}(a) we can see that in position (9,9), the only possible number we can play there is a 6, since it cannot be put anywhere else in the block because of the two sixes of the neighboring blocks. This information is critical to be able to solve sudoku puzzles in a smarter way. This is what we tried to do with our likelihood heuristic. Our heuristic will state that it is very likely that 6 should be put on position (9,9). In fact it is 100\% 'likely' that 6 should be played there.
+If we look at \ref{fig:classic_heuristic_a} we can see that in position (9,9), the only possible number we can play there is a 6, since it cannot be put anywhere else in the block because of the two sixes of the neighboring blocks. This information is critical to be able to solve sudoku puzzles in a smarter way. This is what we tried to do with our likelihood heuristic. Our heuristic will state that it is very likely that 6 should be put on position (9,9). In fact it is 100\% 'likely' that 6 should be played there.
 \newline
 \newline
 \newline
 The way we do this is by checking the domain of (9,9) and comparing it with to the domains of all the other squares in the block. When doing this comparison, we check for the numbers that are in our domain but not in the domain of the square we're comparing with. If a number is not present in the domain of the other square, e.g. number 6, then we know that the likelihood that this 6 is at our position increases. Thus, we keep track of all the differences between the other squares and we count how many times we've seen a number. We then sort our domain according to this in a descending order based on the count. Obviously, we want to try things that are very likely first and things that are less likely at a later moment. One important observation to this is that if the count of a number equals to 9, you know that we are in the only position that can play this number else we would never see this number appear 8 times from the differences. We get to 9 because we use our domain as a starting point. This means that each number in our domain immediately gets a count of 1. We do this because it is not certain that when checking all the differences with the other squares, that you will get all the values from your domain. So if we would only use the numbers from the differences we might for example never see a 2 while actually 2 was the only answer that could be played at that position in the end.
 \newline
 \newline
-When we look at figure \ref{fig:classic_heuristic}(b), we can see the effect of our likelihood heuristic just before the start of the search. We see that already 5 different squares are filled in (the green and red ones). The green ones are some obvious plays but we were actually surprised when it found the red one. The other green ones are 'easy' because for the (9,9) example you see that this position is obviously the only place a 6 can be played because of the other sixes. But for the red one we don't see a single other 8 on the board and yet it knew that it had to play an 8 there. We have to admit though that our system is a bit flawed since this heuristic cannot be used during the search since too many calculations are made. For example with everything we have filled in, we could deduct that for the yellow square, 5 is the only possible play. But this is not feasible since it is way to slow to calculate this. This is why we ordered the domain according to likelihood. If we look at the domain of (2,1) sorted with likelihood, we see that the domain is [5, 3, 6, 8, 9]. So even though we're not fully sure that the 5 had to come there before we filled in the 4 in our block, our system captures the likelihood of a 5 at (2,1) still quite well.
+When we look at figure \ref{fig:classic_heuristic_b} , we can see the effect of our likelihood heuristic just before the start of the search. We see that already 5 different squares are filled in (the green and red ones). The green ones are some obvious plays but we were actually surprised when it found the red one. The other green ones are 'easy' because for the (9,9) example you see that this position is obviously the only place a 6 can be played because of the other sixes. But for the red one we don't see a single other 8 on the board and yet it knew that it had to play an 8 there. We have to admit though that our system is a bit flawed since this heuristic cannot be used during the search since too many calculations are made. For example with everything we have filled in, we could deduct that for the yellow square, 5 is the only possible play. But this is not feasible since it is way to slow to calculate this. This is why we ordered the domain according to likelihood. If we look at the domain of (2,1) sorted with likelihood, we see that the domain is [5, 3, 6, 8, 9]. So even though we're not fully sure that the 5 had to come there before we filled in the 4 in our block, our system captures the likelihood of a 5 at (2,1) still quite well.
 
 \subsubsection{Heuristic alternative viewpoint}
 To increase the search speed for the alternative viewpoint we decided to do something about the search space itself. Consider the following example:
@@ -463,63 +462,121 @@ To increase the search speed for the alternative viewpoint we decided to do some
 \end{figure}
 Let's say we want to play a 3 at the green square on figure \ref{fig:smart_domain}. Our initial domain would be from 1 to 9. If we play the 3 in the green square, then we know that we cannot put aby other 3's in the first column. So the in the domains of other 3's, the first column is removed. But this play actually contains more information which we try to exploit here. Since we played in the first column, we know that the other 3's in this block row cannot be played anywhere in block 1 anymore! So for their domains, instead of just removing the first column, we remove all the columns in the first block. This means that from 9 values, we go to 6, and if we play another 3 in this block row, then the last 3 only has a search space of 3 left! By doing this small change we effectively speed up our system quite a bit.
 \subsubsection{Experiments}
+%%% OLD
+%\begin{table}[h!]
+%  \begin{tabular}{|c|c|c|c|c|c|c|}
+%    \hline
+%    \multirow{1}{*}{Puzzle} &
+%    \multicolumn{1}{L|}{Classical Viewpoint} &
+%    \multicolumn{1}{L|}{Alternative viewpoint} &
+%    \multicolumn{1}{L|}{Channeling} \\
+%    & s & s & s \\
+%    \hline
+%        lambda & 340.04 & 118.72 & 218.44 \\
+%        hard17 & 2003.50 & 463.11 & 413.61 \\
+%        eastermonster & 63.57 & 235.10 & 32.77 \\
+%        tarek\_052 & 13.58 & 170.76 & 26.12 \\
+%        goldennugget & 18.151 & 155.49 & 21.42 \\
+%        coloin & 132.72 & 74.82 & 69.82 \\
+%        extra2 & 18.92 & 2444.10 & 14.14 \\
+%        extra3 & 372.84 & 134.93 & 233.17 \\
+%        extra4 & 141.55 & 297.64 & 115.41 \\
+%        inkara2012 & 141.58 & 1220.32 & 116.46 \\
+%        % ik heb het veranderd naar 45min want hard17 met 2000s is > 30min
+%        clue18 & aborted after 45min & aborted after 45min & aborted after 45min \\
+%        clue17 & 11.29 & 563.06 & 8.56s \\
+%        sudowiki\_nb28& 446.24 & 45.05 & 237.02s \\
+%        sudowiki\_nb49 & 73.02 & 69.20 & 68.67s \\
+%    \hline
+%  \end{tabular}
+%  \caption{Sudoku in CHR without heuristics}
+%\end{table}
+%NEW %%%
 \begin{table}[h!]
-  \begin{tabular}{|c|c|c|c|c|c|c|}
-    \hline
-    \multirow{1}{*}{Puzzle} &
-    \multicolumn{1}{L|}{Classical Viewpoint} &
-    \multicolumn{1}{L|}{Alternative viewpoint} &
-    \multicolumn{1}{L|}{Channeling} \\
-    & s & s & s \\
-    \hline
-        lambda & 340.04 & 118.72 & 218.44 \\
-        hard17 & 2003.50 & 463.11 & 413.61 \\
-        eastermonster & 63.57 & 235.10 & 32.77 \\
-        tarek\_052 & 13.58 & 170.76 & 26.12 \\
-        goldennugget & 18.151 & 155.49 & 21.42 \\
-        coloin & 132.72 & 74.82 & 69.82 \\
-        extra2 & 18.92 & 2444.10 & 14.14 \\
-        extra3 & 372.84 & 134.93 & 233.17 \\
-        extra4 & 141.55 & 297.64 & 115.41 \\
-        inkara2012 & 141.58 & 1220.32 & 116.46 \\
-        % ik heb het veranderd naar 45min want hard17 met 2000s is > 30min
-        clue18 & aborted after 45min & aborted after 45min & aborted after 45min \\
-        clue17 & 11.29 & 563.06 & 8.56s \\
-        sudowiki\_nb28& 446.24 & 45.05 & 237.02s \\
-        sudowiki\_nb49 & 73.02 & 69.20 & 68.67s \\
-    \hline
-  \end{tabular}
-  \caption{Sudoku in CHR without heuristics}
-\end{table}
+      \begin{tabular}{|c|c|c|c|c|c|c|}
+        \hline
+        \multirow{1}{*}{Puzzle} &
+          \multicolumn{1}{L|}{Classical Viewpoint} &
+          \multicolumn{1}{L|}{Our Viewpoint} &
+          \multicolumn{1}{L|}{Channeling} \\
+        & ms & ms & ms \\
+        \hline
+lambda & 240.556s & 31.546s & 268.08s \\
+hard17 & 1410.554s & 111.446s & 581.685s \\
+eastermonster & 2.626s & 52.918s & 3.78s \\
+tarek\_052 & 9.705s & 47.722s & 19.056s \\
+goldennugget & 13.731s & 40.311s & 20.638s \\
+coloin & 92.932s & 21.009s & 99.832s \\
+extra2 & 14.038s & 553.181s & 19.242s \\
+extra3 & 235.877s & 31.142s & 269.242s \\
+extra4 & 91.517s & 69.132s & 128.158s \\
+inkara2012 & 92.476s & 294.721s & 114.792s \\
+clue18 & 1854.41s & 1373.993s & 2743.256s \\
+clue17 & 6.168s & 142.121s & 9.855s \\
+sudowiki\_nb28 & 289.829s & 11.816s & 278.37s \\
+sudowiki\_nb49 & 47.434s & 14.049s & 64.556s \\
+ \hline
+      \end{tabular}
+        \caption{Sudoku in CHR without heuristics}
 
+    \end{table}
+    
 \begin{table}[h!]
-  \begin{tabular}{|c|c|c|c|c|c|c|}
-    \hline
-    \multirow{1}{*}{Puzzle} &
-    \multicolumn{1}{L|}{Classical Viewpoint} &
-    \multicolumn{1}{L|}{the alternative viewpoint} &
-    \multicolumn{1}{L|}{Channeling} \\
-    & s & s & s \\
-    \hline
-        lambda & 383.27 & 8.07 & 70.85s \\
-        hard17 & 282.39 & 0.30 & 1.61s \\
-        eastermonster & 68.83 & 14.74 & 16.73s \\
-        tarek\_052 & 1.70 & 90.21 & 1.70s \\
-        goldennugget & 24.11 & 43.1 & 13.81s \\
-        coloin & 90.63 & 42.73 & 17.73s \\
-        extra2 & 486.39 & 54.98 & 2.11s \\
-        extra3 & 385.02 & 7.95 & 70.63s \\
-        extra4 & 184.18 & 10.60 & 46.23s \\
-        inkara2012 & 10.75 & 255.18 & 5.50s \\
-        clue18 & 1068.80 & 569.44 & 249.05s \\
-        clue17 & 25.60 & 1.01 & 0.98s \\
-        sudowiki\_nb28 & 1204.91 & 4.58 & 207.25s \\
-        sudowiki\_nb49 & 130.41 & 21.85 & 70.93s \\
-    \hline
-  \end{tabular}
-  \caption{Sudoku in CHR with heuristics}
-\end{table}
-When we compare both tables, we see that for the alternative viewpoint there is a good improvement. Although when we look for the classic viewpoint, we see that our heuristic is in most cases quite a bit slower! Although in some cases it does increase it tremendously.
+      \begin{tabular}{|c|c|c|c|c|c|c|}
+        \hline
+        \multirow{1}{*}{Puzzle} &
+          \multicolumn{1}{L|}{Classical Viewpoint} &
+          \multicolumn{1}{L|}{Our Viewpoint} &
+          \multicolumn{1}{L|}{Channeling} \\
+        & s & s & s \\
+        \hline
+lambda & 294.197s & 4.47s & 141.152s \\
+hard17 & 218.107s & 0.225s & 30.291s \\
+eastermonster & 52.796s & 11.054s & 31.252s \\
+tarek\_052 & 1.351s & 56.398s & 1.81s \\
+goldennugget & 16.791s & 26.212s & 18.233s \\
+coloin & 67.885s & 25.439s & 46.873s \\
+extra2 & 360.367s & 37.646s & 26.468s \\
+extra3 & 277.144s & 4.452s & 143.193s \\
+extra4 & 128.014s & 5.107s & 65.539s \\
+inkara2012 & 7.399s & 161.194s & 7.062s \\
+clue18 & 774.288s & 312.615s & 479.363s \\
+clue17 & 16.193s & 0.534s & 7.414s \\
+sudowiki\_nb28 & 994.815s & 3.527s & 477.672s \\
+sudowiki\_nb49 & 103.807s & 14.097s & 112.585s \\
+ \hline
+      \end{tabular}
+      \caption{Sudoku in CHR with heuristics}
+    \end{table}
+
+%\begin{table}[h!]
+%  \begin{tabular}{|c|c|c|c|c|c|c|}
+%    \hline
+%    \multirow{1}{*}{Puzzle} &
+%    \multicolumn{1}{L|}{Classical Viewpoint} &
+%    \multicolumn{1}{L|}{the alternative viewpoint} &
+%    \multicolumn{1}{L|}{Channeling} \\
+%    & s & s & s \\
+%    \hline
+%        lambda & 383.27 & 8.07 & 70.85s \\
+%        hard17 & 282.39 & 0.30 & 1.61s \\
+%        eastermonster & 68.83 & 14.74 & 16.73s \\
+%        tarek\_052 & 1.70 & 90.21 & 1.70s \\
+%        goldennugget & 24.11 & 43.1 & 13.81s \\
+%        coloin & 90.63 & 42.73 & 17.73s \\
+%        extra2 & 486.39 & 54.98 & 2.11s \\
+%        extra3 & 385.02 & 7.95 & 70.63s \\
+%        extra4 & 184.18 & 10.60 & 46.23s \\
+%        inkara2012 & 10.75 & 255.18 & 5.50s \\
+%        clue18 & 1068.80 & 569.44 & 249.05s \\
+%        clue17 & 25.60 & 1.01 & 0.98s \\
+%        sudowiki\_nb28 & 1204.91 & 4.58 & 207.25s \\
+%        sudowiki\_nb49 & 130.41 & 21.85 & 70.93s \\
+%    \hline
+%  \end{tabular}
+%  \caption{Sudoku in CHR with heuristics}
+%\end{table}
+When we compare both tables, we see that for the alternative viewpoint there is a good improvement. Although when we look at the impact of the heuristic for the classic viewpoint, we see that it is in most cases quite a bit slower! However, for the harder boards like hard17 and clue18 we can see a big speed up!
 \mychapter{2}{Task 2: Hashiwokakero}
 \label{sec:Hashiwokakero}
 
@@ -572,7 +629,6 @@ When one thinks about improvements for solving Hashiwokakero there are a couple 
         \qquad
         \subfloat[board with improvement]{{\includegraphics[width=2cm]{one_to_one_improv2} }}%
         \caption{boards without and with improvement}%
-        \label{fig:classic_heuristic}%
     \end{figure}
 
 	\item The second improvement builds further on the idea of avoiding isolated segments.
@@ -585,6 +641,15 @@ All three of the improvements have an impact on the connectivity constraint. Bec
 
 \subsection{Experiments}
 
+	\begin{figure}[h]
+    	%\label{fig:improvement1}
+        \centering
+        \subfloat[board pre search]{{\includegraphics[width=2.2cm]{board_5_pre}}}%
+        \qquad
+        \subfloat[board post search]{{\includegraphics[width=2cm]{board_5_post} }}%
+        \caption{Some of the boards are ready even before the search (board 5)}%
+    \end{figure}
+    
 \subsubsection{ECLiPSe Hashiwokakero solutions using input order}
 Table \ref{table:hashi-1} shows the results of searching with the input order heuristic.
 \begin{table}[h!]
@@ -734,6 +799,7 @@ add(X, Y, Z) \ X in A..B, Y in C..D, Z in E..F <=>
 \end{lstlisting}
 
 The actual search for values of variables is handled by the 'search/0' and 'enum/1' rules. When 'enum/1' is fired with a variable that has a domain constraint ('X in A..B'), then it will cause X to take a value in its domain. Values are assigned to X by Prolog's 'between(A, B, X)' procedure. Each time X is assigned a value by this procedure, other rules may be fired, depending on what is in the constraint store at that time. Among those other rules could lie equality and adition constraints which can now further reduce domains of other variables because the domain of X has been removed. If this causes backtracking to happen back up to the 'between' procedure, the next value in the domain will be assigned to X.
+\newpage
 \begin{lstlisting}[ language = Prolog-pretty, caption  = {Search} ]
 % assign values to variables X. X must lie between A and B
 enum(X)            <=> number(X) | true.
@@ -824,6 +890,14 @@ This improvement has a large impact on the connectivity constraint, because now 
 
 \subsection{Experiments}
 \label{sub:hashi-exp-2}
+	\begin{figure}[h]
+    	%\label{fig:improvement1}
+        \centering
+        \subfloat[board pre search]{{\includegraphics[width=2cm]{board_4_pre}}}%
+        \qquad
+        \subfloat[board post search]{{\includegraphics[width=2cm]{board_4_post} }}%
+        \caption{Even for CHR some of the boards are completely filled in before the search (In this example: board 4)}%
+    \end{figure}
 \begin{table}[h]
 \centering
 \begin{tabular}{|c|c|c|}
@@ -900,7 +974,7 @@ There are a couple of weak points in our report:
 \section{Strong points}
 The strong points in our report are:
 \begin{itemize}
-    \item Our Hashiwokakero CHR implementation is quite fast thanks to our connected set.
+    \item Our Hashiwokakero CHR implementation is quite fast thanks to our improvements set.
     \item We think we have good heuristics for Sudoku in CHR. Certainly the heuristic for the alternative viewpoint has made good improvements on the speed of the search.
 \end{itemize}
 
