@@ -499,7 +499,7 @@ Let's say we want to play a 3 at the green square on figure \ref{fig:smart_domai
           \multicolumn{1}{L|}{Classical Viewpoint} &
           \multicolumn{1}{L|}{Our Viewpoint} &
           \multicolumn{1}{L|}{Channeling} \\
-        & ms & ms & ms \\
+        & s & s & s \\
         \hline
 lambda & 240.556s & 31.546s & 268.08s \\
 hard17 & 1410.554s & 111.446s & 581.685s \\
@@ -576,7 +576,7 @@ sudowiki\_nb49 & 103.807s & 14.097s & 112.585s \\
 %  \end{tabular}
 %  \caption{Sudoku in CHR with heuristics}
 %\end{table}
-When we compare both tables, we see that for the alternative viewpoint there is a good improvement. Although when we look at the impact of the heuristic for the classic viewpoint, we see that it is in most cases quite a bit slower! However, for the harder boards like hard17 and clue18 we can see a big speed up!
+When we compare both tables, we see that for the alternative viewpoint there is a good improvement. Although when we look at the impact of the heuristic for the classic viewpoint, we see that it is in most cases quite a bit slower! However, for the harder boards like hard17 and clue18 we can see a big speed up! The impact of channeling here can be seen in the last column. Sometimes it does bring a serious improvement compared to a standalone technique. Sometimes it is even worse than the two techniques separately for example clue18 in the table without heuristics. We we look to the table with heuristics however we see that there has been a very big increase in speed for clue18!
 \mychapter{2}{Task 2: Hashiwokakero}
 \label{sec:Hashiwokakero}
 
@@ -763,6 +763,7 @@ bridge_constraints, board(_, 1, _, _, _, _, W)                ==> W = 0.
 bridge_constraints, board(_, _, 0, N, E, S, W) ==> N = S, E = W.
 \end{lstlisting}
 \item The amount of bridges connected to an island equals that island's amount. Three addition constraints are used here to represent \[ Amount = N + E + S + W \]
+\newpage
 	    \begin{lstlisting}[ language = Prolog-pretty]
 bridge_constraints, board(_, _, Amount, N, E, S, W) ==> Amount > 0 |
     Sum in 0..4,
