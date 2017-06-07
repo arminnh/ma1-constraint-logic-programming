@@ -244,15 +244,15 @@
 
 \mychapter{0}{Introduction}
 
-In this report we discuss our different solutions we have created for Sudoku and Hashiwokakero. They are the result of a lot of work and a lot of back tracking on our previously done work. We often came in situations where we got stuck because of the limitations of the ECLiPSe and CHR systems but we also often had to back track on our work since we were often feeling that we were doing things in a non declarative way. We often tried to do things in a procedural way when we first started with Sudoku which means we lost quite some time here since we often had to rethink how we could write things in a more declarative way. For the Hashiwokakero part of the project things went a bit better but we lost here we tried to create a graph representation of the problem but we failed since ECLiPSe doesn't support constraints in conditionals. For this reason we had to retrack our steps back to the structure mentioned on the stackoverflow article.
+In this report we discuss different solvers we have created for Sudoku and Hashiwokakero puzzles. They are the result of a lot of work and a lot of backtracking on our previously done work. We often came in situations where we got stuck because of the limitations of the ECLiPSe and CHR systems but we also often had to backtrack on our work since we often felt that we were doing things in a non-declarative way. We often tried to do things in a procedural way, which means we lost quite some time rethinking how we could write things in a more declarative way.
 	\newline
 	\newline
-	In our solutions we decided to only use ECLiPSe and CHR. This was partially due to the fact that when we started this assignment we still hadn't seen Jess in class. Once we did have the class about Jess we found that since we were still novices at declarative programming languages, it would be a good exercise to continue using the more declarative systems to gain more experience with them since Jess can also be used to program in a more procedural way. Another reason for not using Jess was that the Jess syntax looked less appealing than the syntax CHR was offering us by all the parenthesizes used in its syntax.
+	For the solvers we decided to only use ECLiPSe and CHR. This was partially due to the fact that when we started this assignment we still hadn't seen Jess in class. Once we did have the lecture on Jess, we felt that since we were still novices at declarative programming languages, it would be a good exercise to continue using the more declarative systems to gain more experience with them, since Jess can also be used to program in a more procedural way. Another reason for not using Jess was that the Jess syntax looked less appealing than the syntax CHR was offering us with all the parentheses used in its syntax.
 
 \mychapter{1}{Task 1: Sudoku}
-\section{Other Viewpoint}
+\section{Alternative Viewpoint}
 \label{sec:other_viewpoint}
-For the other viewpoint in Sudoku we decided to use the following representation: each number has N positions, represented as tuples (X,Y) (with N the size from one side of the sudoku board). Each of these (X,Y) must be different from each other as well as each X must be different from any other X and Y must be different from all other Y as well. This representation has as a benefit that you know that each value from 1 to N must be in X, so we can already fill this in. The only thing left is to find the right Y.
+For the alternative viewpoint in Sudoku we decided to use the following representation. Each possible sudoku number number must occur in N positions which are represented as tuples (X,Y) (with N the size of the sudoku board). Therefore, we keep track of arrays of length N for each possible sudoku number. The arrays hold positions on which the numbers occur. Each of these positions (X,Y) can only be used once by any of the numbers. Within one such array, all of the X's and all of the Y's must be different, so that a number does not occur multiple times on a row or column on the board. In the arrays, we use the indices to represent the different X values. The values at those indices represent the Y values of positions. These values are the search variables in this viewpoint.
 \newline
 \newline
 
@@ -262,7 +262,7 @@ For the other viewpoint in Sudoku we decided to use the following representation
 \caption{Illustration of the definition of a block row}
 \end{figure}
 
-The block constraints can be expressed with a bit of maths thanks to this representation. For a specific number we know each X of all the different positions, since we already filled them in, so we can check in which block row (see illustration) the position is. For example if you take a 9 x 9 board like in the illustration, you know that the rows 1,2,3 belong to block row 1, the rows 4,5,6 belongs to block row 2 and 7,8,9 belongs to block row 3. To express the block constraints we do the following:
+The block constraints can be expressed with a bit of maths using this representation. For a specific number, we already know each X of all of the different positions, so we can check in which block row (see illustration) the position is. First, we can split the board up in block rows. For example, if you take a 9x9 board like in the illustration above, you know that rows 1,2,3 belong to block row 1, rows 4,5,6 belongs to block row 2 and rows 7,8,9 belongs to block row 3. To express the block constraints we do the following:
 \begin{enumerate}
 	\item Take all the positions of a number
 	\item Check which positions are in the same block row (there are exactly $\sqrt{N}$ positions of a number in the same block row).
@@ -270,87 +270,85 @@ The block constraints can be expressed with a bit of maths thanks to this repres
 \end{enumerate}
 
 \section{Criteria to judge if a viewpoint is good or not}
-This is really difficult in our opinion since we had some problems at first to find a good other viewpoint. We think that some good criterion's to judge if a viewpoint is good or not are
+This is really difficult, since we had some trouble at first to find a good alternative viewpoint. We believe that the following criteria can be used to judge whether a viewpoint is good or not.
 \begin{itemize}
-    \item how easy is it to express what you need with this viewpoint, obviously if you lose a lot of time with implementing an other viewpoint then it may be worth it to look for an other viewpoint
-    \item How easy is it to use this different viewpoint? In other words, is it a logical representation for the problem?
-    \item Lastly, think about the amount of constraints you need with this viewpoint. Is it really the lowest amount possible?
+    \item Ease of expressing what is needed with the viewpoint. Obviously, if you lose a lot of time implementing a viewpoint then it may be worth it to look for an alternative viewpoint.
+    \item How easy is it to understand the viewpoint? In other words, is it a logical representation for the problem?
+    \item Lastly, think about the amount of constraints necessary with the viewpoint. Is it the lowest amount possible?
 \end{itemize}.
 
 \section{Channeling}
-The channeling constraint for our two viewpoints, the classical one and the one explained above, are in fact not that hard to express in words. If for the classical viewpoint you know which value there has to be at a certain (X,Y) position, you obviously immediately know it's (X,Y) values. For the other viewpoint, if you know the (X,Y) values of a number then obviously you can enter the number at that position. This is ofcourse trivial in words but programming it in ECLiPSe was not that easy.
+The channeling constraint for the two viewpoints, the classical one and the one explained above, are in fact not that hard to express in words. If in the classical viewpoint you know which value there has to be at a certain (X,Y) position, you can immediately set the position in the array of the value in the alternative viewpoint. For the alternative viewpoint, if you know an (X,Y) value for a number, then you can enter the number at that position in the classic viewpoint. This of course is trivial in words but finding the correct way to express it in ECLiPSe was not that straightforward.
 
 \subsubsection{ECLiPSe channeling constraints}
 \lstinputlisting[ language = Prolog-pretty, caption  = {Channel constraints in ECLiPSe} ]{eclipse_channel.pl}
 %The first two lines of code are just to get the size of the Board and NumberPositions. Note that both of them are $N x N$, only NumberPositions has an extra dimension to store the (X,Y) pairs.
-	%After this we create the loop variables Number, Positions and Y, these will be used for the channeling constraint and they start from 1 to N.
-	The crucial bit of code for the channeling constraints can be found inside the multifor. There you can find two different constraints that links the two viewpoints together. The first one is the channeling constraint for the classical viewpoint. It lays a constraint on the value of Board[Position,Y]. The second constraint is the channeling constraint for our viewpoint. There you can see that we index with \texttt{Number}, \texttt{Position} and 2. The reason we're only interested in the second value is because the first value is already filled in as stated in section \ref{sec:other_viewpoint}. Together these constraints expresses that if Y is know in our viewpoint then we can fill in the board with \texttt{Number} or if we know which number is at [Position,Y] in the classic viewpoint then we can fill in the Y of our viewpoint. This is done with the B at the end of both of the constraints. This B is crucial in the channeling constraints as it expresses that if one of the constraints is true, then the other should be true as well!
+%After this we create the loop variables Number, Positions and Y, these will be used for the channeling constraint and they start from 1 to N.
+The crucial bit of code for the channeling constraints are inside the multifor. There you can see two different constraints that links the two viewpoints together. The first one is the channeling constraint for the classical viewpoint. It lays a constraint on the value of Board[X, Y]. The second constraint is the channeling constraint for the alternative viewpoint. There you can see that we index with \texttt{Number} and \texttt{X}. Together these constraints expresses that if Y is known in the alternative viewpoint then we can fill in Board[X, Y] with \texttt{Number} or if we know which number is at [X, Y] in the classic viewpoint then we can fill in the Y of the alternative viewpoint. This is done with the B at the end of both of the constraints. This B is crucial in the channeling constraints as it expresses that if one of the constraints is true, then the other should be true as well.
 
 \newpage
 \subsubsection{CHR channeling constraints}
 \lstinputlisting[ language = Prolog-pretty, caption  = {Channel constraints in CHR} ]{chr_channel.pl}
-For the channeling constraints in CHR we decided to use an extra predicate \texttt{channel}. This is used just so that the system waits for the right moment to start setting up the channel constraints. Expressing the channeling constraints in CHR was a bit easier than doing it in ECLiPSe. Let's start with the first constraint. This expresses that if Value of board and board\_viewpoint2 are the same and Value is a number and Y2 and B2 are still variables then we can say that Y2 is Y and B2 is BlockIndex. The important part here was that Y2 and B2 are still variables since this means that we still don't know their values. Why do we use 'is' instead of just removing the old board\_viewpoint2 from the constraint store? If we would just remove the constraint then this would mean that other constraints would never be fired! That's why we use is. If Y2 and B2 gets their values this means that maybe other constraints can be solved too. If we would input a new fact into the constraint store we would break all these links!
+For the channeling constraints in CHR we decided to use an extra predicate \texttt{channel}. This is used just so that the solver sets up the channel constraints at the right moment. Expressing the channeling constraints in CHR was a bit easier than doing it in ECLiPSe. The first rule expresses that if Value of board and board\_viewpoint2 are the same, and if Value is a number, and if Y2 and B2 are still variables then we can say that Y2 equals Y and B2 equals BlockIndex. The important part here was that Y2 and B2 are still variables since this means that we don't know their values yet. Why do we initialise Y2 and B2 instead of just removing the old board\_viewpoint2 from the constraint store? If we would just remove board\_viewpoint2 then this would mean that other constraints would never be fired! When Y2 and B2 get their values, other rules which could not be fired before might be fired now.
 \newline
 \newline
-For the second constraint we need to know that both Y and BlockIndex are numbers and V2 is still a var. Since we know both X, Y and BlockIndex then we can just fill in the Value of that position in board. We use 'is' for the same reason as mentioned before. If V2 finally get's a value then this means that there might be other propagations that can fire.
+For the second constraint we need to know that both Y and BlockIndex are numbers and V2 is a free variable. Since we know both Y and BlockIndex, we can just fill in the Value of that position in board.
 \newpage
 \section{Experiments}
 \subsection{ECLiPSe}
 \subsubsection{input order as value heuristic, alldifferent from ic\_global}
-
 \begin{table}[h!]
   \begin{tabular}{|c|c|c|c|c|c|c|}
     \hline
     \multirow{2}{*}{Puzzle} &
-      \multicolumn{2}{L|}{Classical Viewpoint (input order)} &
-      \multicolumn{2}{L|}{Our Viewpoint (input order)} &
-      \multicolumn{2}{L|}{ Channeling (input order)} \\
-    & ms & backtracks & ms & backtracks & ms & backtracks \\
+    \multicolumn{2}{L|}{Classical Viewpoint} &
+    \multicolumn{2}{L|}{Alternative viewpoint} &
+    \multicolumn{2}{L|}{Channeling} \\
+    & s & backtracks & s & backtracks & s & backtracks \\
     \hline
-lambda & 0.01s & 3 & 74.669s & 78859 & 0.031s & 2\\
-hard17 & 0.01s & 1 & 84.319s & 130134 & 0.041s & 0\\
-eastermonster & 0.21s & 51 & 3.29s & 3278 & 0.139s & 24\\
-tarek\_052 & 0.34s & 59 & 0.19s & 166 & 0.03s & 0\\
-goldennugget & 0.671s & 104 & 12.79s & 11171 & 0.63s & 70\\
-coloin & 0.22s & 88 & 6.469s & 4717 & 1.071s & 178\\
-extra2 & 0.0s & 0 & 691.25s & 662099 & 0.05s & 4\\
-extra3 & 0.011s & 3 & 70.23s & 78859 & 0.03s & 2\\
-extra4 & 0.01s & 4 & 174.23s & 197306 & 0.03s & 3\\
-inkara2012 & 0.03s & 3 & 4.23s & 5273 & 0.19s & 34\\
-clue18 & 0.26s & 69 & 162.28s & 156554 & 0.17s & 20\\
-clue17 & 0.01s & 0 & 180.65s & 191972 & 0.01s & 0\\
-sudowiki\_nb28 & 1.03s & 413 & 39.82s & 40477 & 3.36s & 832\\
-sudowiki\_nb49 & 0.19s & 48 & 9.86s & 10771 & 0.2s & 37\\
- \hline
+        lambda & 0.01 & 3 & 74.669 & 78859 & 0.031 & 2\\
+        hard17 & 0.01 & 1 & 84.319 & 130134 & 0.041 & 0\\
+        eastermonster & 0.21 & 51 & 3.29 & 3278 & 0.139 & 24\\
+        tarek\_052 & 0.34 & 59 & 0.19 & 166 & 0.03 & 0\\
+        goldennugget & 0.671 & 104 & 12.79 & 11171 & 0.63 & 70\\
+        coloin & 0.22 & 88 & 6.469 & 4717 & 1.071 & 178\\
+        extra2 & 0.0 & 0 & 691.25 & 662099 & 0.05 & 4\\
+        extra3 & 0.011 & 3 & 70.23 & 78859 & 0.03 & 2\\
+        extra4 & 0.01 & 4 & 174.23 & 197306 & 0.03 & 3\\
+        inkara2012 & 0.03 & 3 & 4.23 & 5273 & 0.19 & 34\\
+        clue18 & 0.26 & 69 & 162.28 & 156554 & 0.17 & 20\\
+        clue17 & 0.01 & 0 & 180.65 & 191972 & 0.01 & 0\\
+        sudowiki\_nb28 & 1.03 & 413 & 39.82 & 40477 & 3.36 & 832\\
+        sudowiki\_nb49 & 0.19 & 48 & 9.86 & 10771 & 0.2 & 37\\
+    \hline
   \end{tabular}
 \end{table}
 
 \subsubsection{input order as value heuristic, alldifferent from ic}
-
 \begin{table}[h!]
   \begin{tabular}{|c|c|c|c|c|c|c|}
     \hline
     \multirow{2}{*}{Puzzle} &
-      \multicolumn{2}{L|}{Classical Viewpoint (input order)} &
-      \multicolumn{2}{L|}{Our Viewpoint (input order)} &
-      \multicolumn{2}{L|}{ Channeling (input order)} \\
+    \multicolumn{2}{L|}{Classical Viewpoint} &
+    \multicolumn{2}{L|}{Alternative viewpoint} &
+    \multicolumn{2}{L|}{Channeling} \\
     & ms & backtracks & ms & backtracks & ms & backtracks \\
     \hline
-lambda & 0.34s & 4712 & 36.93s & 99470 & 1.359s & 1155\\
-hard17 & 0.07s & 873 & 53.289s & 153383 & 0.781s & 1187\\
-eastermonster & 0.01s & 119 & 2.709s & 4361 & 0.131s & 85\\
-tarek\_052 & 0.02s & 193 & 0.15s & 201 & 0.01s & 6\\
-goldennugget & 0.06s & 520 & 8.81s & 16938 & 0.42s & 389\\
-coloin & 0.19s & 2209 & 3.82s & 6998 & 0.76s & 676\\
-extra2 & 0.18s & 4652 & 477.78s & 959808 & 6.57s & 13979\\
-extra3 & 0.33s & 4712 & 34.6s & 99470 & 1.21s & 1155\\
-extra4 & 0.95s & 15116 & 89.85s & 253873 & 1.19s & 1540\\
-inkara2012 & 0.0s & 50 & 3.78s & 8033 & 0.26s & 196\\
-clue18 & 0.14s & 1838 & 118.8s & 268974 & 3.19s & 3604\\
-clue17 & 0.33s & 5520 & 98.43s & 227622 & 0.15s & 177\\
-sudowiki\_nb28 & 0.21s & 2851 & 41.91s & 76081 & 2.33s & 2187\\
-sudowiki\_nb49 & 0.11s & 1078 & 5.89s & 14424 & 0.18s & 232\\
- \hline
+        lambda & 0.34 & 4712 & 36.93 & 99470 & 1.359 & 1155\\
+        hard17 & 0.07 & 873 & 53.289 & 153383 & 0.781 & 1187\\
+        eastermonster & 0.01 & 119 & 2.709 & 4361 & 0.131 & 85\\
+        tarek\_052 & 0.02 & 193 & 0.15 & 201 & 0.01 & 6\\
+        goldennugget & 0.06 & 520 & 8.81 & 16938 & 0.42 & 389\\
+        coloin & 0.19 & 2209 & 3.82 & 6998 & 0.76 & 676\\
+        extra2 & 0.18 & 4652 & 477.78 & 959808 & 6.57 & 13979\\
+        extra3 & 0.33 & 4712 & 34.6 & 99470 & 1.21 & 1155\\
+        extra4 & 0.95 & 15116 & 89.85 & 253873 & 1.19 & 1540\\
+        inkara2012 & 0.0 & 50 & 3.78 & 8033 & 0.26 & 196\\
+        clue18 & 0.14 & 1838 & 118.8 & 268974 & 3.19 & 3604\\
+        clue17 & 0.33 & 5520 & 98.43 & 227622 & 0.15 & 177\\
+        sudowiki\_nb28 & 0.21 & 2851 & 41.91 & 76081 & 2.33 & 2187\\
+        sudowiki\_nb49 & 0.11 & 1078 & 5.89 & 14424 & 0.18 & 232\\
+    \hline
   \end{tabular}
 \end{table}
 
@@ -361,83 +359,82 @@ sudowiki\_nb49 & 0.11s & 1078 & 5.89s & 14424 & 0.18s & 232\\
   \begin{tabular}{|c|c|c|c|c|c|c|}
     \hline
     \multirow{2}{*}{Puzzle} &
-      \multicolumn{2}{L|}{Classical Viewpoint (first fail)} &
-      \multicolumn{2}{L|}{Our Viewpoint (first fail)} &
-      \multicolumn{2}{L|}{ Channeling (first fail)} \\
+    \multicolumn{2}{L|}{Classical Viewpoint} &
+    \multicolumn{2}{L|}{Alternative viewpoint} &
+    \multicolumn{2}{L|}{Channeling} \\
     & ms & backtracks & ms & backtracks & ms & backtracks \\
     \hline
-lambda & 0.02s & 3 & 24.07s & 32384 & 0.03s & 2\\
-hard17 & 0.01s & 1 & 6.28s & 9183 & 0.02s & 0\\
-eastermonster & 0.12s & 33 & 10.69s & 11599 & 0.17s & 25\\
-tarek\_052 & 0.16s & 35 & 1.389s & 1502 & 0.071s & 6\\
-goldennugget & 0.29s & 76 & 19.94s & 19870 & 0.39s & 59\\
-coloin & 0.04s & 8 & 0.48s & 527 & 0.32s & 56\\
-extra2 & 0.0s & 0 & 0.68s & 909 & 0.02s & 0\\
-extra3 & 0.01s & 3 & 23.88s & 32384 & 0.03s & 2\\
-extra4 & 0.01s & 3 & 585.84s & 858267 & 0.03s & 3\\
-inkara2012 & 0.08s & 17 & 8.33s & 10942 & 0.08s & 15\\
-clue18 & 0.04s & 8 & 175.63s & 221669 & 0.02s & 0\\
-clue17 & 0.01s & 0 & 262.53s & 336082 & 0.019s & 0\\
-sudowiki\_nb28 & 0.549s & 297 & 41.25s & 46872 & 1.25s & 344\\
-sudowiki\_nb49 & 0.21s & 58 & 23.021s & 24536 & 0.219s & 38\\
- \hline
+        lambda & 0.02 & 3 & 24.07 & 32384 & 0.03 & 2 \\
+        hard17 & 0.01 & 1 & 6.28 & 9183 & 0.02 & 0 \\
+        eastermonster & 0.12 & 33 & 10.69 & 11599 & 0.17 & 25 \\
+        tarek\_052 & 0.16 & 35 & 1.389 & 1502 & 0.071 & 6 \\
+        goldennugget & 0.29 & 76 & 19.94 & 19870 & 0.39 & 59 \\
+        coloin & 0.04 & 8 & 0.48 & 527 & 0.32 & 56 \\
+        extra2 & 0.0 & 0 & 0.68 & 909 & 0.02 & 0 \\
+        extra3 & 0.01 & 3 & 23.88 & 32384 & 0.03 & 2 \\
+        extra4 & 0.01 & 3 & 585.84 & 858267 & 0.03 & 3 \\
+        inkara2012 & 0.08 & 17 & 8.33 & 10942 & 0.08 & 15 \\
+        clue18 & 0.04 & 8 & 175.63 & 221669 & 0.02 & 0 \\
+        clue17 & 0.01 & 0 & 262.53 & 336082 & 0.019 & 0 \\
+        sudowiki\_nb28 & 0.549 & 297 & 41.25 & 46872 & 1.25 & 344 \\
+        sudowiki\_nb49 & 0.21 & 58 & 23.021 & 24536 & 0.219 & 38 \\
+    \hline
   \end{tabular}
 \end{table}
-
 
 \subsubsection{first fail as value heuristic, alldifferent from ic}
 \begin{table}[h!]
   \begin{tabular}{|c|c|c|c|c|c|c|}
     \hline
     \multirow{2}{*}{Puzzle} &
-      \multicolumn{2}{L|}{Classical Viewpoint (first fail)} &
-      \multicolumn{2}{L|}{Our Viewpoint (first fail)} &
-      \multicolumn{2}{L|}{ Channeling (first fail)} \\
+    \multicolumn{2}{L|}{Classical Viewpoint} &
+    \multicolumn{2}{L|}{Alternative viewpoint} &
+    \multicolumn{2}{L|}{Channeling} \\
     & ms & backtracks & ms & backtracks & ms & backtracks \\
     \hline
-lambda & 0.091s & 977 & 10.42s & 36846 & 1.2s & 1961\\
-hard17 & 0.031s & 419 & 7.06s & 23036 & 0.139s & 386\\
-eastermonster & 0.01s & 101 & 6.71s & 16122 & 0.11s & 122\\
-tarek\_052 & 0.019s & 130 & 1.11s & 3178 & 0.05s & 45\\
-goldennugget & 0.051s & 358 & 9.609s & 23741 & 0.261s & 310\\
-coloin & 0.01s & 83 & 0.29s & 929 & 0.22s & 227\\
-extra2 & 0.49s & 7690 & 0.3s & 1044 & 0.0s & 10\\
-extra3 & 0.08s & 977 & 10.89s & 36846 & 1.34s & 1961\\
-extra4 & 0.19s & 2097 & 289.22s & 986497 & 0.32s & 720\\
-inkara2012 & 0.03s & 273 & 5.36s & 13509 & 0.09s & 108\\
-clue18 & 0.05s & 439 & 88.58s & 256741 & 0.06s & 52\\
-clue17 & 0.03s & 270 & 140.96s & 440342 & 0.01s & 15\\
-sudowiki\_nb28 & 0.21s & 2221 & 20.19s & 60024 & 0.65s & 864\\
-sudowiki\_nb49 & 0.07s & 655 & 11.9s & 32895 & 0.19s & 241\\
- \hline
+        lambda & 0.091 & 977 & 10.42 & 36846 & 1.2 & 1961 \\
+        hard17 & 0.031 & 419 & 7.06 & 23036 & 0.139 & 386 \\
+        eastermonster & 0.01 & 101 & 6.71 & 16122 & 0.11 & 122 \\
+        tarek\_052 & 0.019 & 130 & 1.11 & 3178 & 0.05 & 45 \\
+        goldennugget & 0.051 & 358 & 9.609 & 23741 & 0.261 & 310 \\
+        coloin & 0.01 & 83 & 0.29 & 929 & 0.22 & 227 \\
+        extra2 & 0.49 & 7690 & 0.3 & 1044 & 0.0 & 10 \\
+        extra3 & 0.08 & 977 & 10.89 & 36846 & 1.34 & 1961 \\
+        extra4 & 0.19 & 2097 & 289.22 & 986497 & 0.32 & 720 \\
+        inkara2012 & 0.03 & 273 & 5.36 & 13509 & 0.09 & 108 \\
+        clue18 & 0.05 & 439 & 88.58 & 256741 & 0.06 & 52 \\
+        clue17 & 0.03 & 270 & 140.96 & 440342 & 0.01 & 15 \\
+        sudowiki\_nb28 & 0.21 & 2221 & 20.19 & 60024 & 0.65 & 864 \\
+        sudowiki\_nb49 & 0.07 & 655 & 11.9 & 32895 & 0.19 & 241 \\
+    \hline
   \end{tabular}
 \end{table}
 \newpage
 \subsection{Impact of the different search strategies and alldifferent}
 \subsubsection{Input order vs first fail}
-When we compare the two tables for \texttt{input order} and \texttt{first fail} with the alldifferent from ic\_global we see that actually for most of the puzzles in all the three columns, the \texttt{first fail} heuristic does a better job than \texttt{input order}! We can see that there are sometimes really big differences between the two tables, for example 'extra2' for our viewpoint in the \texttt{input order} table has 662k backtracks but when you look over at the \texttt{first fail} table you see that it only has 909 backtracks! Though, it is not always \texttt{first fail} that is faster. If we look at 'extra4' for yet again our viewpoint we see that \texttt{input order} is faster this time! 197306 backtracks \texttt{input order} for vs 858267 backtracks \texttt{first fail}. This is quite odd behavior since 'extra4' is just puzzle 'extra3' (where \texttt{first fail} outperforms \texttt{input order} by more than 50\%) with an extra hint.
+When we compare the two tables for \texttt{input order} and \texttt{first fail} with the alldifferent from ic\_global we see that actually for most of the puzzles in all the three columns, the \texttt{first fail} heuristic does a better job than \texttt{input order}. We can see that there sometimes are large differences between the two tables. For example, 'extra2' for the alternative viewpoint in the \texttt{input order} table has 662k backtracks but when you look over at the \texttt{first fail} table you see that it only has 909 backtracks! Though, it is not always \texttt{first fail} that is faster. If we look at 'extra4' for the alternative viewpoint we see that \texttt{input order} is faster this time! 197306 backtracks for \texttt{input order} vs 858267 backtracks for \texttt{first fail}. This is quite odd, since 'extra4' is just puzzle 'extra3' (where \texttt{first fail} outperforms \texttt{input order} by more than 50\%) with an extra hint.
 \newline
 \newline
-When we look at the tables where we use  alldifferent from the ic, we see exactly the same behavior as mentioned before. We see that most of the times \texttt{first fail} is faster than \texttt{input order} but yet again we observe the same odd behavior for 'extra4'.
+When we look at the tables where we use alldifferent from the ic, we see exactly the same behavior as mentioned before. We see that most of the times \texttt{first fail} is faster than \texttt{input order} but yet again we observe the same odd behavior for 'extra4'.
 
 \subsubsection{ic\_global vs ic}
-When we compare the alldifferent from ic\_global vs ic we see that the version from ic\_global is faster/does less backtracking! For our viewpoint the increase is not that big but when you look at the channeling column and the classical viewpoint, then you see that the increases in backtracks here are quite big!
+When we compare the alldifferent from ic\_global vs ic we see that the version from ic\_global is faster/does less backtracking! For the alternative viewpoint, the increase is not that big but when you look at the channeling column and the classical viewpoint, then you see that the increases in backtracks here are quite big!
 
 \subsection{Analysis of differences}
 \subsubsection{input order vs first fail}
-To be able to explain these behaviors we first have to know the exact difference between these two search strategies. \texttt{Input order} takes the first element of a domain and \texttt{first fail} starts to take elements from the smallest domain. We think that the difference for 'extra4' can explained as follows: As you always take the smallest, if you make a wrong decision early on, you will need to do a lot of backtracks in a wrong branch of the tree. Since you always took the smallest ones first you get a tree branch that is very wide. If your first choice was a mistake you need to traverse this whole subtree first before you can backtrack to your first choice. We think that the extra hint resulted in creating just this problem. It has probably adapted an interval to something smaller which creates all these problems. \texttt{Input order} doesn't suffer from this since it just takes the first element of a domain. On the other hand sometimes taking the smallest domain gives you the best result because you have less choices to make here which would explain the behavior for 'extra2'
+To be able to explain these behaviors, we first have to know the exact difference between the two search strategies. \texttt{Input order} takes the first domains that have been created, while \texttt{first fail} starts from the smallest domain. We think that the difference for 'extra4' can explained as follows: As you always take the smallest domain, if you make a wrong decision early on, you will need to do a lot of backtracks in a wrong branch of the tree. Since you always took the smallest ones first you get a tree branch that is very wide. If your first choice was a mistake you need to traverse this whole subtree first before you can backtrack to your first choice. We believe that the extra hint resulted in this situation. It has probably reduced a domain which creates these problems. \texttt{Input order} doesn't suffer from this since it just takes the first entered domains. On the other hand, sometimes taking the smallest domain gives you the best result because you have less choices to make here, which would explain the behavior for 'extra2'.
 
 \subsubsection{alldifferent}
-The difference with the alldifferent is due to the fact that the alldifferent from ic\_global has been programmed with stronger propagation behavior \footnote{\url{http://eclipseclp.org/doc/bips/lib/ic\_global/alldifferent-1.html}} than the alldifferent from the ic library as explained in class. The ic\_global implementation has a global view of the constraints and can thus make smarter decisions about it.
+The difference with the alldifferent versions is due to the fact that the alldifferent from ic\_global has been programmed with stronger propagation behavior \footnote{\url{http://eclipseclp.org/doc/bips/lib/ic\_global/alldifferent-1.html}} than the alldifferent from the ic library as explained in class. The ic\_global implementation has a global view of the constraints and can thus make smarter decisions about it.
+
 \newpage
 \subsection{CHR}
 \label{sub:CHR}
 
-For the CHR implementation of the two viewpoints we had a lot of troubles getting something performant. When we run the two viewpoints on harder boards it takes easily a couple of minutes. Obviously this isn't good so we tried to improve the performance of both our implementations.
+For the CHR implementation of the two viewpoints we had a lot of trouble getting something that performs well. When we run the two viewpoints on harder boards it takes easily a couple of minutes. Obviously this isn't good, so improved the performance of both our implementations using the heuristics explained below.
 
-\subsubsection{Heuristics classical viewpoint}
-For the classical viewpoint we found that there was one obvious heuristic that we could use to try to improve the search.
-To demonstrate this let's take for example the 'lambda' board from the puzzles provided on toledo.
+\subsubsection{Heuristic classical viewpoint}
+For the classical viewpoint we found that there was one obvious heuristic that we could use to try to improve the search. To demonstrate this let's take, for example, the 'lambda' board from the puzzles provided in the assignment.
 
 \begin{figure}[h]
     \centering
@@ -447,49 +444,50 @@ To demonstrate this let's take for example the 'lambda' board from the puzzles p
     \caption{Lambda board pre vs post heuristic}%
     \label{fig:classic_heuristic}%
 \end{figure}
-When we look at \ref{fig:classic_heuristic}(a) we for example see that in the bottom left block, at the position (9,9), the only possible number that we can play there is a 6 since it cannot be put anywhere else in the block because of the two sixes of the blocks next to us. This information is critical to be able to solve sudoku's in a smart way. This is what we tried to do with our likelihood heuristic. Our heuristic will try to let (9,9) know that it is very likely that 6 should be put there. In fact it is 100\% 'likely' that 6 should be played there.
+If we look at \ref{fig:classic_heuristic}(a) we can see that in position (9,9), the only possible number we can play there is a 6, since it cannot be put anywhere else in the block because of the two sixes of the neighboring blocks. This information is critical to be able to solve sudoku puzzles in a smarter way. This is what we tried to do with our likelihood heuristic. Our heuristic will state that it is very likely that 6 should be put on position (9,9). In fact it is 100\% 'likely' that 6 should be played there.
 \newline
 \newline
 \newline
-The way we do this is we check the domain of (9,9) and we compare it with the domains of all the other squares in the block. When doing this comparison we check for the numbers that is in our domain but not in the domain of the square we're comparing. If a number is not present in the domain of the comparing square, let's say 6 for example, then we know that the likelihood that this 6 is at our position increases. So we keep track of all the differences between the other squares and we count how many times we've seen a number. We then sort our domain according to this in a descending order based on the count. Obviously we want to try things that are very likely first and things that are less likely at a later moment. One important observation to this is that if the count of a number equals to 9 you know that we are the only position that can play this number else we would never see this number appear 8 times from the differences. We get to 9 because we use our domain as a starting point, so this means that each number in our domain immediately gets a count of 1. We do this because it is not certain that when checking all the differences with the other squares, you will get all the values from your domain. So if we would only use the numbers from the differences we might for example never see a 2 while actually 2 was the only answer that could be played at that position in the end.
+The way we do this is by checking the domain of (9,9) and comparing it with to the domains of all the other squares in the block. When doing this comparison, we check for the numbers that are in our domain but not in the domain of the square we're comparing with. If a number is not present in the domain of the other square, e.g. number 6, then we know that the likelihood that this 6 is at our position increases. Thus, we keep track of all the differences between the other squares and we count how many times we've seen a number. We then sort our domain according to this in a descending order based on the count. Obviously, we want to try things that are very likely first and things that are less likely at a later moment. One important observation to this is that if the count of a number equals to 9, you know that we are in the only position that can play this number else we would never see this number appear 8 times from the differences. We get to 9 because we use our domain as a starting point. This means that each number in our domain immediately gets a count of 1. We do this because it is not certain that when checking all the differences with the other squares, that you will get all the values from your domain. So if we would only use the numbers from the differences we might for example never see a 2 while actually 2 was the only answer that could be played at that position in the end.
 \newline
 \newline
- When we look at figure \ref{fig:classic_heuristic}(b), we can see the effect of our likelihood heuristic just before the start of the search. We see that already 5 different squares are filled in (the green and red ones). The green ones are some obvious plays but we were actually surprised when it played the red one. The other green ones are 'easy' because for example for the (9,9) example you see that this position is obviously the only place 6 can be played because of the other sixes. But for the red one we don't see a single other 8 on the board and yet it knew that it had to play an 8 there. We have to admit though that our system is a bit flawed since this heuristic cannot be used during the search since too many calculations are made. For example with everything we have filled in we could deduct that for the yellow square, 5 is the only possible play. But this is not feasible since it is way to slow to calculate this. This is why we ordered the domain according to likelihood. If we look at the domain of (2,1) sorted with likelihood, we see that the domain is [5, 3, 6, 8, 9]. So even though we're not fully sure that the 5 had to come there before we filled in the 4 in our block, our system captures the likelihood of a 5 at (2,1) still quite well.
+When we look at figure \ref{fig:classic_heuristic}(b), we can see the effect of our likelihood heuristic just before the start of the search. We see that already 5 different squares are filled in (the green and red ones). The green ones are some obvious plays but we were actually surprised when it found the red one. The other green ones are 'easy' because for the (9,9) example you see that this position is obviously the only place a 6 can be played because of the other sixes. But for the red one we don't see a single other 8 on the board and yet it knew that it had to play an 8 there. We have to admit though that our system is a bit flawed since this heuristic cannot be used during the search since too many calculations are made. For example with everything we have filled in, we could deduct that for the yellow square, 5 is the only possible play. But this is not feasible since it is way to slow to calculate this. This is why we ordered the domain according to likelihood. If we look at the domain of (2,1) sorted with likelihood, we see that the domain is [5, 3, 6, 8, 9]. So even though we're not fully sure that the 5 had to come there before we filled in the 4 in our block, our system captures the likelihood of a 5 at (2,1) still quite well.
 
-\subsubsection{Heuristics our viewpoint}
-To increase the search speed for our viewpoint we decided to do something about the search space itself. Consider the following example:
+\subsubsection{Heuristic alternative viewpoint}
+To increase the search speed for the alternative viewpoint we decided to do something about the search space itself. Consider the following example:
 \begin{figure}[h!]
 \centering
 \includegraphics[width=0.8\textwidth]{smartremoval}
 \caption{Smart domain changes}
 \label{fig:smart_domain}
 \end{figure}
-Let's say we want to play a 3 at the green square on figure \ref{fig:smart_domain}. Our initial domain would be from 1 to 9. If we play the 3 in the green square then we know that for all our other 3's that we cannot put them in the first column anymore. So the other domains for playing 3 will remove the first column from their domain. But this play actually contains more information which we try to exploit with our system. Since we played in the first column, we know that for the other 3's in this block row they cannot be played anywhere in block 1 anymore! So for their domain, instead of just removing the first column, we remove all the columns from the first block from their domain! This means that from 9 values we go to 6 immediately and if we play another 3 in this block row then the last 3 only has a search space of 3 left! By doing this small change we effectively speed up our system quite a bit.
+Let's say we want to play a 3 at the green square on figure \ref{fig:smart_domain}. Our initial domain would be from 1 to 9. If we play the 3 in the green square, then we know that we cannot put aby other 3's in the first column. So the in the domains of other 3's, the first column is removed. But this play actually contains more information which we try to exploit here. Since we played in the first column, we know that the other 3's in this block row cannot be played anywhere in block 1 anymore! So for their domains, instead of just removing the first column, we remove all the columns in the first block. This means that from 9 values, we go to 6, and if we play another 3 in this block row, then the last 3 only has a search space of 3 left! By doing this small change we effectively speed up our system quite a bit.
 \subsubsection{Experiments}
 \begin{table}[h!]
   \begin{tabular}{|c|c|c|c|c|c|c|}
     \hline
     \multirow{1}{*}{Puzzle} &
-      \multicolumn{1}{L|}{Classical Viewpoint} &
-      \multicolumn{1}{L|}{Our Viewpoint} &
-      \multicolumn{1}{L|}{Channeling} \\
-    & ms & ms & ms \\
+    \multicolumn{1}{L|}{Classical Viewpoint} &
+    \multicolumn{1}{L|}{Alternative viewpoint} &
+    \multicolumn{1}{L|}{Channeling} \\
+    & s & s & s \\
     \hline
-lambda & 340.04s & 118.72 & 218.44s \\
-hard17 & 2003.50s & 463.11s & 413.61s \\
-eastermonster & 63.57s & 235.10s & 32.77s \\
-tarek\_052 & 13.58s & 170.76s & 26.12s \\
-goldennugget & 18.151s & 155.49s & 21.42s \\
-coloin & 132.72s & 74.82s & 69.82s \\
-extra2 & 18.92s & 2444.10s & 14.14s\\
-extra3 & 372.84s & 134.93s & 233.17s \\
-extra4 & 141.55s & 297.64s & 115.41s\\
-inkara2012 & 141.58s & 1220.32s & 116.46s\\
-clue18 & aborted after 30 min & aborted after 30 min & aborted after 30 min \\
-clue17 & 11.29s & 563.06s & 8.56s \\
-sudowiki\_nb28& 446.24s & 45.05s & 237.02s \\
-sudowiki\_nb49 & 73.02s & 69.20s & 68.67s \\
- \hline
+        lambda & 340.04 & 118.72 & 218.44 \\
+        hard17 & 2003.50 & 463.11 & 413.61 \\
+        eastermonster & 63.57 & 235.10 & 32.77 \\
+        tarek\_052 & 13.58 & 170.76 & 26.12 \\
+        goldennugget & 18.151 & 155.49 & 21.42 \\
+        coloin & 132.72 & 74.82 & 69.82 \\
+        extra2 & 18.92 & 2444.10 & 14.14 \\
+        extra3 & 372.84 & 134.93 & 233.17 \\
+        extra4 & 141.55 & 297.64 & 115.41 \\
+        inkara2012 & 141.58 & 1220.32 & 116.46 \\
+        % ik heb het veranderd naar 45min want hard17 met 2000s is > 30min
+        clue18 & aborted after 45min & aborted after 45min & aborted after 45min \\
+        clue17 & 11.29 & 563.06 & 8.56s \\
+        sudowiki\_nb28& 446.24 & 45.05 & 237.02s \\
+        sudowiki\_nb49 & 73.02 & 69.20 & 68.67s \\
+    \hline
   \end{tabular}
   \caption{Sudoku in CHR without heuristics}
 \end{table}
@@ -498,30 +496,30 @@ sudowiki\_nb49 & 73.02s & 69.20s & 68.67s \\
   \begin{tabular}{|c|c|c|c|c|c|c|}
     \hline
     \multirow{1}{*}{Puzzle} &
-      \multicolumn{1}{L|}{Classical Viewpoint} &
-      \multicolumn{1}{L|}{Our Viewpoint} &
-      \multicolumn{1}{L|}{Channeling} \\
-    & ms & ms & ms \\
+    \multicolumn{1}{L|}{Classical Viewpoint} &
+    \multicolumn{1}{L|}{the alternative viewpoint} &
+    \multicolumn{1}{L|}{Channeling} \\
+    & s & s & s \\
     \hline
-lambda & 383.27s & 8.07s & 70.85s \\
-hard17 & 282.39s & 0.30s & 1.61s \\
-eastermonster & 68.83s & 14.74s & 16.73s \\
-tarek\_052 & 1.70s & 90.21s & 1.70s \\
-goldennugget & 24.11s & 43.1s & 13.81s \\
-coloin & 90.63s & 42.73s & 17.73s \\
-extra2 & 486.39s & 54.98s & 2.11s \\
-extra3 & 385.02s & 7.95s & 70.63s \\
-extra4 & 184.18s & 10.60s & 46.23s \\
-inkara2012 & 10.75s & 255.18s & 5.50s \\
-clue18 & 1068.80s & 569.44s & 249.05s \\
-clue17 & 25.60s & 1.01s & 0.98s \\
-sudowiki\_nb28 & 1204.91s & 4.58s & 207.25s \\
-sudowiki\_nb49 & 130.41s & 21.85s & 70.93s \\
- \hline
+        lambda & 383.27 & 8.07 & 70.85s \\
+        hard17 & 282.39 & 0.30 & 1.61s \\
+        eastermonster & 68.83 & 14.74 & 16.73s \\
+        tarek\_052 & 1.70 & 90.21 & 1.70s \\
+        goldennugget & 24.11 & 43.1 & 13.81s \\
+        coloin & 90.63 & 42.73 & 17.73s \\
+        extra2 & 486.39 & 54.98 & 2.11s \\
+        extra3 & 385.02 & 7.95 & 70.63s \\
+        extra4 & 184.18 & 10.60 & 46.23s \\
+        inkara2012 & 10.75 & 255.18 & 5.50s \\
+        clue18 & 1068.80 & 569.44 & 249.05s \\
+        clue17 & 25.60 & 1.01 & 0.98s \\
+        sudowiki\_nb28 & 1204.91 & 4.58 & 207.25s \\
+        sudowiki\_nb49 & 130.41 & 21.85 & 70.93s \\
+    \hline
   \end{tabular}
   \caption{Sudoku in CHR with heuristics}
 \end{table}
-When we compare both tables, we see that for our viewpoint we see that there is a good improvement. Although when we look for the classic viewpoint, we see that our heuristic is in most cases quite slower! Although in some cases it does increase it tremendously!
+When we compare both tables, we see that for the alternative viewpoint there is a good improvement. Although when we look for the classic viewpoint, we see that our heuristic is in most cases quite a bit slower! Although in some cases it does increase it tremendously.
 \mychapter{2}{Task 2: Hashiwokakero}
 \label{sec:Hashiwokakero}
 
@@ -549,16 +547,12 @@ board_connected_set(Board) :-
     board_islands(Board, Islands),
     length(Islands, N),
     length(Visited, N),
-
     % make the island be member of current set
     nth1(1, Islands, [X, Y]),
-
     % set position to visited
     nth1(1, Visited, 1),
-
     % travel to the neighbors of the current position and fill the Islands/Visited set
     fill_set_visit(Board, X, Y, Islands, Visited),
-
     % if all free variables in Visited have been bound, then all islands form a connected set
     count_nonvars(Visited, N).
 \end{lstlisting}
@@ -591,41 +585,8 @@ All three of the improvements have an impact on the connectivity constraint. Bec
 
 \subsection{Experiments}
 
-\begin{table}[h!]
-  \begin{tabular}{|c|c|c|c|c|}
-    \hline
-    \multirow{2}{*}{Puzzle} &
-    \multicolumn{2}{L|}{Without improvements} &
-    \multicolumn{2}{L|}{With improvements}\\
-      & ms & backtracks & ms & backtracks \\
-    \hline
-    1 & 0 & 1 & 0 & 1 \\
-    2 & 130 & 60 & 81 & 42 \\
-    3 & 0 & 0 & 0 & 0 \\
-    4 & 0 & 0 & 0 & 0 \\
-    5 & 0 & 0 & 0 & 0 \\
-    6 & 10 & 1 & 10 & 1 \\
-    7 & 0 & 0 & 0 & 0 \\
-    8 & 0 & 0 & 0 & 0 \\
-    9 & 0 & 1 & 0 & 1 \\
-    10 & 49 & 160 & 61 & 160 \\
-    11 & 0 & 0 & 0 & 0 \\
-    12 & 0 & 1 & 0 & 1 \\
-    13 & 10 & 0 & 0 & 0 \\
-    14 & 0 & 1 & 0 & 1 \\
-    15 & 20 & 4 & 20 & 4 \\
-    16 & 21 & 28 & 20 & 28 \\
-    17 & 10 & 1 & 9 & 0 \\
-    18 & 0 & 1 & 0 & 1 \\
-    19 & 0 & 0 & 0 & 0 \\
-    20 & 0 & 2 & 0 & 1 \\
-    21 & 0 & 1 & 0 & 0 \\
-    22 & 10 & 9 & 10 & 9 \\
-    \hline
-  \end{tabular}
-  \caption{ECLiPSe Hashiwokakero solutions using input order}
-\end{table}
-
+\subsubsection{ECLiPSe Hashiwokakero solutions using input order}
+Table \ref{table:hashi-1} shows the results of searching with the input order heuristic.
 \begin{table}[h!]
   \begin{tabular}{|c|c|c|c|c|}
     \hline
@@ -634,33 +595,73 @@ All three of the improvements have an impact on the connectivity constraint. Bec
     \multicolumn{2}{L|}{With improvements}\\
     & ms & backtracks & ms & backtracks \\
     \hline
-    1 & 0 & 1 & 0 & 1 \\
-    2 & 170 & 61 & 20 & 61 \\
-    3 & 0 & 0 &  & 0 \\
-    4 & 0 & 0 & 0 & 0 \\
-    5 & 0 & 0 &  & 0 \\
-    6 & 10 & 1 &  & 1 \\
-    7 & 0 & 0 &  & 0 \\
-    8 & 0 & 0 &  & 0 \\
-    9 & 0 & 1 & 0 & 1 \\
-    10 & 110 & 152 & 69 & 152 \\
-    11 & 0 & 0 & 0 & 0 \\
-    12 & 0 & 1 & 10 & 1 \\
-    13 & 0 & 0 & 0 & 0 \\
-    14 & 10 & 1 & 0 & 1 \\
-    15 & 80 & 4 & 90 & 4 \\
-    16 & 50 & 28 & 61 & 28 \\
-    17 & 0 & 1 & 10 & 0 \\
-    18 & 0 & 1 & 0 & 1 \\
-    19 & 0 & 0 & 0 & 0 \\
-    20 & 0 & 2 & 0 & 1 \\
-    21 & 0 & 1 & 0 & 0 \\
-    22 & 10 & 9 & 10 & 9 \\
+        1 & 0 & 1 & 0 & 1 \\
+        2 & 130 & 60 & 81 & 42 \\
+        3 & 0 & 0 & 0 & 0 \\
+        4 & 0 & 0 & 0 & 0 \\
+        5 & 0 & 0 & 0 & 0 \\
+        6 & 10 & 1 & 10 & 1 \\
+        7 & 0 & 0 & 0 & 0 \\
+        8 & 0 & 0 & 0 & 0 \\
+        9 & 0 & 1 & 0 & 1 \\
+        10 & 49 & 160 & 61 & 160 \\
+        11 & 0 & 0 & 0 & 0 \\
+        12 & 0 & 1 & 0 & 1 \\
+        13 & 10 & 0 & 0 & 0 \\
+        14 & 0 & 1 & 0 & 1 \\
+        15 & 20 & 4 & 20 & 4 \\
+        16 & 21 & 28 & 20 & 28 \\
+        17 & 10 & 1 & 9 & 0 \\
+        18 & 0 & 1 & 0 & 1 \\
+        19 & 0 & 0 & 0 & 0 \\
+        20 & 0 & 2 & 0 & 1 \\
+        21 & 0 & 1 & 0 & 0 \\
+        22 & 10 & 9 & 10 & 9 \\
+    \hline
+  \end{tabular}
+  \caption{ECLiPSe Hashiwokakero solutions using input order}
+  \label{table:hashi-1}
+\end{table}
+
+\subsubsection{ECLiPSe Hashiwokakero solutions using first fail}
+Table \ref{table:hashi-2} shows the results of searching with the first fail heuristic.
+\begin{table}[h!]
+  \begin{tabular}{|c|c|c|c|c|}
+    \hline
+    \multirow{2}{*}{Puzzle} &
+    \multicolumn{2}{L|}{Without improvements} &
+    \multicolumn{2}{L|}{With improvements}\\
+    & ms & backtracks & ms & backtracks \\
+    \hline
+        1 & 0 & 1 & 0 & 1 \\
+        2 & 170 & 61 & 20 & 61 \\
+        3 & 0 & 0 &  & 0 \\
+        4 & 0 & 0 & 0 & 0 \\
+        5 & 0 & 0 &  & 0 \\
+        6 & 10 & 1 &  & 1 \\
+        7 & 0 & 0 &  & 0 \\
+        8 & 0 & 0 &  & 0 \\
+        9 & 0 & 1 & 0 & 1 \\
+        10 & 110 & 152 & 69 & 152 \\
+        11 & 0 & 0 & 0 & 0 \\
+        12 & 0 & 1 & 10 & 1 \\
+        13 & 0 & 0 & 0 & 0 \\
+        14 & 10 & 1 & 0 & 1 \\
+        15 & 80 & 4 & 90 & 4 \\
+        16 & 50 & 28 & 61 & 28 \\
+        17 & 0 & 1 & 10 & 0 \\
+        18 & 0 & 1 & 0 & 1 \\
+        19 & 0 & 0 & 0 & 0 \\
+        20 & 0 & 2 & 0 & 1 \\
+        21 & 0 & 1 & 0 & 0 \\
+        22 & 10 & 9 & 10 & 9 \\
     \hline
   \end{tabular}
   \caption{ECLiPSe Hashiwokakero solutions using first fail}
+  \label{table:hashi-2}
 \end{table}
 
+\newpage
 \newpage
 \section{CHR}
 \subsection{Data representation}
@@ -670,13 +671,12 @@ We used the same data representation as in the ECLiPSe solution. The data is sto
 \begin{itemize}
 	\item The amount of bridges going in one direction equals the amount of bridges going in the opposite direction on the next position.
 \begin{lstlisting}[ language = Prolog-pretty]
-board_connected_set(Board) :-
-bridge_constraints, board(X, Y, _, N, _, _, _),
-    board(X2, Y, _, _, _, S, _) ==> X > 1, X2 is X-1 |
+bridge_constraints, board(X, Y, _, N, _, _, _), board(X2, Y, _, _, _, S, _)
+    ==> X > 1, X2 is X-1 |
     N eq S.
 
-bridge_constraints, board(X, Y, _, _, E, _, _),
-    board(X, Y2, _, _, _, _, W) ==> Y2 is Y+1|
+bridge_constraints, board(X, Y, _, _, E, _, _), board(X, Y2, _, _, _, _, W)
+    ==> Y2 is Y+1 |
     E eq W.
 \end{lstlisting}
 
@@ -710,8 +710,8 @@ bridge_constraints, board(_, _, Amount, N, E, S, W) ==> Amount > 0 |
 
 \subsection{Propagation and search}
 Constraint propagation is handled by the 'in/2', 'add/3' and 'eq/2' rules. The 'in/2' rule is used to set the domain of a variable. The domain of a variable is a list of integers represented by two integers A and B and is noted as 'A..B'. When the domain of a variable only contains one element (when A equals B), then the value of the variable is known. \\
-The 'add/3' and 'eq/2' rules are used to represent the rules for addition and equality in the program. additionally, their job is to reduce the domains of variables (see lines 10, 11, and 16 in the code below). This makes these constraints active constraints. An example of the domain reduction goes as follows. Assume the following facts are known. 'X in 0..4', 'Y in 0..4', 'Z in 0..2', add(X, Y, Z). We know that \(X + Y\) must equal \(Z\), and that \(Z\) must lie between 0 and 2. Therefore, we can reduce the domains of \(X\) and \(Y\) from '0..4' to '0..2'. This kind of behaviour is implemented by line 16 in the code excerpt below.
-\begin{lstlisting}[ language = Prolog-pretty, caption = {Constraint propagation} ]
+The 'add/3' and 'eq/2' rules are used to represent the rules for addition and equality in the program. additionally, their job is to reduce the domains of variables (see lines 9, 10, and 15 in the code below). This makes these constraints active constraints. An example of the domain reduction goes as follows. Assume the following facts are known. 'X in 0..4', 'Y in 0..4', 'Z in 0..2', add(X, Y, Z). We know that \(X + Y\) must equal \(Z\), and that \(Z\) must lie between 0 and 2. Therefore, we can reduce the domains of \(X\) and \(Y\) from '0..4' to '0..2'. This kind of behaviour is implemented by line 15 in the code excerpt below.
+\begin{lstlisting}[ language = Prolog-pretty, caption = {Constraint propagation and domain solving} ]
 % remove duplicate indomain constraints
 X in A..B \ X in A..B <=> var(X) | true.
 % when a variable's domain gets reduced to 1 number, set the value of the variable
@@ -765,7 +765,6 @@ connected, island(_, _, _)                    <=> false.
 \subsubsection{Version 2}
 The second connectivity constraint propagator follows a similar idea, but implements it by using a disjoint-set-like data structure. After the puzzle board is loaded, each island forms its own 'connected set' (or segment). A counter 'connected\_sets\_counter/1' represents the amount of connected sets that are on the board. 'connected\_set/3' represents which island belongs to which connected set. After a bridge has been formed between two islands ('connected/2'), their connected sets are merged together (lines 1, 4, and 10 below) by changing the identifier of the smaller connected set into the identifier of the larger one. After the sets have been merged, the 'connected\_sets\_counter/1' is decremented. The actual connectivity constraint is represented by the last line in the code excerpt. If, after the search phase is over, there exists more than one connected set, then the solution is not valid, and backtracking is forced. \\
 Compared to version 1, this connectivity constraint propagator is actually worse. This is because it is more costly to keep track of all of the connected sets during search than to just check whether or not all island are reachable from a certain island. However, subsection \ref{sec:improvement2} contains an improvement for this version which makes it perform better than the previous one.
-\newpage
 
 \begin{lstlisting}[ language = Prolog-pretty, caption  = {Connectivity constraint propagator 2} ]
 connected_set(A, B, Set1), connected_set(C, D, Set2), connected_set_counter(Set1, Count1)
@@ -821,37 +820,38 @@ connected_set(X, Y, Set1), board(X, Y, _, _, _, _, W) \ connected_set_not_isolat
 connected_set_not_isolated(_) <=> false.
 \end{lstlisting}
 
-This improvement has a large impact on the connectivity constraint, because now the connectivity constraint is checked during the search phase instead of after the search phase. If an isolated segment were to be formed early in the search phase, this improvement would detect it and cause backtracking to happen instantly, whereas without this improvement backtracking would need to go over all choice points made after the creation of the isolated set. The effect of this improvement is most visible on board 2; its solving time went from 1600s (check this / update table) with improvement 1 to 850s with improvement 1 and 2. This improvement did not have a great impact on most other boards. This is because most other boards had smaller and fewer (or zero in some cases) domains to chose from during the search phase because of the domain solving done by 'eq/2' and 'add/3' (CHECK THIS WITH UPDATED TABLE).
+This improvement has a large impact on the connectivity constraint, because now the connectivity constraint is checked during the search phase instead of after the search phase. If an isolated segment were to be formed early in the search phase, this improvement would detect it and cause backtracking to happen instantly, whereas without this improvement backtracking would need to go over all choice points made after the creation of the isolated set. The effect of this improvement is most visible on board 2. Its solving time went from 516s with improvement 1 to 317s with improvement 1 and 2 (see tables in section \ref{sub:hashi-exp-2}). This improvement did not have a great impact on most other boards. This is because most other boards had smaller and fewer (or zero in some cases) domains to chose from during the search phase because of the domain solving done by 'eq/2' and 'add/3'.
 
 \subsection{Experiments}
+\label{sub:hashi-exp-2}
 \begin{table}[h]
 \centering
 \begin{tabular}{|c|c|c|}
 \hline
- board number & no improvements & isolation improvements\\
- \hline
-      1   & 0.049s & 0.044s \\
-      2   & $>$ 1h30m & 497.33s (8.3m)\\
-      3   & 0.026s & 0.03s\\
-      4   & 0.054s & 0.057s\\
-      5   & 0.05s & 0.049s\\
-      6   & 0.121s & 0.114s\\
-      8   & 0.006s & 0.004s\\
-      9   & 0.006s & 0.007s\\
-      10  & 26.642s & 1.344s\\
-      11  & 0.044s & 0.049s\\
-      12  & 0.05s & 0.05s\\
-      13  & 0.056s & 0.056s\\
-      14  & 0.097s & 0.066s\\
-      15  & 1.584s & 1.527s\\
-      16  & 1.11s & 1.113s\\
-      17  & 2.152s & 0.222s\\
-      18  & 0.035s & 0.051s\\
-      19  & 0.01s & 0.011s\\
-      20  & 0.034s & 0.024s\\
-      21  & 0.012s & 0.013s\\
-      22  & 0.028s & 0.027s\\
-\hline
+    board number & no improvements & isolation improvements\\
+    \hline
+        1   & 0.049s & 0.044s \\
+        2   & aborted after 1h30m & 497.33s (8.3m) \\
+        3   & 0.026s & 0.03s \\
+        4   & 0.054s & 0.057s \\
+        5   & 0.05s & 0.049s \\
+        6   & 0.121s & 0.114s \\
+        8   & 0.006s & 0.004s \\
+        9   & 0.006s & 0.007s \\
+        10  & 26.642s & 1.344s \\
+        11  & 0.044s & 0.049s \\
+        12  & 0.05s & 0.05s \\
+        13  & 0.056s & 0.056s \\
+        14  & 0.097s & 0.066s \\
+        15  & 1.584s & 1.527s \\
+        16  & 1.11s & 1.113s \\
+        17  & 2.152s & 0.222s \\
+        18  & 0.035s & 0.051s \\
+        19  & 0.01s & 0.011s \\
+        20  & 0.034s & 0.024s \\
+        21  & 0.012s & 0.013s \\
+        22  & 0.028s & 0.027s \\
+    \hline
 \end{tabular}
 \caption{Improvements on CHR solver with connectivity propagator 1}
 \end{table}
@@ -860,33 +860,32 @@ This improvement has a large impact on the connectivity constraint, because now 
 \centering
 \begin{tabular}{|c|L|L|L|L|}
 \hline
-      board number & no improvements & isolation improvements & connectivity constraint improvement & all improvements\\
-      \hline
-      1   & 0.05s & 0.053s & 0.054s & 0.048s\\
-      2   & unknown & 515.92 (8.6m) & ??? & 316.37s (5.3m)\\
-      3   & 0.028s & 0.028s & 0.028s & 0.026s\\
-      4   & 0.065s & 0.059s & 0.057s & 0.062s\\
-      5   & 0.058s & 0.052s & 0.051s & 0.051s\\
-      6   & 0.125s & 0.119s & 0.127s & 0.116s\\
-      8   & 0.007s & 0.004s & 0.006s & 0.006s\\
-      9   & 0.007s & 0.01s & 0.007s & 0.006s\\
-      10  & 27.415s & 1.356s & 50.548s & 1.34s\\
-      11  & 0.046s & 0.047s & 0.048s & 0.048s\\
-      12  & 0.052s & 0.048s & 0.053s & 0.052s\\
-      13  & 0.059s & 0.059s & 0.06s & 0.06s\\
-      14  & 0.093s & 0.077s & 0.093s & 0.076s\\
-      15  & 1.587s & 1.613s & 1.604s & 1.555s\\
-      16  & 1.127s & 1.226s & 1.132s & 1.143s\\
-      17  & 2.221s & 0.232s & 2.585s & 0.234s\\
-      18  & 0.047s & 0.049s & 0.06s & 0.039s\\
-      19  & 0.01s & 0.011s & 0.012s & 0.011s\\
-      20  & 0.024s & 0.023s & 0.024s & 0.029s\\
-      21  & 0.012s & 0.013s & 0.014s & 0.012s\\
-      22  & 0.03s & 0.037s & 0.024s & 0.026s\\
-\hline
+    board number & no improvements & isolation improvements & connectivity constraint improvement & all improvements\\
+    \hline
+        1   & 0.05s & 0.053s & 0.054s & 0.048s \\
+        2   & unknown & 515.92 (8.6m) & unknown & 316.37s (5.3m) \\
+        3   & 0.028s & 0.028s & 0.028s & 0.026s \\
+        4   & 0.065s & 0.059s & 0.057s & 0.062s \\
+        5   & 0.058s & 0.052s & 0.051s & 0.051s \\
+        6   & 0.125s & 0.119s & 0.127s & 0.116s \\
+        8   & 0.007s & 0.004s & 0.006s & 0.006s \\
+        9   & 0.007s & 0.01s & 0.007s & 0.006s \\
+        10  & 27.415s & 1.356s & 50.548s & 1.34s \\
+        11  & 0.046s & 0.047s & 0.048s & 0.048s \\
+        12  & 0.052s & 0.048s & 0.053s & 0.052s \\
+        13  & 0.059s & 0.059s & 0.06s & 0.06s \\
+        14  & 0.093s & 0.077s & 0.093s & 0.076s \\
+        15  & 1.587s & 1.613s & 1.604s & 1.555s \\
+        16  & 1.127s & 1.226s & 1.132s & 1.143s \\
+        17  & 2.221s & 0.232s & 2.585s & 0.234s \\
+        18  & 0.047s & 0.049s & 0.06s & 0.039s \\
+        19  & 0.01s & 0.011s & 0.012s & 0.011s \\
+        20  & 0.024s & 0.023s & 0.024s & 0.029s \\
+        21  & 0.012s & 0.013s & 0.014s & 0.012s \\
+        22  & 0.03s & 0.037s & 0.024s & 0.026s \\
+    \hline
 \end{tabular}
 \caption{Improvements on CHR solver with connectivity propagator 2}
-
 \end{table}
 
 \mychapter{3}{Conclusion}
@@ -894,20 +893,20 @@ This improvement has a large impact on the connectivity constraint, because now 
 \section{Weak points}
 There are a couple of weak points in our report:
 \begin{itemize}
-    \item We have to admit that the speed of our Sudoku implementations in CHR are not that great. We did try to improve it with our heuristics but we think this is still too slow. We think this was more due to the fact that we were still novices with how CHR worked as our hashiwokakero CHR implementation is quite fast.
-    \item Our connectivity constraint in ECLiPSe for hashiwokakero is also rather a weak point. Ideally we should've implemented it as a connected set but we couldn't figure out how we had to do this.
-    \item We think that implementing hashiwokakero as a graph is a more logical approach than the one we used now, but we had problems with ECLiPSe and how to express the no crossing bridge constraint.
+    \item The speed of our Sudoku implementations in CHR are not that great. We did try to improve it with the heuristics, but we feel it is still too slow. We think this was more due to the fact that we were still novices with how CHR worked as our Hashiwokakero CHR implementation is quite fast.
+    \item The implementation of the connectivity constraint in ECLiPSe for Hashiwokakero is also a rather weak point. Ideally we should have implemented it using disjoint sets like in CHR but we couldn't figure out how to do this correctly.
+    \item We think that implementing a Hashiwokakero solver using a graph representation is a more logical approach than the one we have used, but we had problems with ECLiPSe and how to express the no crossing bridges constraint.
 \end{itemize}
 \section{Strong points}
 The strong points in our report are:
 \begin{itemize}
-    \item Our hashiwokakero CHR implementation is quite fast thanks to our connected set.
-    \item We think we have good heuristics for Sudoku in CHR. Certainly the heuristic for our viewpoint has made good improvements on the speed of the search.
+    \item Our Hashiwokakero CHR implementation is quite fast thanks to our connected set.
+    \item We think we have good heuristics for Sudoku in CHR. Certainly the heuristic for the alternative viewpoint has made good improvements on the speed of the search.
 \end{itemize}
 
 \section{Lessons learned}
-We have learned a lot of things during this project due to the fact we often had to re-track our steps. If we would now have to do an other project with these systems we think we would have a better idea for how to start and what to think about. We spend quite some time with both ECLiPSe and CHR so we now also know very well what the strong points are and the weak points are for each system.
+We have learned a lot of things during this project due to the fact we often had to re-track our steps. If we would now have to do an other project with these systems we think we would have a better idea for how to start and what to think about. We spent quite some time with both ECLiPSe and CHR so we now have a much better idea of what the strong points are and the weak points are for each system.
 
 \mychapter{4}{Appendix}
-We started working on this project before the Easter holiday. In the beginning we often lost quite some time, since we didn't really know how the systems worked. During the second week of the Easter holiday, we continued to work on the project each evening and we finished the Sudoku task and the ECLiPSe part of hashiwokakero before the end of the holiday. We then had to halt our work for a while since we had a deadline for a ridiculously large project for another course. As the semester was coming to an end other deadlines and an exam were coming up so we had to manage those first. Thus it was only at the start of the study period that we could continue working. From the start of the study period we tried to spend around 6 hours of work each day for this project. The work was not really divided since we were doing pair programming most of the time. Sometimes someone made individual changes when they had time but most of our work was done online using Hangouts and its screen sharing functionality. We could argue that by doing pair programming we lost quite some time, which is true, but by doing this we worked very closely together and we learned quite a lot. We have each individually put more than 50 hours in this project.
+We started working on this project before the Easter holiday. In the beginning we often lost quite some time, since we didn't really know how the systems worked. During the second week of the Easter holiday, we continued to work on the project each evening and we finished the Sudoku task and the ECLiPSe part of hashiwokakero before the end of the holiday. We then had to halt our work for a while since we had a deadline for a ridiculously large project for another course. As the semester was coming to an end other deadlines and an exam were coming up so we had to manage those first. Thus it was only at the start of the study period that we could continue working. From the start of the study period we tried to spend around 6 hours of work each day for this project. The work was not really divided since we were doing pair programming most of the time. Sometimes someone made individual changes when they had time but most of our work was done online using Hangouts and its screen sharing functionality. We could argue that by doing pair programming we lost quite some time, which is true, but by doing this we worked very closely together and we learned quite a lot. We have each individually put more than 100 hours in this project.
 \end{document}
